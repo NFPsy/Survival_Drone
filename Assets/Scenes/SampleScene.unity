@@ -741,6 +741,7 @@ GameObject:
   - component: {fileID: 284380586}
   - component: {fileID: 284380591}
   - component: {fileID: 284380590}
+  - component: {fileID: 284380593}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -901,6 +902,21 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &284380593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 284380584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7933e0caeb2d4dd48a3d6a1ea1647023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.DamageFlash
+  targetRenderer: {fileID: 744534821}
+  flashColor: {r: 1, g: 0.15, b: 0.15, a: 1}
+  flashDuration: 0.12
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1181,6 +1197,85 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &428789568
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 428789569}
+  - component: {fileID: 428789571}
+  - component: {fileID: 428789570}
+  m_Layer: 0
+  m_Name: HealthText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &428789569
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 428789568}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1416300418}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 30, y: -30}
+  m_SizeDelta: {x: 300, y: 24}
+  m_Pivot: {x: 0, y: 1}
+--- !u!114 &428789570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 428789568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 16
+    m_FontStyle: 1
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: 100 / 100
+--- !u!222 &428789571
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 428789568}
+  m_CullTransparentMesh: 1
 --- !u!1 &480773811
 GameObject:
   m_ObjectHideFlags: 0
@@ -1238,6 +1333,7 @@ GameObject:
   - component: {fileID: 694891556}
   - component: {fileID: 694891555}
   - component: {fileID: 694891554}
+  - component: {fileID: 694891558}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -1330,6 +1426,34 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &694891558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 694891553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe8e4357295d8c4f83901ed839fcc7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpUI
+  playerExperience: {fileID: 284380587}
+  droneManager: {fileID: 284380586}
+  playerStats: {fileID: 284380585}
+  panel: {fileID: 1470769664}
+  optionButtons:
+  - {fileID: 230017200}
+  - {fileID: 2029274672}
+  - {fileID: 1980693725}
+  optionTitles:
+  - {fileID: 714095995}
+  - {fileID: 165006073}
+  - {fileID: 943271232}
+  optionDescriptions:
+  - {fileID: 2040366545}
+  - {fileID: 1594989054}
+  - {fileID: 1208209957}
 --- !u!1 &714095993
 GameObject:
   m_ObjectHideFlags: 0
@@ -2384,6 +2508,7 @@ RectTransform:
   - {fileID: 1291023437}
   - {fileID: 1776085003}
   - {fileID: 1108111048}
+  - {fileID: 428789569}
   m_Father: {fileID: 694891557}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2406,6 +2531,7 @@ MonoBehaviour:
   playerHealth: {fileID: 284380588}
   playerExperience: {fileID: 284380587}
   healthFill: {fileID: 1839743301}
+  healthText: {fileID: 428789570}
   xpFill: {fileID: 1242545449}
   timerText: {fileID: 1776085004}
   levelText: {fileID: 1108111049}
@@ -2591,7 +2717,6 @@ GameObject:
   - component: {fileID: 1470769665}
   - component: {fileID: 1470769668}
   - component: {fileID: 1470769667}
-  - component: {fileID: 1470769666}
   m_Layer: 0
   m_Name: LevelUpPanel
   m_TagString: Untagged
@@ -2621,34 +2746,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1470769666
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1470769664}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fe8e4357295d8c4f83901ed839fcc7f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpUI
-  playerExperience: {fileID: 284380587}
-  droneManager: {fileID: 284380586}
-  playerStats: {fileID: 284380585}
-  panel: {fileID: 1470769664}
-  optionButtons:
-  - {fileID: 230017200}
-  - {fileID: 2029274672}
-  - {fileID: 1980693725}
-  optionTitles:
-  - {fileID: 714095995}
-  - {fileID: 165006073}
-  - {fileID: 943271232}
-  optionDescriptions:
-  - {fileID: 2040366545}
-  - {fileID: 1594989054}
-  - {fileID: 1208209957}
 --- !u!114 &1470769667
 MonoBehaviour:
   m_ObjectHideFlags: 0
