@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee2962949a95cd7448dcdfabc02195ee, type: 3}
+  m_Name: Enemy_Boss
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyDefinition
+  kind: 4
+  displayName: "\uBCF4\uC2A4 \uB85C\uBD07"
+  maxHealth: 500
+  moveSpeed: 1
+  contactDamage: 25
+  unlockTime: 540
+  xpReward: 50
+  debugColor: {r: 0.6, g: 0.05, b: 0.7, a: 1}
