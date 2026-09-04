@@ -11,10 +11,11 @@ namespace SurvivalDrone.Drones
     public class HealDrone : DroneBase
     {
         // 한 번에 회복시켜주는 체력량 (레벨에 따라 배율이 곱해짐).
-        [SerializeField] private float baseHealAmount = 2f;
+        [SerializeField] private float baseHealAmount = 1.2f;
 
         // 몇 초마다 한 번씩 회복시켜주는지.
-        [SerializeField] private float baseHealInterval = 2f;
+        // (밸런스 조정: 원래 2초/2였는데 실제로 플레이해보니 접촉 피해를 사실상 무효화할 만큼 강해서 낮췄다.)
+        [SerializeField] private float baseHealInterval = 2.5f;
 
         // 다음 회복까지 남은 시간.
         private float healTimer;

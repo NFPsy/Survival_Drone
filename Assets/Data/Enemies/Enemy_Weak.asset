@@ -15,7 +15,7 @@ MonoBehaviour:
   kind: 0
   displayName: "\uC57D\uD55C \uB85C\uBD07"
   maxHealth: 10
-  moveSpeed: 3.5
+  moveSpeed: 4.6
   contactDamage: 5
   unlockTime: 0
   xpReward: 1

@@ -15,7 +15,7 @@ MonoBehaviour:
   kind: 4
   displayName: "\uBCF4\uC2A4 \uB85C\uBD07"
   maxHealth: 500
-  moveSpeed: 1
+  moveSpeed: 1.8
   contactDamage: 25
   unlockTime: 540
   xpReward: 50

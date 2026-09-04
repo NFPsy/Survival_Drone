@@ -110,5 +110,5 @@ MonoBehaviour:
   owner: {fileID: 0}
   slotOffset: {x: 0, y: 0, z: 0}
   followLerp: 8
-  baseHealAmount: 2
-  baseHealInterval: 2
+  baseHealAmount: 1.2
+  baseHealInterval: 2.5
