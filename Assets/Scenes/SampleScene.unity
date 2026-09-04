@@ -781,6 +781,10 @@ MonoBehaviour:
     prefab: {fileID: 4589472370824785971, guid: d5fa381aa670d17428dc7b41849ae3e8, type: 3}
   - type: 2
     prefab: {fileID: 630722092676839512, guid: 90df9918ad4836848a8ff6d2cf1c76a0, type: 3}
+  - type: 3
+    prefab: {fileID: 1839169560662655820, guid: 63edfea7224fb204d87a88450c6e09c7, type: 3}
+  - type: 4
+    prefab: {fileID: 657794188532633736, guid: 44717aa43ae04804ebea7ce2122df81a, type: 3}
   startingDrone: 0
   slotRadius: 2.5
   maxDrones: 6

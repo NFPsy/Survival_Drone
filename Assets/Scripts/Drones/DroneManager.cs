@@ -4,7 +4,7 @@ using UnityEngine;
 namespace SurvivalDrone.Drones
 {
     // 현재 게임에 존재하는 드론 종류들. 새로운 드론 종류를 추가하려면 여기에도 추가해야 한다.
-    public enum DroneType { Melee, Sniper, Collector }
+    public enum DroneType { Melee, Sniper, Collector, Explosion, Heal }
 
     // "드론 종류 + 그 드론의 프리팹"을 한 쌍으로 묶어두는 데이터.
     // 인스펙터에서 리스트로 편집할 수 있도록 [System.Serializable]을 붙였다.
