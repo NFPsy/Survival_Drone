@@ -19,6 +19,10 @@ namespace SurvivalDrone.UI
         // 체력바로 사용할 이미지 (fillAmount 값을 0~1로 조절해서 채워지는 정도를 표현).
         [SerializeField] private Image healthFill;
 
+        // 체력을 "80 / 100"처럼 숫자로도 함께 보여줄 텍스트.
+        // 체력바만 있으면 살짝 줄어드는 건 눈에 잘 안 띄기 때문에, 숫자로 확실하게 보여주기 위해 추가.
+        [SerializeField] private Text healthText;
+
         // XP바로 사용할 이미지.
         [SerializeField] private Image xpFill;
 
@@ -78,6 +82,9 @@ namespace SurvivalDrone.UI
         private void HandleHealthChanged(float current, float max)
         {
             if (healthFill != null) healthFill.fillAmount = max > 0f ? current / max : 0f;
+
+            // 정수로 반올림해서 "80 / 100" 형태로 표시 (소수점까지 보여줄 필요는 없으므로).
+            if (healthText != null) healthText.text = $"{Mathf.RoundToInt(current)} / {Mathf.RoundToInt(max)}";
         }
 
         // XP가 바뀔 때 호출되어 XP바를 채워진 비율로 갱신.
