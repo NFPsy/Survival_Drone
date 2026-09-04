@@ -26,6 +26,10 @@ namespace SurvivalDrone.Core
         // 죽었을 때 한 번 호출되는 이벤트. (예: 적이면 사라지고, 플레이어면 게임오버 처리)
         public event Action OnDeath;
 
+        // "피해를 입었다"는 것만 콕 집어서 알려주는 이벤트 (회복과는 구분됨).
+        // 매개변수는 이번에 실제로 입은 피해량. 피격 이펙트(DamageFlash)가 이걸 구독해서 사용한다.
+        public event Action<float> OnDamaged;
+
         // 게임 오브젝트가 생성될 때 최초 1회 호출됨.
         private void Awake()
         {
@@ -52,6 +56,7 @@ namespace SurvivalDrone.Core
             // 체력이 0 밑으로 내려가지 않도록 Mathf.Max로 최소값을 0으로 고정.
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
             OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+            OnDamaged?.Invoke(amount);
 
             // 체력이 0이 되면 사망 처리.
             if (CurrentHealth <= 0f)

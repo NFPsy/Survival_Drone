@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 4241688181473140262}
   - component: {fileID: 8012720363797209749}
   - component: {fileID: 7937532246476286089}
+  - component: {fileID: 1367798404511814709}
   m_Layer: 0
   m_Name: Enemy_Boss
   m_TagString: Untagged
@@ -143,3 +144,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyAI
   contactDamageInterval: 1
   contactRange: 1
+--- !u!114 &1367798404511814709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724273393077841766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7933e0caeb2d4dd48a3d6a1ea1647023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.DamageFlash
+  targetRenderer: {fileID: 0}
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.12
