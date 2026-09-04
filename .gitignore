@@ -30,6 +30,10 @@ MemoryCaptures/
 # Unity3D generated meta files that don't need tracking
 sysinfo.txt
 
+# In-editor test screenshots (manage_camera / Play mode captures)
+Assets/Screenshots/
+Assets/Screenshots.meta
+
 # Builds
 *.apk
 *.aab
