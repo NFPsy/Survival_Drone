@@ -63,6 +63,9 @@ namespace SurvivalDrone.Enemies
         // 보스를 이미 스폰했는지 여부 (한 판에 한 번만 나오게 하기 위한 플래그).
         private bool bossSpawned;
 
+        // 마지막으로 로그를 찍은 구간 번호 (0=초반, 1=중반, 2=후반). 구간이 바뀔 때 한 번만 로그를 남기기 위함.
+        private int loggedPhase = -1;
+
         private void Update()
         {
             // GameManager가 없거나 게임이 진행 중이 아니면(승리/패배 상태) 스폰을 멈춘다.
@@ -75,6 +78,7 @@ namespace SurvivalDrone.Enemies
             if (!bossSpawned && elapsed >= bossSpawnTime)
             {
                 bossSpawned = true;
+                Debug.Log($"[Spawner] 보스 등장 - 경과 시간 {elapsed:F0}초");
                 SpawnEnemy(bossEntry);
                 return;
             }
@@ -84,20 +88,32 @@ namespace SurvivalDrone.Enemies
             // "가장 늦은 구간"부터 확인해야 조건이 겹치지 않기 때문.
             Vector2 rateRange;
             int maxAlive;
+            int phase;
             if (elapsed >= latePhaseStart)
             {
                 rateRange = lateSpawnPerSecond;
                 maxAlive = lateMaxAlive;
+                phase = 2;
             }
             else if (elapsed >= midPhaseStart)
             {
                 rateRange = midSpawnPerSecond;
                 maxAlive = midMaxAlive;
+                phase = 1;
             }
             else
             {
                 rateRange = earlySpawnPerSecond;
                 maxAlive = earlyMaxAlive;
+                phase = 0;
+            }
+
+            // 구간이 바뀐 첫 프레임에만 로그를 남긴다.
+            if (phase != loggedPhase)
+            {
+                loggedPhase = phase;
+                string[] phaseNames = { "초반", "중반", "후반" };
+                Debug.Log($"[Spawner] {phaseNames[phase]} 구간 진입 - 경과 시간 {elapsed:F0}초 (스폰 {rateRange.x}~{rateRange.y}/초, 최대 {maxAlive}마리)");
             }
 
             // 이미 죽어서 파괴된(null이 된) 적들을 목록에서 정리.

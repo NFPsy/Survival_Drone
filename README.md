@@ -106,6 +106,12 @@ Assets/
 | 2026-09-05 | 초반 구간 최대 동시 등장 수 | 15마리 → 20마리 | `Assets/Scripts/Enemies/EnemySpawner.cs` | 위와 동일 → 위와 동일 |
 | 2026-09-05 | 능력치 강화: 이동 속도 | +8% → +6% | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 추가 하향 |
 | 2026-09-05 | 능력치 강화: 최대 체력 | +15 → +12 | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 추가 하향 |
+| 2026-09-05 | 튼튼한/빠른 로봇 등장 시점 | 180초 → 90초 | `Assets/Data/Enemies/Enemy_Tough.asset`, `Enemy_Fast.asset` | 버그 수정: 중반 스폰 구간 시작을 90초로 앞당겼는데 이 값들은 예전 180초 그대로라 90~180초 구간엔 약한 로봇만 나오고 있었음 |
+| 2026-09-05 | 약한 로봇 체력/피해량 | 10 → 14 / 5 → 6 | `Assets/Data/Enemies/Enemy_Weak.asset` | "3분까지도 업그레이드로 쉽게 이김" 피드백 → 초반 유일한 등장 적 강화 |
+| 2026-09-05 | 튼튼한 로봇 체력/피해량 | 30 → 38 / 8 → 10 | `Assets/Data/Enemies/Enemy_Tough.asset` | 위와 동일 |
+| 2026-09-05 | 빠른 로봇 피해량 | 5 → 6 | `Assets/Data/Enemies/Enemy_Fast.asset` | 위와 동일 |
+| 2026-09-05 | 강한 로봇 체력/피해량 | 80 → 95 / 15 → 18 | `Assets/Data/Enemies/Enemy_Strong.asset` | 위와 동일 |
+| 2026-09-05 | 플레이 로그 추가 (밸런스 수치 아님) | 콘솔에 아무 기록도 없었음 → 승패/구간 진입/레벨업 선택을 Debug.Log로 기록 | `GameManager.cs`, `EnemySpawner.cs`, `LevelUpUI.cs` | 플레이 후 콘솔로 복기할 수 있게 최소한의 로그를 추가함 |
 
 ## 참고 문서
 

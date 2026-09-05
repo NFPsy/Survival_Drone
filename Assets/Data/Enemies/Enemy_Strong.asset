@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyDefinition
   kind: 3
   displayName: "\uAC15\uD55C \uB85C\uBD07"
-  maxHealth: 80
+  maxHealth: 95
   moveSpeed: 3.5
-  contactDamage: 15
+  contactDamage: 18
   unlockTime: 360
   xpReward: 4
   debugColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}

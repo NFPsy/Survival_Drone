@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using SurvivalDrone.Drones;
 using SurvivalDrone.Player;
+using SurvivalDrone.Core;
 
 namespace SurvivalDrone.LevelUp
 {
@@ -181,6 +182,9 @@ namespace SurvivalDrone.LevelUp
                     }
                     break;
             }
+
+            float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
+            Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{option.Title}\" 선택");
 
             // 선택이 끝났으니 패널을 끄고, 멈춰뒀던 시간을 다시 흐르게 한다.
             if (panel != null) panel.SetActive(false);
