@@ -67,12 +67,16 @@ Assets/
 │   ├── Drones/        드론 5종 + 드론 매니저
 │   ├── Pickups/       XP 오브, 자석 범위
 │   ├── LevelUp/       레벨업 3택1 선택지 UI
-│   └── UI/            HUD, 결과 화면
+│   └── UI/            HUD, 결과 화면, 메인 메뉴/설정
 ├── Data/Enemies/      적 5종 스탯 데이터 (ScriptableObject)
 ├── Prefabs/           드론 3(+2)종, 적 5종, XP 오브 프리팹
 ├── Materials/         플레이스홀더 색상 머티리얼
-└── Scenes/            SampleScene (메인 플레이 씬)
+└── Scenes/
+    ├── MainMenu.unity     시작 화면 (게임 시작/조작법/게임 설명/설정)
+    └── SampleScene.unity  실제 플레이 씬
 ```
+
+메인 메뉴에서 "게임 시작"을 누르면 `SampleScene`으로 전환된다. "조작법"/"게임 설명"은 같은 화면 위에 뜨는 팝업이고, "설정"에는 마스터 볼륨(사운드는 아직 없어서 지금은 효과 없음)과 전체화면 토글이 있으며 PlayerPrefs에 저장되어 다음 실행에도 유지된다.
 
 ## 개발 일정 및 진행 상황
 
