@@ -139,14 +139,14 @@ namespace SurvivalDrone.LevelUp
             {
                 Kind = LevelUpOptionKind.StatBoost,
                 StatBoost = StatBoostKind.MoveSpeed,
-                Title = "이동 속도 +8%",
+                Title = "이동 속도 +6%",
                 Description = "이동 속도를 증가시킵니다."
             });
             pool.Add(new LevelUpOption
             {
                 Kind = LevelUpOptionKind.StatBoost,
                 StatBoost = StatBoostKind.MaxHealth,
-                Title = "최대 체력 +15",
+                Title = "최대 체력 +12",
                 Description = "최대 체력을 증가시킵니다."
             });
 
@@ -172,12 +172,12 @@ namespace SurvivalDrone.LevelUp
                 case LevelUpOptionKind.StatBoost:
                     if (option.StatBoost == StatBoostKind.MoveSpeed)
                     {
-                        // 현재 이동속도의 8%만큼을 더해준다(고정값이 아니라 비율 증가).
-                        playerStats.AddMoveSpeed(playerStats.MoveSpeed * 0.08f);
+                        // 현재 이동속도의 6%만큼을 더해준다(고정값이 아니라 비율 증가).
+                        playerStats.AddMoveSpeed(playerStats.MoveSpeed * 0.06f);
                     }
                     else
                     {
-                        playerStats.AddMaxHealth(15f);
+                        playerStats.AddMaxHealth(12f);
                     }
                     break;
             }

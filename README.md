@@ -99,6 +99,13 @@ Assets/
 | 2026-09-05 | 드론 레벨당 성능 증가율 | 28% → 22% | `Assets/Scripts/Drones/DroneBase.cs` | 위와 동일 → 드론 5종 공통 강화 파워 하향 |
 | 2026-09-05 | 능력치 강화: 이동 속도 | +10% → +8% | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 하향 |
 | 2026-09-05 | 능력치 강화: 최대 체력 | +20 → +15 | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 하향 |
+| 2026-09-05 | 드론 레벨당 성능 증가율 | 22% → 16% | `Assets/Scripts/Drones/DroneBase.cs` | 1차 조정 후에도 "무난하게 깼다"는 피드백 → 추가 하향 |
+| 2026-09-05 | 드론 변신(5레벨) 보너스 배율 | ×1.3 → ×1.2 | `Assets/Scripts/Drones/DroneBase.cs` | 위와 동일 → 만렙 드론의 순간 파워 스파이크 완화 |
+| 2026-09-05 | 중반 구간 시작 시점 | 120초(2분) → 90초(1분 30초) | `Assets/Scripts/Enemies/EnemySpawner.cs` | 위와 동일 → 강한 스폰 구간을 더 앞당김 |
+| 2026-09-05 | 초반 구간 스폰 속도 | 초당 1~2마리 → 1.5~2.5마리 | `Assets/Scripts/Enemies/EnemySpawner.cs` | 위와 동일 → 초반 자체의 적 압박을 올림 |
+| 2026-09-05 | 초반 구간 최대 동시 등장 수 | 15마리 → 20마리 | `Assets/Scripts/Enemies/EnemySpawner.cs` | 위와 동일 → 위와 동일 |
+| 2026-09-05 | 능력치 강화: 이동 속도 | +8% → +6% | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 추가 하향 |
+| 2026-09-05 | 능력치 강화: 최대 체력 | +15 → +12 | `Assets/Scripts/LevelUp/LevelUpUI.cs` | 위와 동일 → 업그레이드 선택지 파워 추가 하향 |
 
 ## 참고 문서
 
