@@ -35,8 +35,8 @@ namespace SurvivalDrone.Enemies
         // ── 아래는 기획서 6장 "시간대별 난이도 곡선" 표를 코드 값으로 옮긴 부분 ──
         [Header("난이도 곡선 (기획서 6장)")]
 
-        // 중반 구간이 시작되는 시점(초). 180초 = 3분.
-        [SerializeField] private float midPhaseStart = 180f;
+        // 중반 구간이 시작되는 시점(초). 120초 = 2분. (초반 10분 난이도 조정: 3분 -> 2분으로 앞당김)
+        [SerializeField] private float midPhaseStart = 120f;
 
         // 후반 구간이 시작되는 시점(초). 360초 = 6분.
         [SerializeField] private float latePhaseStart = 360f;

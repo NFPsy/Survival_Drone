@@ -15,8 +15,8 @@ namespace SurvivalDrone.Drones
         // 드론이 도달할 수 있는 최대 레벨. 기획서 기준 5단계.
         [SerializeField] private int maxLevel = 5;
 
-        // 레벨이 1 오를 때마다 성능이 몇 % 좋아지는지 (0.28 = 28%). 기획서의 "25~30%" 기준.
-        [SerializeField] private float statGrowthPerLevel = 0.28f;
+        // 레벨이 1 오를 때마다 성능이 몇 % 좋아지는지 (0.22 = 22%). 초반 성장이 너무 쉬워져서 기존 28%에서 하향.
+        [SerializeField] private float statGrowthPerLevel = 0.22f;
 
         // 최대 레벨(5)에 도달해서 "변신"했을 때 추가로 곱해지는 보너스 배율.
         [SerializeField] private float transformedBonusMultiplier = 1.3f;
