@@ -105,8 +105,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Drones.MeleeDrone
   level: 1
   maxLevel: 5
-  statGrowthPerLevel: 0.28
-  transformedBonusMultiplier: 1.3
+  statGrowthPerLevel: 0.16
+  transformedBonusMultiplier: 1.2
   owner: {fileID: 0}
   slotOffset: {x: 0, y: 0, z: 0}
   followLerp: 8

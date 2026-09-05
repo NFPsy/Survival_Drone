@@ -163,13 +163,13 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: ef44a5fc54322ca4ca2662aad139a0ee, type: 2}
     prefab: {fileID: 724273393077841766, guid: daa559dbb493a94428cffc8ab29ea1a6, type: 3}
   spawnRadius: 16
-  midPhaseStart: 180
+  midPhaseStart: 90
   latePhaseStart: 360
   bossSpawnTime: 540
-  earlySpawnPerSecond: {x: 1, y: 2}
+  earlySpawnPerSecond: {x: 1.5, y: 2.5}
   midSpawnPerSecond: {x: 3, y: 4}
   lateSpawnPerSecond: {x: 5, y: 6}
-  earlyMaxAlive: 15
+  earlyMaxAlive: 20
   midMaxAlive: 30
   lateMaxAlive: 48
 --- !u!4 &57493590
