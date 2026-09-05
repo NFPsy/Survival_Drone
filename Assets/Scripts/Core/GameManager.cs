@@ -72,6 +72,7 @@ namespace SurvivalDrone.Core
             State = MatchState.Lost;
             // 시간을 멈춰서 게임 오브젝트들의 움직임/스폰 등을 모두 정지시킨다.
             Time.timeScale = 0f;
+            // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
             OnStateChanged?.Invoke(State);
         }

@@ -183,6 +183,7 @@ namespace SurvivalDrone.LevelUp
                     break;
             }
 
+            // 나중에 콘솔에서 "몇 초에 어떤 선택을 골랐는지" 순서대로 복기할 수 있도록 기록해둔다.
             float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
             Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{option.Title}\" 선택");
 
