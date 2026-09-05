@@ -696,7 +696,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1000, y: 650}
+  m_SizeDelta: {x: 1100, y: 820}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &199612051
 MonoBehaviour:
@@ -3400,7 +3400,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 28
+    m_FontSize: 26
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -3419,7 +3419,14 @@ MonoBehaviour:
     \uB4DC\uB860\uC744 \uB298\uB9AC\uACE0 \uAC15\uD654\uD574\n8~10\uBD84\uC744 \uBC84\uD2F0\uBA74
     \uC2B9\uB9AC\uD569\uB2C8\uB2E4.\n\n\uC5B4\uB5A4 \uB4DC\uB860\uC744 \uBA3C\uC800
     \uC5BB\uACE0 \uC5B4\uB5BB\uAC8C \uAC15\uD654\uD558\uB294\uC9C0\uC5D0 \uB530\uB77C\n\uB9E4\uD310
-    \uB2E4\uB978 \uC804\uB7B5\uC774 \uB9CC\uB4E4\uC5B4\uC9D1\uB2C8\uB2E4."
+    \uB2E4\uB978 \uC804\uB7B5\uC774 \uB9CC\uB4E4\uC5B4\uC9D1\uB2C8\uB2E4.\n\n\uB4DC\uB860
+    \uC885\uB958\n\uADFC\uC811 \uB4DC\uB860 - \uC8FC\uC704\uB97C \uB3CC\uBA70 \uAC00\uAE4C\uC6B4
+    \uC801\uC744 \uC790\uB3D9 \uACF5\uACA9\n\uC800\uACA9 \uB4DC\uB860 - \uAC00\uC7A5
+    \uBA3C \uC801\uC744 \uC6D0\uAC70\uB9AC \uACF5\uACA9\n\uD3ED\uBC1C \uB4DC\uB860
+    - \uC77C\uC815 \uC8FC\uAE30\uB85C \uC8FC\uBCC0 \uC804\uCCB4\uC5D0 \uBC94\uC704
+    \uD53C\uD574\n\uD68C\uBCF5 \uB4DC\uB860 - \uCCB4\uB825\uC744 \uC11C\uC11C\uD788
+    \uD68C\uBCF5 (\uACF5\uACA9 \uC5C6\uC74C)\n\uC218\uC9D1 \uB4DC\uB860 - \uC544\uC774\uD15C\xB7\uACBD\uD5D8\uCE58\uB97C
+    \uC790\uB3D9\uC73C\uB85C \uB04C\uC5B4\uBAA8\uC74C (\uACF5\uACA9 \uC5C6\uC74C)"
 --- !u!222 &2023931159
 CanvasRenderer:
   m_ObjectHideFlags: 0
