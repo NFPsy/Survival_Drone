@@ -946,8 +946,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.Health
   maxHealth: 100
-  hitSound: {fileID: 0}
-  deathSound: {fileID: 0}
+  hitSound: {fileID: 8300000, guid: 1959c24dfcd5eb54d9ced7b26e4795db, type: 3}
+  deathSound: {fileID: 8300000, guid: e5680be85a3addd4a929dd93f5e17731, type: 3}
 --- !u!4 &284380589
 Transform:
   m_ObjectHideFlags: 0
@@ -1451,8 +1451,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.GameManager
   matchDuration: 600
-  victorySound: {fileID: 0}
-  defeatSound: {fileID: 0}
+  victorySound: {fileID: 8300000, guid: aa9fdca97df571b409f328900e3a7ff0, type: 3}
+  defeatSound: {fileID: 8300000, guid: e992c1a6d671ab44b9b70c5a051b8ae5, type: 3}
 --- !u!4 &480773813
 Transform:
   m_ObjectHideFlags: 0
@@ -1603,8 +1603,8 @@ MonoBehaviour:
   - {fileID: 2040366545}
   - {fileID: 1594989054}
   - {fileID: 1208209957}
-  levelUpSound: {fileID: 0}
-  chooseSound: {fileID: 0}
+  levelUpSound: {fileID: 8300000, guid: cb72810c3638bc74998cb06c033167b1, type: 3}
+  chooseSound: {fileID: 8300000, guid: 491237dd817cc724ca964c5f2432c608, type: 3}
 --- !u!114 &694891559
 MonoBehaviour:
   m_ObjectHideFlags: 0

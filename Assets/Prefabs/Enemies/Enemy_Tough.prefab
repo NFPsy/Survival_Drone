@@ -5026,6 +5026,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.Health
   maxHealth: 10
+  hitSound: {fileID: 8300000, guid: 1959c24dfcd5eb54d9ced7b26e4795db, type: 3}
+  deathSound: {fileID: 8300000, guid: e5680be85a3addd4a929dd93f5e17731, type: 3}
 --- !u!114 &3329170871436157782
 MonoBehaviour:
   m_ObjectHideFlags: 0
