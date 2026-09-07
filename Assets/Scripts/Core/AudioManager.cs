@@ -7,7 +7,7 @@ namespace SurvivalDrone.Core
     // 6주차 사운드 작업 때 클립 파일만 인스펙터에 끼워 넣으면 바로 재생되도록
     // 미리 배관(뼈대)만 만들어두는 스크립트다.
     //
-    // MainMenu 씬과 SampleScene(실제 플레이 씬)을 오가도 배경음악이 끊기지 않도록
+    // MainMenu 씬과 InGame(실제 플레이 씬)을 오가도 배경음악이 끊기지 않도록
     // DontDestroyOnLoad로 씬이 바뀌어도 사라지지 않게 만든다.
     public class AudioManager : MonoBehaviour
     {
@@ -23,7 +23,7 @@ namespace SurvivalDrone.Core
 
         private void Awake()
         {
-            // 씬 전환(MainMenu -> SampleScene)으로 AudioManager가 중복 생성될 수 있으므로,
+            // 씬 전환(MainMenu -> InGame)으로 AudioManager가 중복 생성될 수 있으므로,
             // 이미 하나가 존재한다면 방금 만들어진 쪽을 스스로 파괴해서 항상 하나만 남긴다.
             if (Instance != null && Instance != this)
             {

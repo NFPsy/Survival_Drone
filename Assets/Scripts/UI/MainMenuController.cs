@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using SurvivalDrone.Core;
 
 namespace SurvivalDrone.UI
 {
@@ -11,7 +12,7 @@ namespace SurvivalDrone.UI
     {
         // 게임 시작 버튼을 눌렀을 때 로드할 실제 플레이 씬 이름.
         // 인스펙터에서 씬 이름을 바꿀 일이 생겨도 코드를 안 고치도록 필드로 빼두었다.
-        [SerializeField] private string gameplaySceneName = "SampleScene";
+        [SerializeField] private string gameplaySceneName = "InGame";
 
         // 처음 보이는 타이틀 화면(버튼 4개가 있는 패널).
         private GameObject titlePanel;
@@ -25,6 +26,9 @@ namespace SurvivalDrone.UI
         // "설정" 버튼을 누르면 뜨는 팝업(볼륨/전체화면).
         private GameObject settingsPanel;
 
+        // "게임 시작" 버튼을 누르면 뜨는 난이도 선택 팝업(쉬움/보통/어려움).
+        private GameObject difficultyPanel;
+
         private void Awake()
         {
             // 자식 오브젝트를 이름으로 찾아서 각 패널 변수에 저장해둔다.
@@ -34,17 +38,25 @@ namespace SurvivalDrone.UI
             controlsPanel = transform.Find("ControlsPanel").gameObject;
             aboutPanel = transform.Find("AboutPanel").gameObject;
             settingsPanel = transform.Find("SettingsPanel").gameObject;
+            difficultyPanel = transform.Find("DifficultyPanel").gameObject;
 
             // 타이틀 화면의 버튼 4개에 각각 클릭 시 실행할 함수를 연결한다.
-            titlePanel.transform.Find("BtnStart").GetComponent<Button>().onClick.AddListener(StartGame);
+            // "게임 시작"은 바로 씬을 불러오지 않고, 먼저 난이도 선택 팝업을 띄운다.
+            titlePanel.transform.Find("BtnStart").GetComponent<Button>().onClick.AddListener(delegate { ShowPanel(difficultyPanel); });
             titlePanel.transform.Find("BtnControls").GetComponent<Button>().onClick.AddListener(delegate { ShowPanel(controlsPanel); });
             titlePanel.transform.Find("BtnAbout").GetComponent<Button>().onClick.AddListener(delegate { ShowPanel(aboutPanel); });
             titlePanel.transform.Find("BtnSettings").GetComponent<Button>().onClick.AddListener(delegate { ShowPanel(settingsPanel); });
 
-            // 팝업 3개 모두 "닫기" 버튼을 누르면 똑같이 타이틀 화면으로 돌아간다.
+            // 팝업 4개 모두 "닫기/취소" 버튼을 누르면 똑같이 타이틀 화면으로 돌아간다.
             controlsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
             aboutPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
             settingsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
+            difficultyPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
+
+            // 난이도 선택 팝업의 버튼 3개: 누르면 그 난이도로 정하고 바로 게임을 시작한다.
+            difficultyPanel.transform.Find("BtnEasy").GetComponent<Button>().onClick.AddListener(delegate { StartGame(DifficultyLevel.Easy); });
+            difficultyPanel.transform.Find("BtnNormal").GetComponent<Button>().onClick.AddListener(delegate { StartGame(DifficultyLevel.Normal); });
+            difficultyPanel.transform.Find("BtnHard").GetComponent<Button>().onClick.AddListener(delegate { StartGame(DifficultyLevel.Hard); });
 
             // 게임을 처음 켰을 때는 항상 타이틀 화면부터 보이도록 초기화.
             ShowTitle();
@@ -57,6 +69,7 @@ namespace SurvivalDrone.UI
             controlsPanel.SetActive(panelToShow == controlsPanel);
             aboutPanel.SetActive(panelToShow == aboutPanel);
             settingsPanel.SetActive(panelToShow == settingsPanel);
+            difficultyPanel.SetActive(panelToShow == difficultyPanel);
         }
 
         // 팝업을 닫고 처음 타이틀 화면(버튼 4개)으로 돌아간다.
@@ -66,11 +79,14 @@ namespace SurvivalDrone.UI
             controlsPanel.SetActive(false);
             aboutPanel.SetActive(false);
             settingsPanel.SetActive(false);
+            difficultyPanel.SetActive(false);
         }
 
-        // "게임 시작" 버튼을 눌렀을 때 실행. 현재 메뉴 씬을 내리고 실제 플레이 씬을 불러온다.
-        private void StartGame()
+        // 난이도 선택 팝업에서 버튼을 눌렀을 때 실행. 선택한 난이도를 저장하고
+        // 현재 메뉴 씬을 내린 뒤 실제 플레이 씬을 불러온다.
+        private void StartGame(DifficultyLevel level)
         {
+            GameDifficulty.Current = level;
             SceneManager.LoadScene(gameplaySceneName);
         }
     }

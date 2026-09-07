@@ -7,7 +7,7 @@ namespace SurvivalDrone.EditorTools
     //
     // 문제 상황: 실제로 빌드한 게임은 Build Settings에 등록된 순서(0번 = MainMenu)대로
     // 항상 메인메뉴부터 시작한다. 하지만 에디터 안에서 Play 버튼을 누르면, 지금 "열려 있는" 씬이
-    // 무엇이든 상관없이 그 씬부터 바로 시작해버린다. 그래서 개발 중에 SampleScene(실제 게임 플레이 씬)을
+    // 무엇이든 상관없이 그 씬부터 바로 시작해버린다. 그래서 개발 중에 InGame(실제 게임 플레이 씬)을
     // 열어놓고 밸런스를 만지다가 Play를 누르면 메인메뉴를 건너뛰고 바로 게임이 시작되는 문제가 있었다.
     //
     // 해결: EditorSceneManager.playModeStartScene에 메인메뉴 씬을 지정해두면,

@@ -41,6 +41,10 @@ namespace SurvivalDrone.Enemies
         // 이 적이 죽었을 때 스포너(EnemySpawner)에게 알려주기 위한 콜백 함수.
         private Action<EnemyAI> onDeathCallback;
 
+        // 난이도 배율이 적용된 실제 접촉 피해량. definition.contactDamage에 매번 배율을
+        // 곱하지 않도록 Initialize 시점에 한 번만 계산해서 저장해둔다.
+        private float scaledContactDamage;
+
         // 외부에서 이 적의 종류 데이터를 읽을 수 있게 해주는 프로퍼티.
         public EnemyDefinition Definition => definition;
 
@@ -53,9 +57,14 @@ namespace SurvivalDrone.Enemies
             xpOrbPrefab = orbPrefab;
             onDeathCallback = onDeath;
 
+            // 난이도(쉬움/보통/어려움)에 따라 체력/접촉 피해량을 낮춰준다. 어려움은 1배(원래 밸런스 그대로).
+            float difficultyScale = GameDifficulty.EnemyStatMultiplier;
+            float scaledMaxHealth = def.maxHealth * difficultyScale;
+            scaledContactDamage = def.contactDamage * difficultyScale;
+
             health = GetComponent<Health>();
-            // 이 적 종류에 맞는 체력으로 설정하고, 가득 채운 상태로 시작.
-            health.SetMaxHealth(def.maxHealth, def.maxHealth);
+            // 난이도가 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
+            health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
             // 체력이 0이 되면 HandleDeath 함수가 자동으로 호출되도록 연결.
             health.OnDeath += HandleDeath;
         }
@@ -97,7 +106,7 @@ namespace SurvivalDrone.Enemies
             if (distance <= contactRange && contactTimer <= 0f)
             {
                 var playerHealth = target.GetComponent<Health>();
-                playerHealth?.TakeDamage(definition.contactDamage);
+                playerHealth?.TakeDamage(scaledContactDamage);
                 contactTimer = contactDamageInterval;
             }
         }

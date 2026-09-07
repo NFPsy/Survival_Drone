@@ -116,14 +116,18 @@ namespace SurvivalDrone.Enemies
                 Debug.Log($"[Spawner] {phaseNames[phase]} 구간 진입 - 경과 시간 {elapsed:F0}초 (스폰 {rateRange.x}~{rateRange.y}/초, 최대 {maxAlive}마리)");
             }
 
+            // 난이도(쉬움/보통/어려움)에 따라 최대 마릿수/스폰 속도를 낮춰준다. 어려움은 1배(원래 밸런스 그대로).
+            float difficultyScale = GameDifficulty.SpawnMultiplier;
+            maxAlive = Mathf.Max(1, Mathf.RoundToInt(maxAlive * difficultyScale));
+
             // 이미 죽어서 파괴된(null이 된) 적들을 목록에서 정리.
             alive.RemoveAll(e => e == null);
 
             // 이미 최대 마릿수에 도달했으면 더 이상 스폰하지 않는다.
             if (alive.Count >= maxAlive) return;
 
-            // 이번 구간의 스폰 속도 범위 안에서 무작위로 "초당 스폰 수"를 정한다.
-            float spawnsPerSecond = Random.Range(rateRange.x, rateRange.y);
+            // 이번 구간의 스폰 속도 범위 안에서 무작위로 "초당 스폰 수"를 정하고, 난이도 배율을 곱한다.
+            float spawnsPerSecond = Random.Range(rateRange.x, rateRange.y) * difficultyScale;
 
             // 시간이 흐른 만큼(deltaTime) 스폰 속도를 곱해서 타이머에 누적.
             // 예: 초당 2마리면 0.5초마다 타이머가 1이 되어 한 마리씩 스폰됨.
