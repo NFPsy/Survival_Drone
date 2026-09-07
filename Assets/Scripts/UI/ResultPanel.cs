@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using SurvivalDrone.Core;
+using SurvivalDrone.Player;
+using SurvivalDrone.Drones;
 
 namespace SurvivalDrone.UI
 {
@@ -15,14 +17,29 @@ namespace SurvivalDrone.UI
         // "승리" 또는 "패배" 문구를 보여줄 텍스트.
         [SerializeField] private Text resultText;
 
+        // 생존 시간/도달 레벨/보유 드론 수 같은 이번 판의 기록을 보여줄 텍스트.
+        [SerializeField] private Text statsText;
+
         // 게임 상태(진행중/승리/패배)가 바뀌는 것을 감지하기 위한 GameManager 연결.
         [SerializeField] private GameManager gameManager;
+
+        // 도달 레벨을 읽어오기 위한 플레이어 경험치 연결.
+        [SerializeField] private PlayerExperience playerExperience;
+
+        // 보유 드론 수를 읽어오기 위한 드론 매니저 연결.
+        [SerializeField] private DroneManager droneManager;
 
         // "다시 시작" 버튼: 지금 플레이 중인 씬을 처음부터 다시 불러온다.
         [SerializeField] private Button restartButton;
 
         // "메인 메뉴" 버튼: 타이틀 화면(MainMenu 씬)으로 돌아간다.
         [SerializeField] private Button mainMenuButton;
+
+        // 승리했을 때 결과 문구에 쓸 색(청록색 계열 - "성공"의 느낌).
+        [SerializeField] private Color victoryColor = new Color(0.4f, 0.95f, 1f);
+
+        // 패배했을 때 결과 문구에 쓸 색(붉은색 계열 - "위험/실패"의 느낌).
+        [SerializeField] private Color defeatColor = new Color(1f, 0.35f, 0.35f);
 
         private void OnEnable()
         {
@@ -52,12 +69,30 @@ namespace SurvivalDrone.UI
             // 아직 "진행 중" 상태면(=게임이 끝난 게 아니면) 아무것도 하지 않는다.
             if (state == MatchState.Playing) return;
 
-            // 게임이 끝났으면(승리 또는 패배) 결과 패널을 켜고 알맞은 문구를 표시한다.
+            bool won = state == MatchState.Won;
+
+            // 게임이 끝났으면(승리 또는 패배) 결과 패널을 켜고 알맞은 문구/색을 표시한다.
             if (panel != null) panel.SetActive(true);
             if (resultText != null)
             {
-                resultText.text = state == MatchState.Won ? "MISSION COMPLETE" : "GAME OVER";
+                resultText.text = won ? "MISSION COMPLETE" : "SYSTEM DOWN";
+                resultText.color = won ? victoryColor : defeatColor;
             }
+
+            if (statsText != null) statsText.text = BuildStatsText();
+        }
+
+        // 생존 시간/도달 레벨/보유 드론 수를 "분:초 · Lv.n · 드론 n종" 형태의 문구로 만드는 함수.
+        private string BuildStatsText()
+        {
+            float elapsed = gameManager != null ? gameManager.ElapsedTime : 0f;
+            int minutes = Mathf.FloorToInt(elapsed / 60f);
+            int seconds = Mathf.FloorToInt(elapsed % 60f);
+
+            int level = playerExperience != null ? playerExperience.Level : 1;
+            int droneCount = droneManager != null ? droneManager.OwnedCount : 0;
+
+            return $"생존 시간 {minutes:00}:{seconds:00}   ·   도달 레벨 {level}   ·   보유 드론 {droneCount}종";
         }
 
         // "다시 시작" 버튼을 눌렀을 때 실행. 지금 씬을 그대로 다시 불러와서 처음부터 재도전한다.
