@@ -33,6 +33,12 @@ namespace SurvivalDrone.LevelUp
         // 각 버튼 위에 표시될 설명 텍스트들.
         [SerializeField] private Text[] optionDescriptions;
 
+        // 레벨업 선택 화면이 뜰 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
+        [SerializeField] private AudioClip levelUpSound;
+
+        // 선택지를 고를 때 재생할 효과음.
+        [SerializeField] private AudioClip chooseSound;
+
         // 지금 화면에 보여지고 있는 선택지 3개를 기억해두는 목록.
         // (버튼을 눌렀을 때 "몇 번째 버튼이 어떤 선택지였는지" 알아야 하기 때문에 필요)
         private readonly List<LevelUpOption> currentOptions = new List<LevelUpOption>();
@@ -100,6 +106,7 @@ namespace SurvivalDrone.LevelUp
             // 패널을 켜서 화면에 보여주고, 시간을 멈춰서 게임을 일시정지시킨다(선택하는 동안 적이 움직이지 않도록).
             if (panel != null) panel.SetActive(true);
             Time.timeScale = 0f;
+            AudioManager.Instance?.PlaySfx(levelUpSound);
         }
 
         // 지금 고를 수 있는 모든 선택지 후보를 만들어서 리스트로 반환하는 함수.
@@ -186,6 +193,8 @@ namespace SurvivalDrone.LevelUp
             // 나중에 콘솔에서 "몇 초에 어떤 선택을 골랐는지" 순서대로 복기할 수 있도록 기록해둔다.
             float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
             Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{option.Title}\" 선택");
+
+            AudioManager.Instance?.PlaySfx(chooseSound);
 
             // 선택이 끝났으니 패널을 끄고, 멈춰뒀던 시간을 다시 흐르게 한다.
             if (panel != null) panel.SetActive(false);

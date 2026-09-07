@@ -10,6 +10,12 @@ namespace SurvivalDrone.Core
         // 인스펙터(Inspector)에서 조절 가능한 "최대 체력" 값.
         [SerializeField] private float maxHealth = 10f;
 
+        // 피해를 입을 때 재생할 효과음. 아직 사운드 파일이 없다면 비워둬도 안전하다(재생만 생략됨).
+        [SerializeField] private AudioClip hitSound;
+
+        // 사망(체력 0)했을 때 재생할 효과음.
+        [SerializeField] private AudioClip deathSound;
+
         // 외부에서는 읽기만 가능하도록 프로퍼티로 노출.
         public float MaxHealth => maxHealth;
 
@@ -58,10 +64,15 @@ namespace SurvivalDrone.Core
             OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
             OnDamaged?.Invoke(amount);
 
+            // AudioManager가 아직 씬에 없거나(예: 테스트 환경) 클립이 비어있어도
+            // 안전하게 넘어가도록 ?.(null 조건부 연산자)로 호출한다.
+            AudioManager.Instance?.PlaySfx(hitSound);
+
             // 체력이 0이 되면 사망 처리.
             if (CurrentHealth <= 0f)
             {
                 IsDead = true;
+                AudioManager.Instance?.PlaySfx(deathSound);
                 OnDeath?.Invoke();
             }
         }

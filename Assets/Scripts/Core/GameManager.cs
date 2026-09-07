@@ -17,6 +17,12 @@ namespace SurvivalDrone.Core
         // 한 판의 길이(초). 기획서 기준 8~10분이라 기본값을 600초(10분)로 설정.
         [SerializeField] private float matchDuration = 600f;
 
+        // 승리했을 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
+        [SerializeField] private AudioClip victorySound;
+
+        // 패배했을 때 재생할 효과음.
+        [SerializeField] private AudioClip defeatSound;
+
         public float MatchDuration => matchDuration;
 
         // 게임이 시작된 뒤 흐른 시간(초). Update()에서 매 프레임 누적된다.
@@ -74,6 +80,7 @@ namespace SurvivalDrone.Core
             Time.timeScale = 0f;
             // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
+            AudioManager.Instance?.PlaySfx(defeatSound);
             OnStateChanged?.Invoke(State);
         }
 
@@ -86,6 +93,7 @@ namespace SurvivalDrone.Core
             // 승리 시점은 항상 매치 길이(600초) 근처라 F0로 찍으면 콘솔의 "중복 묶기"에 걸려
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
+            AudioManager.Instance?.PlaySfx(victorySound);
             GameEvents.RaiseMatchWon();
             OnStateChanged?.Invoke(State);
         }
