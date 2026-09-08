@@ -3288,7 +3288,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 56
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -3581,8 +3581,8 @@ MonoBehaviour:
   playerHealth: {fileID: 284380588}
   overlay: {fileID: 1411335273}
   warningThreshold: 0.3
-  pulseSpeed: 4
-  maxAlpha: 0.35
+  pulseSpeed: 2.2
+  maxAlpha: 0.18
 --- !u!114 &1411335273
 MonoBehaviour:
   m_ObjectHideFlags: 0

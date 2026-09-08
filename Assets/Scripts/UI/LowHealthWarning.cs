@@ -19,10 +19,12 @@ namespace SurvivalDrone.UI
         [SerializeField] private float warningThreshold = 0.3f;
 
         // 맥동(깜빡임) 속도. 값이 클수록 더 빨리 깜빡인다.
-        [SerializeField] private float pulseSpeed = 4f;
+        // (원래 4였는데 너무 정신없이 깜빡인다는 피드백으로 낮춤)
+        [SerializeField] private float pulseSpeed = 2.2f;
 
         // 가장 진할 때의 최대 투명도(알파). 너무 진하면 화면이 안 보이니 적당히 낮게.
-        [SerializeField] private float maxAlpha = 0.35f;
+        // (원래 0.35였는데 너무 과하다는 피드백으로 낮춤)
+        [SerializeField] private float maxAlpha = 0.18f;
 
         // 지금 경고 상태인지 여부 (체력 비율이 threshold 이하인 동안 true).
         private bool isWarning;
