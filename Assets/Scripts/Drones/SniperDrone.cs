@@ -3,7 +3,7 @@ using SurvivalDrone.Enemies;
 
 namespace SurvivalDrone.Drones
 {
-    // 저격 드론: 사거리 안에서 "가장 멀리 있는(=가장 위협적인)" 적 하나를 골라 원거리 공격한다.
+    // 저격 드론: 사거리 안에서 "가장 가까이 있는" 적 하나를 골라 원거리 공격한다.
     // 기획서 4장 기준 - 강화될수록 좋아지는 것은 "공격력 또는 공격 속도"이므로,
     // 레벨이 오르면 데미지와 공격 속도가 함께 증가하도록 만들었다.
     public class SniperDrone : DroneBase
@@ -69,12 +69,11 @@ namespace SurvivalDrone.Drones
             }
         }
 
-        // 사거리 안에 있는 적들 중 "가장 멀리 있는" 적 하나를 찾는 함수.
-        // (기획서의 "가장 멀거나 위협적인 적"을 단순화해서 "가장 먼 적"으로 구현)
+        // 사거리 안에 있는 적들 중 "가장 가까이 있는" 적 하나를 찾는 함수.
         private EnemyAI FindTarget()
         {
             EnemyAI best = null;
-            float bestDistance = -1f;
+            float bestDistance = float.MaxValue;
 
             // EnemyAI.ActiveEnemies는 현재 살아있는 모든 적의 목록 (EnemyAI.cs에서 관리됨).
             foreach (var enemy in EnemyAI.ActiveEnemies)
@@ -86,8 +85,8 @@ namespace SurvivalDrone.Drones
                 // 사거리 밖이면 후보에서 제외.
                 if (distance > range) continue;
 
-                // 지금까지 찾은 것보다 더 멀리 있으면 새로운 후보로 교체.
-                if (distance > bestDistance)
+                // 지금까지 찾은 것보다 더 가까우면 새로운 후보로 교체.
+                if (distance < bestDistance)
                 {
                     bestDistance = distance;
                     best = enemy;
