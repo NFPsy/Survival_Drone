@@ -118,6 +118,7 @@ MonoBehaviour:
   baseOrbitRadius: 2
   baseOrbitSpeed: 180
   attackEffect: {fileID: 0}
+  attackSound: {fileID: 8300000, guid: b1b9d1f09aa1c4d499e6f037b13e1710, type: 3}
 --- !u!1 &7191192488367079214
 GameObject:
   m_ObjectHideFlags: 0

@@ -29,6 +29,12 @@ namespace SurvivalDrone.UI
         // "게임 시작" 버튼을 누르면 뜨는 난이도 선택 팝업(쉬움/보통/어려움).
         private GameObject difficultyPanel;
 
+        // 버튼을 누를 때마다 재생할 공용 클릭음.
+        [SerializeField] private AudioClip clickSound;
+
+        // 메인 메뉴에서 재생할 배경음악.
+        [SerializeField] private AudioClip menuMusic;
+
         private void Awake()
         {
             // 자식 오브젝트를 이름으로 찾아서 각 패널 변수에 저장해둔다.
@@ -48,10 +54,10 @@ namespace SurvivalDrone.UI
             titlePanel.transform.Find("BtnSettings").GetComponent<Button>().onClick.AddListener(delegate { ShowPanel(settingsPanel); });
 
             // 팝업 4개 모두 "닫기/취소" 버튼을 누르면 똑같이 타이틀 화면으로 돌아간다.
-            controlsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
-            aboutPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
-            settingsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
-            difficultyPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(ShowTitle);
+            controlsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(delegate { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
+            aboutPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(delegate { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
+            settingsPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(delegate { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
+            difficultyPanel.transform.Find("BtnClose").GetComponent<Button>().onClick.AddListener(delegate { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
 
             // 난이도 선택 팝업의 버튼 3개: 누르면 그 난이도로 정하고 바로 게임을 시작한다.
             difficultyPanel.transform.Find("BtnEasy").GetComponent<Button>().onClick.AddListener(delegate { StartGame(DifficultyLevel.Easy); });
@@ -62,9 +68,19 @@ namespace SurvivalDrone.UI
             ShowTitle();
         }
 
+        private void Start()
+        {
+            // AudioManager.Instance는 AudioManager 자신의 Awake()에서 등록되는데,
+            // 어느 오브젝트의 Awake()가 먼저 실행될지는 보장되지 않는다(실행 순서 미지정 시).
+            // 반면 Start()는 씬의 모든 Awake()가 다 끝난 뒤에만 호출되므로,
+            // 여기서 불러야 AudioManager.Instance가 확실히 준비되어 있다.
+            AudioManager.Instance?.PlayMusic(menuMusic);
+        }
+
         // 팝업 패널 하나만 켜고 나머지(타이틀 포함)는 모두 끈다.
         private void ShowPanel(GameObject panelToShow)
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             titlePanel.SetActive(false);
             controlsPanel.SetActive(panelToShow == controlsPanel);
             aboutPanel.SetActive(panelToShow == aboutPanel);
@@ -86,6 +102,7 @@ namespace SurvivalDrone.UI
         // 현재 메뉴 씬을 내린 뒤 실제 플레이 씬을 불러온다.
         private void StartGame(DifficultyLevel level)
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             GameDifficulty.Current = level;
             SceneManager.LoadScene(gameplaySceneName);
         }

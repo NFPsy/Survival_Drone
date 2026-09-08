@@ -23,6 +23,9 @@ namespace SurvivalDrone.Core
         // 패배했을 때 재생할 효과음.
         [SerializeField] private AudioClip defeatSound;
 
+        // 플레이 중 계속 재생할 배경음악.
+        [SerializeField] private AudioClip inGameMusic;
+
         public float MatchDuration => matchDuration;
 
         // 게임이 시작된 뒤 흐른 시간(초). Update()에서 매 프레임 누적된다.
@@ -41,6 +44,15 @@ namespace SurvivalDrone.Core
         {
             // 씬에서 가장 먼저 생성될 때 자기 자신을 Instance에 등록.
             Instance = this;
+        }
+
+        private void Start()
+        {
+            // AudioManager.Instance는 AudioManager 자신의 Awake()에서 등록되는데,
+            // 어느 오브젝트의 Awake()가 먼저 실행될지는 보장되지 않는다(실행 순서 미지정 시).
+            // 반면 Start()는 씬의 모든 Awake()가 다 끝난 뒤에만 호출되므로,
+            // 여기서 불러야 AudioManager.Instance가 확실히 준비되어 있다.
+            AudioManager.Instance?.PlayMusic(inGameMusic);
         }
 
         private void OnEnable()

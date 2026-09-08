@@ -115,6 +115,7 @@ MonoBehaviour:
   baseHealAmount: 1.2
   baseHealInterval: 2.5
   healEffect: {fileID: 0}
+  healSound: {fileID: 8300000, guid: b14f5d93d6cc3844bbcd5d4215f76ab4, type: 3}
 --- !u!1 &5479762713261087863
 GameObject:
   m_ObjectHideFlags: 0

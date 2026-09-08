@@ -292,6 +292,7 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: ef44a5fc54322ca4ca2662aad139a0ee, type: 2}
     prefab: {fileID: 724273393077841766, guid: daa559dbb493a94428cffc8ab29ea1a6, type: 3}
   spawnRadius: 16
+  bossWarningSound: {fileID: 8300000, guid: 2fcbd336c7797de4d8271a9efca2733a, type: 3}
   midPhaseStart: 90
   latePhaseStart: 360
   bossSpawnTime: 540
@@ -1455,6 +1456,7 @@ MonoBehaviour:
   matchDuration: 600
   victorySound: {fileID: 8300000, guid: aa9fdca97df571b409f328900e3a7ff0, type: 3}
   defeatSound: {fileID: 8300000, guid: e992c1a6d671ab44b9b70c5a051b8ae5, type: 3}
+  inGameMusic: {fileID: 0}
 --- !u!4 &480773813
 Transform:
   m_ObjectHideFlags: 0
@@ -1710,6 +1712,7 @@ MonoBehaviour:
   mainMenuButton: {fileID: 761384238}
   victoryColor: {r: 0.4, g: 0.95, b: 1, a: 1}
   defeatColor: {r: 1, g: 0.35, b: 0.35, a: 1}
+  clickSound: {fileID: 8300000, guid: 442d36d73e46c40498985d862c5da596, type: 3}
 --- !u!114 &694891560
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1723,6 +1726,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.UI.PauseController
   mainMenuSceneName: MainMenu
+  clickSound: {fileID: 8300000, guid: 442d36d73e46c40498985d862c5da596, type: 3}
 --- !u!1 &714095993
 GameObject:
   m_ObjectHideFlags: 0
@@ -3583,6 +3587,7 @@ MonoBehaviour:
   warningThreshold: 0.3
   pulseSpeed: 2.2
   maxAlpha: 0.18
+  warningSound: {fileID: 8300000, guid: 5393a88bee263db40bb48bd940bf3747, type: 3}
 --- !u!114 &1411335273
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -13,6 +13,9 @@ namespace SurvivalDrone.UI
         // "메인메뉴" 버튼을 눌렀을 때 돌아갈 씬 이름.
         [SerializeField] private string mainMenuSceneName = "MainMenu";
 
+        // 버튼을 누를 때마다 재생할 공용 클릭음.
+        [SerializeField] private AudioClip clickSound;
+
         // 일시정지 화면 전체 패널 (평소엔 꺼져 있다가 P를 누르면 켜짐).
         private GameObject pausePanel;
 
@@ -61,6 +64,7 @@ namespace SurvivalDrone.UI
         // 일시정지 화면을 끄고 시간을 다시 흐르게 한다.
         private void Resume()
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             isPaused = false;
             pausePanel.SetActive(false);
             Time.timeScale = 1f;
@@ -70,6 +74,7 @@ namespace SurvivalDrone.UI
         // 선택했던 난이도는 PlayerPrefs에 저장되어 있어서, 씬을 새로 불러와도 그대로 유지된다.
         private void Restart()
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
@@ -77,6 +82,7 @@ namespace SurvivalDrone.UI
         // "메인메뉴" 버튼: 타이틀 화면으로 돌아간다.
         private void GoToMainMenu()
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             Time.timeScale = 1f;
             SceneManager.LoadScene(mainMenuSceneName);
         }

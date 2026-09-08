@@ -26,6 +26,9 @@ namespace SurvivalDrone.Drones
         // 회복할 때마다 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
         [SerializeField] private ParticleSystem healEffect;
 
+        // 회복할 때마다 재생할 효과음.
+        [SerializeField] private AudioClip healSound;
+
         private void Awake()
         {
             if (healEffect == null) healEffect = GetComponentInChildren<ParticleSystem>();
@@ -59,6 +62,7 @@ namespace SurvivalDrone.Drones
 
                 // 회복할 때마다 파티클을 한 번씩 재생해서 눈에 보이게 한다.
                 healEffect?.Play();
+                SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(healSound, 0.6f);
             }
         }
     }

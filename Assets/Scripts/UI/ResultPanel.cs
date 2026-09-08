@@ -41,6 +41,9 @@ namespace SurvivalDrone.UI
         // 패배했을 때 결과 문구에 쓸 색(붉은색 계열 - "위험/실패"의 느낌).
         [SerializeField] private Color defeatColor = new Color(1f, 0.35f, 0.35f);
 
+        // 버튼을 누를 때마다 재생할 공용 클릭음.
+        [SerializeField] private AudioClip clickSound;
+
         private void OnEnable()
         {
             // 게임 상태가 바뀔 때마다 HandleStateChanged가 자동으로 호출되도록 연결.
@@ -98,6 +101,7 @@ namespace SurvivalDrone.UI
         // "다시 시작" 버튼을 눌렀을 때 실행. 지금 씬을 그대로 다시 불러와서 처음부터 재도전한다.
         private void RestartGame()
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             // 결과 화면을 띄우면서 Time.timeScale을 0으로 멈춰뒀던 걸 반드시 1로 되돌려야 한다.
             // 그대로 두면 새로 불러온 씬도 멈춘 채로 시작돼버린다.
             Time.timeScale = 1f;
@@ -107,6 +111,7 @@ namespace SurvivalDrone.UI
         // "메인 메뉴" 버튼을 눌렀을 때 실행. 타이틀 화면으로 돌아간다.
         private void GoToMainMenu()
         {
+            AudioManager.Instance?.PlaySfx(clickSound);
             Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
         }

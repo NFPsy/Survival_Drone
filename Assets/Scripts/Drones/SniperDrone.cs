@@ -20,6 +20,9 @@ namespace SurvivalDrone.Drones
         // 발사 순간 잠깐 보여줄 이펙트(총알 궤적 등) 프리팹. 비워둬도 동작에는 문제 없음(연출용).
         [SerializeField] private GameObject tracerPrefab;
 
+        // 발사할 때마다 재생할 효과음.
+        [SerializeField] private AudioClip fireSound;
+
         // 다음 공격까지 남은 시간.
         private float attackTimer;
 
@@ -48,6 +51,7 @@ namespace SurvivalDrone.Drones
 
             // 레벨이 오를수록(scale이 커질수록) 데미지도 함께 증가.
             target.ApplyDamage(baseDamage * scale);
+            SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(fireSound, 0.5f);
 
             // 발사 이펙트가 설정되어 있으면 드론과 적 사이를 잇는 가느다란 빛줄기(광선)로 잠깐 보여준 뒤 0.1초 뒤 자동으로 제거.
             if (tracerPrefab != null)

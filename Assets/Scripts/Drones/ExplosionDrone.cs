@@ -25,6 +25,9 @@ namespace SurvivalDrone.Drones
         // 터질 때 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
         [SerializeField] private ParticleSystem explosionEffect;
 
+        // 터질 때 재생할 효과음.
+        [SerializeField] private AudioClip explosionSound;
+
         private void Awake()
         {
             if (explosionEffect == null) explosionEffect = GetComponentInChildren<ParticleSystem>();
@@ -70,6 +73,7 @@ namespace SurvivalDrone.Drones
                 shape.radius = radius;
                 explosionEffect.Play();
             }
+            SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(explosionSound);
         }
     }
 }

@@ -116,6 +116,7 @@ MonoBehaviour:
   baseInterval: 3
   baseRadius: 3
   explosionEffect: {fileID: 0}
+  explosionSound: {fileID: 8300000, guid: dda1db3db0be9cf459a6366590331452, type: 3}
 --- !u!1 &9066775641067391679
 GameObject:
   m_ObjectHideFlags: 0

@@ -32,6 +32,9 @@ namespace SurvivalDrone.Enemies
         // 플레이어를 중심으로 이 거리(반지름)에 있는 원 위에서 적을 스폰한다 (화면 밖에서 나타나도록).
         [SerializeField] private float spawnRadius = 16f;
 
+        // 보스가 등장할 때 재생할 경고음.
+        [SerializeField] private AudioClip bossWarningSound;
+
         // ── 아래는 기획서 6장 "시간대별 난이도 곡선" 표를 코드 값으로 옮긴 부분 ──
         [Header("난이도 곡선 (기획서 6장)")]
 
@@ -79,6 +82,7 @@ namespace SurvivalDrone.Enemies
             {
                 bossSpawned = true;
                 Debug.Log($"[Spawner] 보스 등장 - 경과 시간 {elapsed:F0}초");
+                AudioManager.Instance?.PlaySfx(bossWarningSound);
                 SpawnEnemy(bossEntry);
                 return;
             }

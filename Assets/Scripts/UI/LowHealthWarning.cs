@@ -26,6 +26,9 @@ namespace SurvivalDrone.UI
         // (원래 0.35였는데 너무 과하다는 피드백으로 낮춤)
         [SerializeField] private float maxAlpha = 0.18f;
 
+        // 경고 상태에 막 들어갔을 때 한 번 재생할 효과음 (계속 반복 재생하지 않도록 상태 전환 시에만 재생).
+        [SerializeField] private AudioClip warningSound;
+
         // 지금 경고 상태인지 여부 (체력 비율이 threshold 이하인 동안 true).
         private bool isWarning;
 
@@ -48,10 +51,14 @@ namespace SurvivalDrone.UI
         private void HandleHealthChanged(float current, float max)
         {
             float ratio = max > 0f ? current / max : 0f;
+            bool wasWarning = isWarning;
             isWarning = ratio > 0f && ratio <= warningThreshold;
 
             // 경고 상태가 아니게 되면(체력을 회복했거나 죽었으면) 오버레이를 즉시 끈다.
             if (!isWarning) SetAlpha(0f);
+
+            // 방금 막 경고 상태로 "들어간" 순간에만 한 번 소리를 울린다(계속 반복 재생 방지).
+            if (isWarning && !wasWarning) AudioManager.Instance?.PlaySfx(warningSound);
         }
 
         private void Update()

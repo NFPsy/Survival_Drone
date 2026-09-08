@@ -1,5 +1,6 @@
 using UnityEngine;
 using SurvivalDrone.Player;
+using SurvivalDrone.Core;
 
 namespace SurvivalDrone.Pickups
 {
@@ -7,6 +8,9 @@ namespace SurvivalDrone.Pickups
     // 플레이어가 일정 거리 안으로 들어오면 자석처럼 끌려가고, 닿으면 XP를 지급한 뒤 사라진다.
     public class XPOrb : MonoBehaviour
     {
+        // 주울 때 재생할 효과음.
+        [SerializeField] private AudioClip pickupSound;
+
         // 수집 드론이 없을 때도 기본으로 적용되는 자석 반경(이 거리 안에 들어오면 끌려감).
         [SerializeField] private float baseMagnetRadius = 2.5f;
 
@@ -59,6 +63,7 @@ namespace SurvivalDrone.Pickups
             if (distance <= pickupDistance)
             {
                 playerXP?.AddXP(xpValue);
+                AudioManager.Instance?.PlaySfx(pickupSound, 0.6f);
                 Destroy(gameObject);
             }
         }

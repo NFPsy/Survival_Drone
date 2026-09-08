@@ -32,6 +32,9 @@ namespace SurvivalDrone.Drones
         // 공격할 때마다 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
         [SerializeField] private ParticleSystem attackEffect;
 
+        // 공격할 때마다 재생할 효과음.
+        [SerializeField] private AudioClip attackSound;
+
         private void Awake()
         {
             if (attackEffect == null) attackEffect = GetComponentInChildren<ParticleSystem>();
@@ -66,6 +69,7 @@ namespace SurvivalDrone.Drones
 
                 // 공격할 때마다 파티클을 한 번씩 터뜨려서 눈에 보이게 한다.
                 attackEffect?.Play();
+                SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(attackSound, 0.5f);
             }
         }
 

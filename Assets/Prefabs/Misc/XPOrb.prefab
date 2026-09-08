@@ -103,6 +103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae8c6afa16c2db84a8479279b42d4c48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Pickups.XPOrb
+  pickupSound: {fileID: 8300000, guid: dd98ec663ca96d6479e827ea101f3920, type: 3}
   baseMagnetRadius: 2.5
   moveSpeed: 10
   pickupDistance: 0.6
