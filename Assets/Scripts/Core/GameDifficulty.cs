@@ -23,15 +23,11 @@ namespace SurvivalDrone.Core
 
         // 적의 체력/접촉 피해량에 곱해줄 배율. 어려움(Hard)은 지금까지의 밸런스 그대로(1배),
         // 보통은 20% 약하게, 쉬움은 40% 약하게 만든다.
+        //
+        // 스폰 속도/최대 마릿수는 일부러 난이도별로 낮추지 않는다. 스폰을 줄이면 쉬움/보통에서
+        // 오히려 XP 구슬을 모을 기회가 줄어서 레벨업이 더 느려지는, 의도와 반대되는 결과가 났기 때문.
+        // 그래서 "쉬움/보통 = 적은 약하지만 그만큼 많이 나온다"는 방향으로 통일했다.
         public static float EnemyStatMultiplier => Current switch
-        {
-            DifficultyLevel.Easy => 0.6f,
-            DifficultyLevel.Normal => 0.8f,
-            _ => 1f,
-        };
-
-        // 적 스폰 속도/최대 마릿수에 곱해줄 배율. 값이 작을수록 적이 더 적게/느리게 나온다.
-        public static float SpawnMultiplier => Current switch
         {
             DifficultyLevel.Easy => 0.6f,
             DifficultyLevel.Normal => 0.8f,
