@@ -22,6 +22,14 @@ namespace SurvivalDrone.Drones
         // 다음 폭발까지 남은 시간.
         private float explodeTimer;
 
+        // 터질 때 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
+        [SerializeField] private ParticleSystem explosionEffect;
+
+        private void Awake()
+        {
+            if (explosionEffect == null) explosionEffect = GetComponentInChildren<ParticleSystem>();
+        }
+
         protected override void Update()
         {
             // 폭발 드론은 궤도를 돌지 않고 플레이어 주변 고정 위치에 떠 있으면 되므로,
@@ -53,6 +61,14 @@ namespace SurvivalDrone.Drones
             {
                 var enemy = col.GetComponent<EnemyAI>();
                 if (enemy != null) enemy.ApplyDamage(damage);
+            }
+
+            // 폭발 파티클도 실제 피해 범위(radius)에 맞춰 크기를 조절한 뒤 재생.
+            if (explosionEffect != null)
+            {
+                var shape = explosionEffect.shape;
+                shape.radius = radius;
+                explosionEffect.Play();
             }
         }
     }

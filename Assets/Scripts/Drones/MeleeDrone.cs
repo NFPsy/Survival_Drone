@@ -29,6 +29,14 @@ namespace SurvivalDrone.Drones
         // 다음 공격까지 남은 시간.
         private float attackTimer;
 
+        // 공격할 때마다 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
+        [SerializeField] private ParticleSystem attackEffect;
+
+        private void Awake()
+        {
+            if (attackEffect == null) attackEffect = GetComponentInChildren<ParticleSystem>();
+        }
+
         // DroneBase의 기본 "따라다니기" 동작 대신, 이 드론만의 "궤도 돌기" 동작으로 완전히 교체한다.
         protected override void Update()
         {
@@ -55,6 +63,9 @@ namespace SurvivalDrone.Drones
 
                 // 공격 판정 범위도 레벨에 따라 커진다.
                 DealDamageToNearby(baseAttackRadius * Mathf.Sqrt(scale));
+
+                // 공격할 때마다 파티클을 한 번씩 터뜨려서 눈에 보이게 한다.
+                attackEffect?.Play();
             }
         }
 

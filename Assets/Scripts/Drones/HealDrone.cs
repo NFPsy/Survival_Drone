@@ -23,6 +23,14 @@ namespace SurvivalDrone.Drones
         // 주인(플레이어)의 체력 컴포넌트. 처음엔 비어있다가 owner가 정해진 뒤에 찾아서 저장해둔다.
         private Health ownerHealth;
 
+        // 회복할 때마다 재생할 파티클. 인스펙터에서 지정 안 해도 자식에서 자동으로 찾는다.
+        [SerializeField] private ParticleSystem healEffect;
+
+        private void Awake()
+        {
+            if (healEffect == null) healEffect = GetComponentInChildren<ParticleSystem>();
+        }
+
         protected override void Update()
         {
             // 회복 드론도 플레이어를 따라다니기만 하면 되므로 부모의 기본 동작을 그대로 사용.
@@ -48,6 +56,9 @@ namespace SurvivalDrone.Drones
 
                 // 레벨이 오를수록 회복량도 함께 늘어난다.
                 ownerHealth.Heal(baseHealAmount * scale);
+
+                // 회복할 때마다 파티클을 한 번씩 재생해서 눈에 보이게 한다.
+                healEffect?.Play();
             }
         }
     }

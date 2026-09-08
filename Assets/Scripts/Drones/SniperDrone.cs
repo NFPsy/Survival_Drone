@@ -49,10 +49,18 @@ namespace SurvivalDrone.Drones
             // 레벨이 오를수록(scale이 커질수록) 데미지도 함께 증가.
             target.ApplyDamage(baseDamage * scale);
 
-            // 발사 이펙트가 설정되어 있으면 잠깐 보여줬다가 0.1초 뒤 자동으로 제거.
+            // 발사 이펙트가 설정되어 있으면 드론과 적 사이를 잇는 가느다란 빛줄기(광선)로 잠깐 보여준 뒤 0.1초 뒤 자동으로 제거.
             if (tracerPrefab != null)
             {
-                var tracer = Instantiate(tracerPrefab, transform.position, Quaternion.LookRotation(target.transform.position - transform.position));
+                Vector3 start = transform.position;
+                Vector3 end = target.transform.position;
+                Vector3 midpoint = (start + end) * 0.5f;
+                float distance = Vector3.Distance(start, end);
+
+                var tracer = Instantiate(tracerPrefab, midpoint, Quaternion.LookRotation(end - start));
+                // 프리팹의 가로/세로 두께는 그대로 두고, 길이(z축)만 드론-적 사이 거리에 맞춰 늘린다.
+                Vector3 tracerScale = tracer.transform.localScale;
+                tracer.transform.localScale = new Vector3(tracerScale.x, tracerScale.y, distance);
                 Destroy(tracer, 0.1f);
             }
         }

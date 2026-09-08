@@ -114,7 +114,7 @@ MonoBehaviour:
   baseDamage: 15
   baseAttackInterval: 2
   range: 14
-  tracerPrefab: {fileID: 0}
+  tracerPrefab: {fileID: 1352061670687659175, guid: 440d7d2158356754aab084e8dd9e8c3b, type: 3}
 --- !u!1001 &3336626370601983153
 PrefabInstance:
   m_ObjectHideFlags: 0
