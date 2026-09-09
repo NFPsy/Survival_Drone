@@ -78,7 +78,7 @@ namespace SurvivalDrone.UI
             if (panel != null) panel.SetActive(true);
             if (resultText != null)
             {
-                resultText.text = won ? "MISSION COMPLETE" : "SYSTEM DOWN";
+                resultText.text = won ? "GAME CLEAR" : "GAME OVER";
                 resultText.color = won ? victoryColor : defeatColor;
             }
 
