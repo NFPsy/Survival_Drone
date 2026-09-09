@@ -22,8 +22,15 @@ namespace SurvivalDrone.UI
         private void Awake()
         {
             // 자식 오브젝트에서 슬라이더/토글 컴포넌트를 찾아온다.
-            volumeSlider = transform.Find("VolumeSlider").GetComponent<Slider>();
-            fullscreenToggle = transform.Find("FullscreenToggle").GetComponent<Toggle>();
+            // 못 찾아도(이름이 바뀌었거나 지워졌으면) 예외 대신 경고 로그만 남기고,
+            // 나머지 하나는 정상 동작하도록 각각 따로 처리한다.
+            var sliderTransform = transform.Find("VolumeSlider");
+            volumeSlider = sliderTransform != null ? sliderTransform.GetComponent<Slider>() : null;
+            if (volumeSlider == null) Debug.LogWarning("[SettingsPanelController] 'VolumeSlider' 자식 오브젝트를 찾지 못했습니다.");
+
+            var toggleTransform = transform.Find("FullscreenToggle");
+            fullscreenToggle = toggleTransform != null ? toggleTransform.GetComponent<Toggle>() : null;
+            if (fullscreenToggle == null) Debug.LogWarning("[SettingsPanelController] 'FullscreenToggle' 자식 오브젝트를 찾지 못했습니다.");
 
             // 이전에 저장해둔 값이 있으면 그 값을, 없으면 기본값(볼륨 1=최대,
             // 전체화면은 현재 화면 상태)을 가져온다.
@@ -35,12 +42,19 @@ namespace SurvivalDrone.UI
             Screen.fullScreen = savedFullscreen;
 
             // UI에도 현재 값을 반영해서, 패널을 열었을 때 실제 상태와 다르게 보이지 않도록 한다.
-            volumeSlider.value = savedVolume;
-            fullscreenToggle.isOn = savedFullscreen;
+            if (volumeSlider != null)
+            {
+                volumeSlider.value = savedVolume;
+                // 사용자가 슬라이더를 조작할 때마다 호출되도록 연결.
+                volumeSlider.onValueChanged.AddListener(HandleVolumeChanged);
+            }
 
-            // 사용자가 슬라이더/토글을 조작할 때마다 아래 함수들이 호출되도록 연결.
-            volumeSlider.onValueChanged.AddListener(HandleVolumeChanged);
-            fullscreenToggle.onValueChanged.AddListener(HandleFullscreenChanged);
+            if (fullscreenToggle != null)
+            {
+                fullscreenToggle.isOn = savedFullscreen;
+                // 사용자가 토글을 조작할 때마다 호출되도록 연결.
+                fullscreenToggle.onValueChanged.AddListener(HandleFullscreenChanged);
+            }
         }
 
         // 볼륨 슬라이더를 움직일 때마다 호출. 바로 적용하고 다음 실행을 위해 저장까지 한다.

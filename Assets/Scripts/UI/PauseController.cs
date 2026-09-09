@@ -24,12 +24,37 @@ namespace SurvivalDrone.UI
 
         private void Awake()
         {
-            pausePanel = transform.Find("PausePanel").gameObject;
+            // "PausePanel" 자식을 못 찾으면(이름이 바뀌었거나 지워졌으면) 경고만 남기고
+            // 이 컴포넌트는 아무 동작도 하지 않도록 한다 — 예외로 게임 전체가 멈추는 것보다 안전하다.
+            var pausePanelTransform = transform.Find("PausePanel");
+            if (pausePanelTransform == null)
+            {
+                Debug.LogWarning("[PauseController] 'PausePanel' 자식 오브젝트를 찾지 못해 일시정지 기능이 비활성화됩니다.");
+                // Update()가 계속 돌면서 null인 pausePanel을 건드리지 않도록 컴포넌트 자체를 꺼버린다.
+                enabled = false;
+                return;
+            }
+
+            pausePanel = pausePanelTransform.gameObject;
             pausePanel.SetActive(false);
 
-            pausePanel.transform.Find("BtnContinue").GetComponent<Button>().onClick.AddListener(Resume);
-            pausePanel.transform.Find("BtnRestart").GetComponent<Button>().onClick.AddListener(Restart);
-            pausePanel.transform.Find("BtnMainMenu").GetComponent<Button>().onClick.AddListener(GoToMainMenu);
+            WireButton("BtnContinue", Resume);
+            WireButton("BtnRestart", Restart);
+            WireButton("BtnMainMenu", GoToMainMenu);
+        }
+
+        // pausePanel 아래에서 buttonName인 버튼을 찾아 클릭 이벤트를 연결하는 함수.
+        // 못 찾으면 경고 로그만 남기고 조용히 건너뛴다.
+        private void WireButton(string buttonName, UnityEngine.Events.UnityAction action)
+        {
+            var buttonTransform = pausePanel.transform.Find(buttonName);
+            var button = buttonTransform != null ? buttonTransform.GetComponent<Button>() : null;
+            if (button == null)
+            {
+                Debug.LogWarning($"[PauseController] 'PausePanel/{buttonName}' 버튼을 찾지 못했습니다.");
+                return;
+            }
+            button.onClick.AddListener(action);
         }
 
         private void Update()
