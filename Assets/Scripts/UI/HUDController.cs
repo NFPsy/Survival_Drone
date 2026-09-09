@@ -26,6 +26,9 @@ namespace SurvivalDrone.UI
         // XP바로 사용할 이미지.
         [SerializeField] private Image xpFill;
 
+        // XP를 "3 / 10"처럼 숫자로도 함께 보여줄 텍스트.
+        [SerializeField] private Text xpText;
+
         // 남은 시간을 보여줄 텍스트.
         [SerializeField] private Text timerText;
 
@@ -91,6 +94,9 @@ namespace SurvivalDrone.UI
         private void HandleXPChanged(float current, float toNext)
         {
             if (xpFill != null) xpFill.fillAmount = toNext > 0f ? current / toNext : 0f;
+
+            // 체력바와 마찬가지로 "3 / 10" 형태의 숫자도 함께 보여준다.
+            if (xpText != null) xpText.text = $"{Mathf.RoundToInt(current)} / {Mathf.RoundToInt(toNext)}";
         }
 
         // 레벨업이 일어날 때 호출되어 레벨 텍스트를 새 레벨로 갱신.
