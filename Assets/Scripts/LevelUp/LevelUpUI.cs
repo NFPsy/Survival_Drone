@@ -114,32 +114,38 @@ namespace SurvivalDrone.LevelUp
         {
             var pool = new List<LevelUpOption>();
 
-            // 드론 종류(Melee, Sniper, Collector)마다 "신규 장착" 또는 "강화" 선택지를 하나씩 만든다.
-            foreach (DroneType type in Enum.GetValues(typeof(DroneType)))
+            // droneManager 연결이 인스펙터에서 빠져있으면(실수로 끊겼거나 프리팹이 바뀐 경우)
+            // 드론 관련 선택지는 만들지 않고 능력치 강화만 남긴다. 여기서 막지 않으면
+            // 바로 아래에서 NullReferenceException이 나서 레벨업 화면 자체가 멈춰버린다.
+            if (droneManager != null)
             {
-                // 아직 없는 드론이면 "신규 드론" 선택지를 추가.
-                if (droneManager.CanAddDrone(type))
+                // 드론 종류(Melee, Sniper, Collector)마다 "신규 장착" 또는 "강화" 선택지를 하나씩 만든다.
+                foreach (DroneType type in Enum.GetValues(typeof(DroneType)))
                 {
-                    pool.Add(new LevelUpOption
+                    // 아직 없는 드론이면 "신규 드론" 선택지를 추가.
+                    if (droneManager.CanAddDrone(type))
                     {
-                        Kind = LevelUpOptionKind.NewDrone,
-                        DroneType = type,
-                        Title = $"신규 드론: {type}",
-                        Description = "새로운 드론을 장착합니다."
-                    });
-                }
-                // 이미 있고 아직 최대 레벨이 아니면 "강화" 선택지를 추가.
-                else if (droneManager.CanUpgradeDrone(type))
-                {
-                    pool.Add(new LevelUpOption
+                        pool.Add(new LevelUpOption
+                        {
+                            Kind = LevelUpOptionKind.NewDrone,
+                            DroneType = type,
+                            Title = $"신규 드론: {type}",
+                            Description = "새로운 드론을 장착합니다."
+                        });
+                    }
+                    // 이미 있고 아직 최대 레벨이 아니면 "강화" 선택지를 추가.
+                    else if (droneManager.CanUpgradeDrone(type))
                     {
-                        Kind = LevelUpOptionKind.UpgradeDrone,
-                        DroneType = type,
-                        Title = $"강화: {type}",
-                        Description = "보유한 드론의 레벨을 올립니다."
-                    });
+                        pool.Add(new LevelUpOption
+                        {
+                            Kind = LevelUpOptionKind.UpgradeDrone,
+                            DroneType = type,
+                            Title = $"강화: {type}",
+                            Description = "보유한 드론의 레벨을 올립니다."
+                        });
+                    }
+                    // 둘 다 아니면(이미 최대 레벨) 이 드론에 대한 선택지는 만들지 않는다.
                 }
-                // 둘 다 아니면(이미 최대 레벨) 이 드론에 대한 선택지는 만들지 않는다.
             }
 
             // 능력치 강화 선택지 두 가지는 항상 후보에 포함시킨다.
@@ -169,23 +175,28 @@ namespace SurvivalDrone.LevelUp
             var option = currentOptions[index];
 
             // 선택지 종류에 따라 실제로 적용할 내용을 분기 처리.
+            // droneManager/playerStats 연결이 빠져있으면 조용히 건너뛴다(적용은 안 되지만
+            // 최소한 게임이 멈추지는 않는다).
             switch (option.Kind)
             {
                 case LevelUpOptionKind.NewDrone:
-                    droneManager.AddDrone(option.DroneType);
+                    droneManager?.AddDrone(option.DroneType);
                     break;
                 case LevelUpOptionKind.UpgradeDrone:
-                    droneManager.UpgradeDrone(option.DroneType);
+                    droneManager?.UpgradeDrone(option.DroneType);
                     break;
                 case LevelUpOptionKind.StatBoost:
-                    if (option.StatBoost == StatBoostKind.MoveSpeed)
+                    if (playerStats != null)
                     {
-                        // 현재 이동속도의 6%만큼을 더해준다(고정값이 아니라 비율 증가).
-                        playerStats.AddMoveSpeed(playerStats.MoveSpeed * 0.06f);
-                    }
-                    else
-                    {
-                        playerStats.AddMaxHealth(12f);
+                        if (option.StatBoost == StatBoostKind.MoveSpeed)
+                        {
+                            // 현재 이동속도의 6%만큼을 더해준다(고정값이 아니라 비율 증가).
+                            playerStats.AddMoveSpeed(playerStats.MoveSpeed * 0.06f);
+                        }
+                        else
+                        {
+                            playerStats.AddMaxHealth(12f);
+                        }
                     }
                     break;
             }
