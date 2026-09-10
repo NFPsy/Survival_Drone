@@ -745,6 +745,7 @@ GameObject:
   - component: {fileID: 230017202}
   - component: {fileID: 230017201}
   - component: {fileID: 230017200}
+  - component: {fileID: 230017203}
   m_Layer: 0
   m_Name: Option0
   m_TagString: Untagged
@@ -855,6 +856,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 230017198}
   m_CullTransparentMesh: 1
+--- !u!114 &230017203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 230017198}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &284380584
 GameObject:
   m_ObjectHideFlags: 0
@@ -2020,6 +2036,7 @@ GameObject:
   - component: {fileID: 761384240}
   - component: {fileID: 761384239}
   - component: {fileID: 761384238}
+  - component: {fileID: 761384241}
   m_Layer: 0
   m_Name: BtnMainMenu
   m_TagString: Untagged
@@ -2129,6 +2146,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 761384236}
   m_CullTransparentMesh: 1
+--- !u!114 &761384241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761384236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &782660839
 GameObject:
   m_ObjectHideFlags: 0
@@ -2220,6 +2252,7 @@ GameObject:
   - component: {fileID: 784398550}
   - component: {fileID: 784398549}
   - component: {fileID: 784398548}
+  - component: {fileID: 784398551}
   m_Layer: 0
   m_Name: BtnRestart
   m_TagString: Untagged
@@ -2329,6 +2362,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 784398546}
   m_CullTransparentMesh: 1
+--- !u!114 &784398551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 784398546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.31, g: 0.847, b: 0.91, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &821839725
 GameObject:
   m_ObjectHideFlags: 0
@@ -2618,6 +2666,7 @@ GameObject:
   - component: {fileID: 1019469955}
   - component: {fileID: 1019469954}
   - component: {fileID: 1019469953}
+  - component: {fileID: 1019469957}
   m_Layer: 0
   m_Name: PausePanel
   m_TagString: Untagged
@@ -2712,6 +2761,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1019469951}
   m_CullTransparentMesh: 1
+--- !u!114 &1019469957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019469951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1103611699
 GameObject:
   m_ObjectHideFlags: 0
@@ -3085,6 +3149,7 @@ GameObject:
   - component: {fileID: 1291023437}
   - component: {fileID: 1291023439}
   - component: {fileID: 1291023438}
+  - component: {fileID: 1291023440}
   m_Layer: 0
   m_Name: XPBarBG
   m_TagString: Untagged
@@ -3150,6 +3215,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1291023436}
   m_CullTransparentMesh: 1
+--- !u!114 &1291023440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1291023436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1305661088
 GameObject:
   m_ObjectHideFlags: 0
@@ -3780,6 +3860,7 @@ GameObject:
   - component: {fileID: 1428133166}
   - component: {fileID: 1428133169}
   - component: {fileID: 1428133168}
+  - component: {fileID: 1428133170}
   m_Layer: 0
   m_Name: ResultPanel
   m_TagString: Untagged
@@ -3874,6 +3955,21 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1428133170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1428133163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1446871600
 GameObject:
   m_ObjectHideFlags: 0
@@ -3935,6 +4031,7 @@ GameObject:
   - component: {fileID: 1470769667}
   - component: {fileID: 1470769670}
   - component: {fileID: 1470769669}
+  - component: {fileID: 1470769671}
   m_Layer: 0
   m_Name: LevelUpPanel
   m_TagString: Untagged
@@ -4028,6 +4125,21 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1470769671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1470769664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1594989052
 GameObject:
   m_ObjectHideFlags: 0
@@ -4290,6 +4402,7 @@ GameObject:
   - component: {fileID: 1664776261}
   - component: {fileID: 1664776263}
   - component: {fileID: 1664776262}
+  - component: {fileID: 1664776264}
   m_Layer: 0
   m_Name: HealthBarBG
   m_TagString: Untagged
@@ -4355,6 +4468,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1664776260}
   m_CullTransparentMesh: 1
+--- !u!114 &1664776264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1664776260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1671253884
 GameObject:
   m_ObjectHideFlags: 0
@@ -4679,6 +4807,7 @@ GameObject:
   - component: {fileID: 1929071371}
   - component: {fileID: 1929071370}
   - component: {fileID: 1929071369}
+  - component: {fileID: 1929071372}
   m_Layer: 0
   m_Name: BtnContinue
   m_TagString: Untagged
@@ -4788,6 +4917,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1929071367}
   m_CullTransparentMesh: 1
+--- !u!114 &1929071372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929071367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.31, g: 0.847, b: 0.91, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &1938117941
 GameObject:
   m_ObjectHideFlags: 0
@@ -9694,6 +9838,7 @@ GameObject:
   - component: {fileID: 1980693727}
   - component: {fileID: 1980693726}
   - component: {fileID: 1980693725}
+  - component: {fileID: 1980693728}
   m_Layer: 0
   m_Name: Option2
   m_TagString: Untagged
@@ -9804,6 +9949,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1980693723}
   m_CullTransparentMesh: 1
+--- !u!114 &1980693728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1980693723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &2029274670
 GameObject:
   m_ObjectHideFlags: 0
@@ -9816,6 +9976,7 @@ GameObject:
   - component: {fileID: 2029274674}
   - component: {fileID: 2029274673}
   - component: {fileID: 2029274672}
+  - component: {fileID: 2029274675}
   m_Layer: 0
   m_Name: Option1
   m_TagString: Untagged
@@ -9926,6 +10087,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2029274670}
   m_CullTransparentMesh: 1
+--- !u!114 &2029274675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2029274670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!4 &2031080672 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ec08afb588c9b414a9e7d0ca01153635, type: 3}
@@ -10063,6 +10239,7 @@ GameObject:
   - component: {fileID: 2082808996}
   - component: {fileID: 2082808995}
   - component: {fileID: 2082808994}
+  - component: {fileID: 2082808997}
   m_Layer: 0
   m_Name: BtnMainMenu
   m_TagString: Untagged
@@ -10172,6 +10349,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2082808992}
   m_CullTransparentMesh: 1
+--- !u!114 &2082808997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2082808992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!1 &2094144898
 GameObject:
   m_ObjectHideFlags: 0
@@ -10184,6 +10376,7 @@ GameObject:
   - component: {fileID: 2094144902}
   - component: {fileID: 2094144901}
   - component: {fileID: 2094144900}
+  - component: {fileID: 2094144903}
   m_Layer: 0
   m_Name: BtnRestart
   m_TagString: Untagged
@@ -10293,6 +10486,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2094144898}
   m_CullTransparentMesh: 1
+--- !u!114 &2094144903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2094144898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0.3, g: 0.36, b: 0.46, a: 0.9}
+  m_EffectDistance: {x: 1, y: 1}
+  m_UseGraphicAlpha: 0
 --- !u!21 &2115090318
 Material:
   serializedVersion: 8
