@@ -1547,7 +1547,7 @@ MonoBehaviour:
   matchDuration: 600
   victorySound: {fileID: 8300000, guid: aa9fdca97df571b409f328900e3a7ff0, type: 3}
   defeatSound: {fileID: 8300000, guid: e992c1a6d671ab44b9b70c5a051b8ae5, type: 3}
-  inGameMusic: {fileID: 0}
+  inGameMusic: {fileID: 8300000, guid: f3d476e323fb2ba45b07639e3ef77f63, type: 3}
 --- !u!4 &480773813
 Transform:
   m_ObjectHideFlags: 0

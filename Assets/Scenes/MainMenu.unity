@@ -524,7 +524,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.UI.MainMenuController
   gameplaySceneName: InGame
   clickSound: {fileID: 8300000, guid: 442d36d73e46c40498985d862c5da596, type: 3}
-  menuMusic: {fileID: 0}
+  menuMusic: {fileID: 8300000, guid: f3d476e323fb2ba45b07639e3ef77f63, type: 3}
 --- !u!114 &90031808
 MonoBehaviour:
   m_ObjectHideFlags: 0
