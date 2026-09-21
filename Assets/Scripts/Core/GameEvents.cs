@@ -8,8 +8,10 @@ namespace SurvivalDrone.Core
     // 예: 적이 죽었을 때 여러 시스템(사운드, 이펙트, 통계 등)에 한 번에 알리고 싶을 때 사용.
     public static class GameEvents
     {
-        // 적이 죽었을 때 발생하는 이벤트. 죽은 위치(Vector3)를 함께 전달한다.
-        public static event Action<Vector3> OnEnemyKilled;
+        // 적이 죽었을 때 발생하는 이벤트.
+        // 죽은 위치(Vector3)와, 그 적이 엘리트 로봇이었는지(bool)를 함께 전달한다.
+        // 엘리트 여부를 같이 보내는 이유: 오버드라이브 게이지를 엘리트일 때 훨씬 많이 채워주기 때문.
+        public static event Action<Vector3, bool> OnEnemyKilled;
 
         // 플레이어가 레벨업했을 때 발생하는 이벤트. 새로운 레벨 값을 함께 전달한다.
         public static event Action<int> OnPlayerLevelUp;
@@ -22,7 +24,7 @@ namespace SurvivalDrone.Core
 
         // 아래 4개 함수는 이벤트를 "발생시키는" 역할만 한다.
         // ?.Invoke()는 이 이벤트를 구독하는 곳이 하나도 없어도 에러 없이 안전하게 넘어가기 위한 문법.
-        public static void RaiseEnemyKilled(Vector3 position) => OnEnemyKilled?.Invoke(position);
+        public static void RaiseEnemyKilled(Vector3 position, bool wasElite = false) => OnEnemyKilled?.Invoke(position, wasElite);
         public static void RaisePlayerLevelUp(int newLevel) => OnPlayerLevelUp?.Invoke(newLevel);
         public static void RaisePlayerDied() => OnPlayerDied?.Invoke();
         public static void RaiseMatchWon() => OnMatchWon?.Invoke();

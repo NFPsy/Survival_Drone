@@ -38,7 +38,8 @@ namespace SurvivalDrone.Drones
             if (attackTimer <= 0f)
             {
                 // 레벨이 오를수록(scale이 커질수록) 공격 간격이 짧아져서 더 자주 쏘게 된다.
-                attackTimer = baseAttackInterval / scale;
+                // 오버드라이브 중이면 거기에 더해 배율만큼 또 짧아진다.
+                attackTimer = baseAttackInterval / (scale * OverdriveAttackSpeed);
                 TryFire(scale);
             }
         }

@@ -29,6 +29,26 @@ namespace SurvivalDrone.UI
         // XP를 "3 / 10"처럼 숫자로도 함께 보여줄 텍스트.
         [SerializeField] private Text xpText;
 
+        // ── 오버드라이브(액티브 스킬) 관련 ──
+
+        // 오버드라이브 게이지를 읽어오기 위한 플레이어의 OverdriveSystem 컴포넌트.
+        [SerializeField] private SurvivalDrone.Player.OverdriveSystem overdrive;
+
+        // 오버드라이브 게이지 바로 사용할 이미지.
+        [SerializeField] private Image overdriveFill;
+
+        // 게이지 상태를 글자로 알려줄 텍스트 ("충전 중" / "SPACE 발동 가능" / "발동 중").
+        [SerializeField] private Text overdriveText;
+
+        // 게이지가 아직 다 안 찼을 때의 바 색상 (어두운 시안).
+        [SerializeField] private Color overdriveChargingColor = new Color(0.18f, 0.45f, 0.5f);
+
+        // 가득 차서 쓸 수 있을 때의 바 색상 (밝은 시안 — "지금 누르라"는 신호).
+        [SerializeField] private Color overdriveReadyColor = new Color(0.31f, 0.847f, 0.91f);
+
+        // 발동 중일 때의 바 색상 (주황 — 위험을 감수하는 상태라는 뜻).
+        [SerializeField] private Color overdriveActiveColor = new Color(1f, 0.62f, 0.25f);
+
         // 남은 시간을 보여줄 텍스트.
         [SerializeField] private Text timerText;
 
@@ -46,6 +66,9 @@ namespace SurvivalDrone.UI
                 playerExperience.OnXPChanged += HandleXPChanged;
                 playerExperience.OnLevelUp += HandleLevelUp;
             }
+
+            // 오버드라이브 게이지가 바뀔 때마다 게이지 바를 갱신하도록 연결.
+            if (overdrive != null) overdrive.OnGaugeChanged += HandleOverdriveChanged;
         }
 
         private void OnDisable()
@@ -57,6 +80,7 @@ namespace SurvivalDrone.UI
                 playerExperience.OnXPChanged -= HandleXPChanged;
                 playerExperience.OnLevelUp -= HandleLevelUp;
             }
+            if (overdrive != null) overdrive.OnGaugeChanged -= HandleOverdriveChanged;
         }
 
         private void Start()
@@ -103,6 +127,29 @@ namespace SurvivalDrone.UI
         private void HandleLevelUp(int newLevel)
         {
             if (levelText != null) levelText.text = $"Lv. {newLevel}";
+        }
+
+        // 오버드라이브 게이지가 바뀔 때 호출되어 게이지 바와 안내 문구를 갱신한다.
+        // ratio: 0~1 사이의 게이지 비율, isActive: 지금 발동 중인지.
+        private void HandleOverdriveChanged(float ratio, bool isActive)
+        {
+            if (overdriveFill != null)
+            {
+                overdriveFill.fillAmount = ratio;
+
+                // 상태에 따라 바 색을 바꿔서, 숫자를 안 읽어도 상태를 알 수 있게 한다.
+                // 발동 중 = 주황 / 가득 참 = 밝은 시안 / 충전 중 = 어두운 시안
+                if (isActive) overdriveFill.color = overdriveActiveColor;
+                else if (ratio >= 1f) overdriveFill.color = overdriveReadyColor;
+                else overdriveFill.color = overdriveChargingColor;
+            }
+
+            if (overdriveText != null)
+            {
+                if (isActive) overdriveText.text = "OVERDRIVE";
+                else if (ratio >= 1f) overdriveText.text = "[SPACE] 오버드라이브";
+                else overdriveText.text = $"오버드라이브 {Mathf.FloorToInt(ratio * 100f)}%";
+            }
         }
     }
 }

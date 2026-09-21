@@ -35,6 +35,14 @@ namespace SurvivalDrone.Enemies
         // 보스가 등장할 때 재생할 경고음.
         [SerializeField] private AudioClip bossWarningSound;
 
+        // 일반 적이 스폰될 때 "엘리트"로 승격될 확률 (0.08 = 8%).
+        // 너무 높으면 특별함이 사라지고, 너무 낮으면 존재를 못 느낀다.
+        // 8%면 초반엔 가끔, 후반(스폰이 빨라질 때)엔 자주 만나게 된다.
+        [SerializeField, Range(0f, 1f)] private float eliteChance = 0.08f;
+
+        // 엘리트가 등장하기 시작하는 시점(초). 30초 = 게임에 적응할 시간을 준 뒤 등장.
+        [SerializeField] private float eliteUnlockTime = 30f;
+
         // ── 아래는 기획서 6장 "시간대별 난이도 곡선" 표를 코드 값으로 옮긴 부분 ──
         [Header("난이도 곡선 (기획서 6장)")]
 
@@ -83,7 +91,8 @@ namespace SurvivalDrone.Enemies
                 bossSpawned = true;
                 Debug.Log($"[Spawner] 보스 등장 - 경과 시간 {elapsed:F0}초");
                 AudioManager.Instance?.PlaySfx(bossWarningSound);
-                SpawnEnemy(bossEntry);
+                // 보스는 이미 충분히 강하므로 엘리트 승격 대상에서 제외한다.
+                SpawnEnemy(bossEntry, false);
                 return;
             }
 
@@ -168,7 +177,8 @@ namespace SurvivalDrone.Enemies
         }
 
         // 실제로 적 하나를 생성(Instantiate)하는 함수.
-        private void SpawnEnemy(EnemyEntry entry)
+        // allowElite: 이 적이 엘리트로 승격될 수 있는지. 보스는 이미 충분히 강하므로 false로 넘긴다.
+        private void SpawnEnemy(EnemyEntry entry, bool allowElite = true)
         {
             if (entry == null || entry.prefab == null || player == null) return;
 
@@ -184,6 +194,14 @@ namespace SurvivalDrone.Enemies
             var ai = obj.GetComponent<EnemyAI>();
             if (ai != null)
             {
+                // 엘리트 판정: 해금 시간이 지났고, 확률에 당첨되면 엘리트로 승격시킨다.
+                // 반드시 Initialize()보다 먼저 호출해야 체력 배율이 제대로 적용된다.
+                float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
+                if (allowElite && elapsed >= eliteUnlockTime && Random.value < eliteChance)
+                {
+                    ai.MakeElite();
+                }
+
                 ai.Initialize(entry.definition, player, xpOrbPrefab, HandleEnemyDeath);
                 alive.Add(ai);
             }

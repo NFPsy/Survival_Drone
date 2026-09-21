@@ -45,6 +45,30 @@ namespace SurvivalDrone.Enemies
         // 곱하지 않도록 Initialize 시점에 한 번만 계산해서 저장해둔다.
         private float scaledContactDamage;
 
+        // ── 엘리트 로봇 관련 ──
+        // 엘리트는 가끔 섞여 나오는 "강화판" 적이다. 체력이 훨씬 많고 크고 색이 다르지만,
+        // 잡으면 XP를 많이 주고 오버드라이브 게이지를 왕창 채워준다.
+        // 있는 이유: 모든 적이 똑같으면 "아무나 잡으면 된다"가 되는데,
+        // 엘리트가 있으면 "저놈부터 잡을까?"라는 우선순위 판단이 생겨서 전투가 덜 단조로워진다.
+
+        // 이 적이 엘리트인지 여부. EnemySpawner가 스폰 직후 MakeElite()를 불러서 정해준다.
+        private bool isElite;
+
+        // 엘리트일 때 체력이 몇 배가 되는지.
+        [SerializeField] private float eliteHealthMultiplier = 3f;
+
+        // 엘리트일 때 주는 XP가 몇 배가 되는지.
+        [SerializeField] private float eliteXpMultiplier = 3f;
+
+        // 엘리트일 때 겉보기 크기가 몇 배가 되는지 (한눈에 구분되도록).
+        [SerializeField] private float eliteScaleMultiplier = 1.35f;
+
+        // 엘리트 표시용 색상 (시안색 — 게임 전체의 강조색과 맞춤).
+        [SerializeField] private Color eliteTint = new Color(0.31f, 0.847f, 0.91f);
+
+        // 외부에서 이 적이 엘리트인지 확인할 수 있게 해주는 프로퍼티.
+        public bool IsElite => isElite;
+
         // 외부에서 이 적의 종류 데이터를 읽을 수 있게 해주는 프로퍼티.
         public EnemyDefinition Definition => definition;
 
@@ -62,11 +86,46 @@ namespace SurvivalDrone.Enemies
             float scaledMaxHealth = def.maxHealth * difficultyScale;
             scaledContactDamage = def.contactDamage * difficultyScale;
 
+            // 엘리트라면 체력만 크게 올려준다.
+            // (접촉 피해량은 일부러 안 올렸다 — 엘리트를 "더 아픈 적"이 아니라
+            //  "잡는 데 오래 걸리지만 보상이 큰 적"으로 만들기 위함. 그래야 플레이어가
+            //  피하지 않고 노리게 된다.)
+            if (isElite) scaledMaxHealth *= eliteHealthMultiplier;
+
             health = GetComponent<Health>();
             // 난이도가 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
             health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
             // 체력이 0이 되면 HandleDeath 함수가 자동으로 호출되도록 연결.
             health.OnDeath += HandleDeath;
+        }
+
+        // 이 적을 "엘리트"로 만드는 함수.
+        // 반드시 Initialize()보다 먼저 호출해야 한다 — Initialize에서 체력을 정할 때
+        // 엘리트 여부를 보고 배율을 곱하기 때문이다. (EnemySpawner가 순서를 지켜서 호출한다)
+        public void MakeElite()
+        {
+            isElite = true;
+
+            // 한눈에 알아볼 수 있도록 크기를 키운다.
+            transform.localScale *= eliteScaleMultiplier;
+
+            // 색을 시안색 계열로 물들여서 일반 적과 구분되게 한다.
+            // MaterialPropertyBlock을 쓰는 이유: 머티리얼 원본을 복제하지 않고 이 오브젝트만
+            // 색을 바꿀 수 있어서, 엘리트가 여러 마리 나와도 메모리 낭비가 없다.
+            // (피격 시 색 번쩍임을 담당하는 DamageFlash도 같은 방식을 쓴다)
+            var renderers = GetComponentsInChildren<Renderer>();
+            var block = new MaterialPropertyBlock();
+            foreach (var r in renderers)
+            {
+                r.GetPropertyBlock(block);
+                block.SetColor("_BaseColor", eliteTint);
+                r.SetPropertyBlock(block);
+            }
+
+            // 피격 시 색이 번쩍였다가 되돌아갈 "원래 색"도 엘리트 색으로 바꿔준다.
+            // 이걸 안 해주면 한 대 맞는 순간 원래 흰색으로 되돌아가서 엘리트 표시가 사라진다.
+            var flash = GetComponent<Core.DamageFlash>();
+            if (flash != null) flash.SetBaseColor(eliteTint);
         }
 
         // 오브젝트가 활성화될 때 살아있는 적 목록에 자신을 추가.
@@ -120,15 +179,21 @@ namespace SurvivalDrone.Enemies
         // 체력이 0이 되어 죽었을 때 호출되는 함수.
         private void HandleDeath()
         {
-            // 게임 전체에 "적이 죽었다"는 신호를 보낸다 (사운드/이펙트 등에서 활용 가능).
-            GameEvents.RaiseEnemyKilled(transform.position);
+            // 게임 전체에 "적이 죽었다"는 신호를 보낸다.
+            // 엘리트였는지도 함께 알려줘서, 오버드라이브 게이지를 얼마나 채울지 판단하게 한다.
+            GameEvents.RaiseEnemyKilled(transform.position, isElite);
 
             // 죽은 위치에 XP 오브를 하나 만들고, 이 적의 xpReward 값을 지급하도록 설정.
             if (xpOrbPrefab != null)
             {
                 var orbObj = Instantiate(xpOrbPrefab, transform.position, Quaternion.identity);
                 var orb = orbObj.GetComponent<XPOrb>();
-                if (orb != null && definition != null) orb.SetValue(definition.xpReward);
+                if (orb != null && definition != null)
+                {
+                    // 엘리트는 XP도 몇 배로 준다 (잡는 데 오래 걸린 만큼 보상).
+                    float reward = definition.xpReward * (isElite ? eliteXpMultiplier : 1f);
+                    orb.SetValue(reward);
+                }
             }
 
             // 스포너에게 "나 죽었어, 살아있는 목록에서 빼줘"라고 알림.

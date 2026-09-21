@@ -25,6 +25,11 @@ namespace SurvivalDrone.Core
         // 이미 죽었는지 여부 (중복으로 죽는 것을 방지하기 위한 플래그)
         public bool IsDead { get; private set; }
 
+        // 받는 피해에 곱해지는 배율. 기본값 1 = 원래 피해량 그대로.
+        // 오버드라이브(플레이어 액티브 스킬)를 켜면 2가 되어 피해를 2배로 받는다.
+        // 이 값은 "받는 쪽"에만 적용되므로, 공격하는 쪽 코드는 아무것도 몰라도 된다.
+        public float DamageTakenMultiplier { get; set; } = 1f;
+
         // 체력이 바뀔 때마다 알림을 받고 싶은 다른 스크립트(예: 체력바 UI)가 구독하는 이벤트.
         // 매개변수는 (현재 체력, 최대 체력) 순서.
         public event Action<float, float> OnHealthChanged;
@@ -58,6 +63,9 @@ namespace SurvivalDrone.Core
         {
             // 이미 죽었거나, 피해량이 0 이하면 아무것도 하지 않는다.
             if (IsDead || amount <= 0f) return;
+
+            // 받는 피해 배율을 곱해준다 (오버드라이브 중이면 2배로 아프다).
+            amount *= DamageTakenMultiplier;
 
             // 체력이 0 밑으로 내려가지 않도록 Mathf.Max로 최소값을 0으로 고정.
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);

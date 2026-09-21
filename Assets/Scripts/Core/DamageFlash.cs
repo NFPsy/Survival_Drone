@@ -77,6 +77,19 @@ namespace SurvivalDrone.Core
             initialized = true;
         }
 
+        // 이 오브젝트의 "평소 색"을 바깥에서 바꿔주는 함수.
+        //
+        // 왜 필요한가: 이 스크립트는 맞을 때 색을 잠깐 바꿨다가 "원래 색"으로 되돌리는데,
+        // 그 원래 색을 시작할 때 머티리얼에서 한 번 읽어와 기억해둔다.
+        // 그래서 엘리트 로봇처럼 나중에 색을 따로 칠한 경우, 한 대 맞고 나면
+        // 기억해둔 옛날 색(흰색)으로 되돌아가버려서 엘리트 표시가 사라진다.
+        // 색을 칠하는 쪽에서 이 함수로 "이제 이게 원래 색이야"라고 알려주면 그 문제가 없어진다.
+        public void SetBaseColor(Color color)
+        {
+            EnsureInitialized();
+            originalColor = color;
+        }
+
         private void HandleDamaged(float amount)
         {
             EnsureInitialized();

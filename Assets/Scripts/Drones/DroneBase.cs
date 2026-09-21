@@ -77,6 +77,16 @@ namespace SurvivalDrone.Drones
             return scale;
         }
 
+        // 플레이어가 "오버드라이브"(액티브 스킬)를 켰을 때 공격 속도가 몇 배가 되는지 알려주는 값.
+        // 평소엔 1배(변화 없음), 오버드라이브 중에는 2.5배가 된다.
+        //
+        // 공격형 드론들(근접/저격/폭발)은 공격 쿨타임을 계산할 때 이 값으로 나눠주면
+        // 그만큼 더 자주 공격하게 된다. 예: 0.5초 간격 ÷ 2.5배 = 0.2초 간격.
+        //
+        // 회복 드론은 일부러 이 배율을 쓰지 않는다 — 오버드라이브는 "피해를 2배로 받는 대신
+        // 화력을 얻는" 위험 감수 스킬인데, 회복까지 빨라지면 그 위험이 사라져버리기 때문이다.
+        protected static float OverdriveAttackSpeed => SurvivalDrone.Player.OverdriveSystem.AttackSpeedMultiplier;
+
         // 레벨이 바뀔 때마다 호출되는 함수. 자식 클래스가 필요하면 override해서 사용(기본은 빈 함수).
         protected virtual void OnLevelChanged()
         {

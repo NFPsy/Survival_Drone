@@ -59,7 +59,9 @@ namespace SurvivalDrone.Player
             if (move.sqrMagnitude > 1f) move.Normalize();
 
             // PlayerStats에서 최종 이동속도를 가져온다. 없으면 기본값 5 사용.
-            float speed = stats != null ? stats.MoveSpeed : 5f;
+            // 오버드라이브(액티브 스킬)를 켜면 배율이 곱해져서 더 빨리 움직일 수 있다.
+            // (그 동안 받는 피해가 2배가 되므로, 피할 수단도 함께 강화해주는 것)
+            float speed = (stats != null ? stats.MoveSpeed : 5f) * OverdriveSystem.MoveSpeedMultiplier;
             Vector3 motion = move * speed;
 
             // 땅에 닿아있으면 살짝 아래로 눌러주는 값(-0.5)을 줘서 계단 등에서 떨어지지 않게 함.

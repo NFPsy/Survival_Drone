@@ -62,7 +62,8 @@ namespace SurvivalDrone.Drones
             attackTimer -= Time.deltaTime;
             if (attackTimer <= 0f)
             {
-                attackTimer = 1f / attacksPerSecond;
+                // 오버드라이브 중이면 공격 속도가 배율만큼 빨라진다(=쿨타임이 그만큼 짧아진다).
+                attackTimer = 1f / (attacksPerSecond * OverdriveAttackSpeed);
 
                 // 공격 판정 범위도 레벨에 따라 커진다.
                 DealDamageToNearby(baseAttackRadius * Mathf.Sqrt(scale));

@@ -43,7 +43,8 @@ namespace SurvivalDrone.Drones
             explodeTimer -= Time.deltaTime;
             if (explodeTimer <= 0f)
             {
-                explodeTimer = baseInterval;
+                // 오버드라이브 중이면 폭발 간격도 배율만큼 짧아진다.
+                explodeTimer = baseInterval / OverdriveAttackSpeed;
                 Explode();
             }
         }
