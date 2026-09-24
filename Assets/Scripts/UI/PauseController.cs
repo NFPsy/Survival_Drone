@@ -96,7 +96,6 @@ namespace SurvivalDrone.UI
         }
 
         // "재시작" 버튼: 지금 플레이 중인 씬을 그대로 다시 불러온다.
-        // 선택했던 난이도는 PlayerPrefs에 저장되어 있어서, 씬을 새로 불러와도 그대로 유지된다.
         private void Restart()
         {
             AudioManager.Instance?.PlaySfx(clickSound);

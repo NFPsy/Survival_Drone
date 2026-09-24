@@ -129,10 +129,6 @@ namespace SurvivalDrone.Enemies
                 Debug.Log($"[Spawner] {phaseNames[phase]} 구간 진입 - 경과 시간 {elapsed:F0}초 (스폰 {rateRange.x}~{rateRange.y}/초, 최대 {maxAlive}마리)");
             }
 
-            // 스폰 속도/최대 마릿수는 난이도와 상관없이 항상 동일하다(적 체력/피해량만 난이도별로 달라짐).
-            // 쉬움/보통에서 적을 덜 나오게 하면 XP를 모을 기회도 줄어서 레벨업이 더 느려지는
-            // 역효과가 있었기 때문에, 여기서는 난이도 배율을 곱하지 않는다.
-
             // 이미 죽어서 파괴된(null이 된) 적들을 목록에서 정리.
             alive.RemoveAll(e => e == null);
 

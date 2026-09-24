@@ -26,9 +26,6 @@ namespace SurvivalDrone.UI
         // "설정" 버튼을 누르면 뜨는 팝업(볼륨/전체화면).
         private GameObject settingsPanel;
 
-        // "게임 시작" 버튼을 누르면 뜨는 난이도 선택 팝업(쉬움/보통/어려움).
-        private GameObject difficultyPanel;
-
         // 버튼을 누를 때마다 재생할 공용 클릭음.
         [SerializeField] private AudioClip clickSound;
 
@@ -46,25 +43,17 @@ namespace SurvivalDrone.UI
             controlsPanel = FindChild("ControlsPanel");
             aboutPanel = FindChild("AboutPanel");
             settingsPanel = FindChild("SettingsPanel");
-            difficultyPanel = FindChild("DifficultyPanel");
 
             // 타이틀 화면의 버튼 4개에 각각 클릭 시 실행할 함수를 연결한다.
-            // "게임 시작"은 바로 씬을 불러오지 않고, 먼저 난이도 선택 팝업을 띄운다.
-            WireButton(titlePanel, "BtnStart", () => ShowPanel(difficultyPanel));
+            WireButton(titlePanel, "BtnStart", StartGame);
             WireButton(titlePanel, "BtnControls", () => ShowPanel(controlsPanel));
             WireButton(titlePanel, "BtnAbout", () => ShowPanel(aboutPanel));
             WireButton(titlePanel, "BtnSettings", () => ShowPanel(settingsPanel));
 
-            // 팝업 4개 모두 "닫기/취소" 버튼을 누르면 똑같이 타이틀 화면으로 돌아간다.
+            // 팝업들 모두 "닫기" 버튼을 누르면 똑같이 타이틀 화면으로 돌아간다.
             WireButton(controlsPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
             WireButton(aboutPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
             WireButton(settingsPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
-            WireButton(difficultyPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
-
-            // 난이도 선택 팝업의 버튼 3개: 누르면 그 난이도로 정하고 바로 게임을 시작한다.
-            WireButton(difficultyPanel, "BtnEasy", () => StartGame(DifficultyLevel.Easy));
-            WireButton(difficultyPanel, "BtnNormal", () => StartGame(DifficultyLevel.Normal));
-            WireButton(difficultyPanel, "BtnHard", () => StartGame(DifficultyLevel.Hard));
 
             // 게임을 처음 켰을 때는 항상 타이틀 화면부터 보이도록 초기화.
             ShowTitle();
@@ -116,7 +105,6 @@ namespace SurvivalDrone.UI
             controlsPanel?.SetActive(panelToShow == controlsPanel);
             aboutPanel?.SetActive(panelToShow == aboutPanel);
             settingsPanel?.SetActive(panelToShow == settingsPanel);
-            difficultyPanel?.SetActive(panelToShow == difficultyPanel);
         }
 
         // 팝업을 닫고 처음 타이틀 화면(버튼 4개)으로 돌아간다.
@@ -126,15 +114,12 @@ namespace SurvivalDrone.UI
             controlsPanel?.SetActive(false);
             aboutPanel?.SetActive(false);
             settingsPanel?.SetActive(false);
-            difficultyPanel?.SetActive(false);
         }
 
-        // 난이도 선택 팝업에서 버튼을 눌렀을 때 실행. 선택한 난이도를 저장하고
-        // 현재 메뉴 씬을 내린 뒤 실제 플레이 씬을 불러온다.
-        private void StartGame(DifficultyLevel level)
+        // "게임 시작" 버튼을 눌렀을 때 실행. 현재 메뉴 씬을 내리고 실제 플레이 씬을 불러온다.
+        private void StartGame()
         {
             AudioManager.Instance?.PlaySfx(clickSound);
-            GameDifficulty.Current = level;
             SceneManager.LoadScene(gameplaySceneName);
         }
     }

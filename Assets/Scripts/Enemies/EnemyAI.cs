@@ -41,8 +41,8 @@ namespace SurvivalDrone.Enemies
         // 이 적이 죽었을 때 스포너(EnemySpawner)에게 알려주기 위한 콜백 함수.
         private Action<EnemyAI> onDeathCallback;
 
-        // 난이도 배율이 적용된 실제 접촉 피해량. definition.contactDamage에 매번 배율을
-        // 곱하지 않도록 Initialize 시점에 한 번만 계산해서 저장해둔다.
+        // 실제 접촉 피해량. definition.contactDamage를 매번 다시 읽지 않도록
+        // Initialize 시점에 한 번만 저장해둔다.
         private float scaledContactDamage;
 
         // ── 엘리트 로봇 관련 ──
@@ -81,10 +81,8 @@ namespace SurvivalDrone.Enemies
             xpOrbPrefab = orbPrefab;
             onDeathCallback = onDeath;
 
-            // 난이도(쉬움/보통/어려움)에 따라 체력/접촉 피해량을 낮춰준다. 어려움은 1배(원래 밸런스 그대로).
-            float difficultyScale = GameDifficulty.EnemyStatMultiplier;
-            float scaledMaxHealth = def.maxHealth * difficultyScale;
-            scaledContactDamage = def.contactDamage * difficultyScale;
+            float scaledMaxHealth = def.maxHealth;
+            scaledContactDamage = def.contactDamage;
 
             // 엘리트라면 체력만 크게 올려준다.
             // (접촉 피해량은 일부러 안 올렸다 — 엘리트를 "더 아픈 적"이 아니라
@@ -93,7 +91,7 @@ namespace SurvivalDrone.Enemies
             if (isElite) scaledMaxHealth *= eliteHealthMultiplier;
 
             health = GetComponent<Health>();
-            // 난이도가 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
+            // 엘리트 배율이 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
             health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
             // 체력이 0이 되면 HandleDeath 함수가 자동으로 호출되도록 연결.
             health.OnDeath += HandleDeath;
