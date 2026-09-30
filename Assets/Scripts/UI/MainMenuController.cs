@@ -10,9 +10,10 @@ namespace SurvivalDrone.UI
     // 인스펙터에서 필드를 따로 연결할 필요 없이 정해진 이름의 자식 구조만 맞추면 동작한다.
     public class MainMenuController : MonoBehaviour
     {
-        // 게임 시작 버튼을 눌렀을 때 로드할 실제 플레이 씬 이름.
+        // 게임 시작 버튼을 눌렀을 때 로드할 씬 이름. 이제 바로 플레이 씬이 아니라 로비(허브)로 간다.
         // 인스펙터에서 씬 이름을 바꿀 일이 생겨도 코드를 안 고치도록 필드로 빼두었다.
-        [SerializeField] private string gameplaySceneName = "InGame";
+        // (필드 이름을 gameplaySceneName에서 바꾼 이유: 씬에 저장돼 있던 옛 값 "InGame"이 새 기본값을 덮어쓰지 않게 하려고)
+        [SerializeField] private string lobbySceneName = "Lobby";
 
         // 처음 보이는 타이틀 화면(버튼 4개가 있는 패널).
         private GameObject titlePanel;
@@ -116,11 +117,11 @@ namespace SurvivalDrone.UI
             settingsPanel?.SetActive(false);
         }
 
-        // "게임 시작" 버튼을 눌렀을 때 실행. 현재 메뉴 씬을 내리고 실제 플레이 씬을 불러온다.
+        // "게임 시작" 버튼을 눌렀을 때 실행. 현재 메뉴 씬을 내리고 로비 씬을 불러온다.
         private void StartGame()
         {
             AudioManager.Instance?.PlaySfx(clickSound);
-            SceneManager.LoadScene(gameplaySceneName);
+            SceneManager.LoadScene(lobbySceneName);
         }
     }
 }

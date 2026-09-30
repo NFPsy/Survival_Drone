@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using SurvivalDrone.Core;
+using SurvivalDrone.Meta;
 using SurvivalDrone.Pickups;
 
 namespace SurvivalDrone.Enemies
@@ -81,8 +82,12 @@ namespace SurvivalDrone.Enemies
             xpOrbPrefab = orbPrefab;
             onDeathCallback = onDeath;
 
-            float scaledMaxHealth = def.maxHealth;
-            scaledContactDamage = def.contactDamage;
+            // 선택한 스테이지의 배율(x1.0 / x1.5 / x2.2)을 체력과 접촉 피해에만 곱한다.
+            // 스폰 속도와 마릿수는 건드리지 않는다 (적을 줄이면 XP 구슬도 줄어 레벨업이 느려지는 역효과가 있었음).
+            // StageProgress가 없으면(씬을 단독 실행한 경우) 1배로 원래 밸런스 그대로 동작한다.
+            float stageScale = StageProgress.Instance != null ? StageProgress.Instance.CurrentEnemyMultiplier : 1f;
+            float scaledMaxHealth = def.maxHealth * stageScale;
+            scaledContactDamage = def.contactDamage * stageScale;
 
             // 엘리트라면 체력만 크게 올려준다.
             // (접촉 피해량은 일부러 안 올렸다 — 엘리트를 "더 아픈 적"이 아니라

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.Core
 {
@@ -92,6 +93,7 @@ namespace SurvivalDrone.Core
             Time.timeScale = 0f;
             // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
+            StageProgress.Instance?.RecordMatchResult(false, ElapsedTime);
             AudioManager.Instance?.PlaySfx(defeatSound);
             OnStateChanged?.Invoke(State);
         }
@@ -105,6 +107,7 @@ namespace SurvivalDrone.Core
             // 승리 시점은 항상 매치 길이(600초) 근처라 F0로 찍으면 콘솔의 "중복 묶기"에 걸려
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
+            StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
             AudioManager.Instance?.PlaySfx(victorySound);
             GameEvents.RaiseMatchWon();
             OnStateChanged?.Invoke(State);

@@ -1,12 +1,13 @@
 using System;
+using System.Collections.Generic;
 
 namespace SurvivalDrone.Meta
 {
     // 저장 파일(JSON)에 들어가는 내용을 담는 "저장용 상자".
     // [Serializable]을 붙이면 유니티의 JsonUtility가 이 클래스를 글자(JSON)로 바꾸거나 다시 되돌릴 수 있다.
     //
-    // 지금은 재화(코어·크레딧)만 들어 있다.
-    // 보유 드론, 천장 카운트, 스테이지 해금 같은 것은 해당 시스템(DroneInventory, GachaSystem 연결, StageProgress)을
+    // 지금은 재화(코어·크레딧)와 스테이지 진행(해금, 최고 기록)이 들어 있다.
+    // 보유 드론, 천장 카운트 같은 것은 해당 시스템(DroneInventory, GachaSystem 연결)을
     // 만들 때 여기에 필드를 하나씩 추가한다. 예전 저장 파일에 없는 필드는 0/기본값으로 읽히므로 그대로 이어서 쓸 수 있다.
     [Serializable]
     public class SaveData
@@ -22,5 +23,11 @@ namespace SurvivalDrone.Meta
 
         // 크레딧(소프트 재화)의 현재 보유량.
         public int credit;
+
+        // 해금된 스테이지 개수. 1이면 스테이지 1만 열려 있다. (이전 스테이지를 클리어하면 하나씩 늘어난다)
+        public int unlockedStageCount = 1;
+
+        // 스테이지별 최고 생존 시간(초). 0번 칸이 스테이지 1이다. 아직 플레이 안 한 스테이지는 칸이 없거나 0이다.
+        public List<float> bestSurvivalSeconds = new List<float>();
     }
 }
