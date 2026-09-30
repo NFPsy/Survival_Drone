@@ -22,7 +22,7 @@ namespace SurvivalDrone.Drones
         // 각 드론 종류별 프리팹 목록. 인스펙터에서 3종(근접/저격/수집) 프리팹을 연결해둔다.
         [SerializeField] private List<DronePrefabEntry> dronePrefabs = new List<DronePrefabEntry>();
 
-        // 게임을 시작할 때 기본으로 장착하고 시작할 드론 (기획서 기준 근접 드론 1개).
+        // 격납고에서 장착한 드론이 없을 때(InGame 씬만 단독으로 실행한 경우 등) 대신 들고 시작할 드론 (근접 드론 1개).
         [SerializeField] private DroneType startingDrone = DroneType.Melee;
 
         // 드론들을 플레이어 주위에 배치할 때 사용하는 반지름.
@@ -46,8 +46,35 @@ namespace SurvivalDrone.Drones
 
         private void Start()
         {
-            // 게임 시작 시 기본 드론(근접 드론)을 자동으로 장착.
-            AddDrone(startingDrone);
+            // 격납고에서 장착한 드론들(최대 2개)로 시작한다. 각 드론은 뽑기 등급 × 강화 배율을 받는다.
+            // 장착한 드론이 없거나 메타 시스템이 없으면 예전처럼 기본 드론(근접) 1개로 시작한다.
+            if (!AddEquippedDrones()) AddDrone(startingDrone);
+        }
+
+        // DroneInventory에 장착된 드론들을 판 시작 드론으로 추가한다. 하나라도 추가했으면 true.
+        // 판 시작 시점의 배율을 그대로 쓴다 (판 도중에는 격납고에 못 가므로 값이 바뀔 일이 없다).
+        private bool AddEquippedDrones()
+        {
+            var inventory = SurvivalDrone.Meta.DroneInventory.Instance;
+            if (inventory == null) return false;
+
+            bool addedAny = false;
+            string summary = "";
+            for (int slot = 0; slot < inventory.EquipSlotCount; slot++)
+            {
+                var equipped = inventory.GetEquipped(slot);
+                if (!equipped.HasValue) continue;
+
+                float multiplier = inventory.GetStatMultiplier(equipped.Value);
+                if (AddDrone(equipped.Value, multiplier))
+                {
+                    addedAny = true;
+                    summary += $" {equipped.Value}(x{multiplier:0.00})";
+                }
+            }
+
+            if (addedAny) Debug.Log($"[Match] 장착 드론으로 시작:{summary} · 전투력 {inventory.TotalCombatPower}");
+            return addedAny;
         }
 
         // 이 종류의 드론을 이미 가지고 있는지 확인.
@@ -69,7 +96,8 @@ namespace SurvivalDrone.Drones
         }
 
         // 새 드론을 실제로 장착하는 함수. 레벨업 선택지에서 "신규 드론"을 고르면 호출된다.
-        public bool AddDrone(DroneType type)
+        // metaMultiplier: 뽑기 등급 × 강화 배율. 격납고에서 장착해 판을 시작하는 드론만 넘기고, 레벨업으로 얻는 드론은 기본값 1배다.
+        public bool AddDrone(DroneType type, float metaMultiplier = 1f)
         {
             // 이미 가지고 있으면 중복으로 추가하지 않는다.
             if (HasDrone(type)) return false;
@@ -85,6 +113,7 @@ namespace SurvivalDrone.Drones
 
             // 새로 만든 드론에게 "네 주인은 나(플레이어)야"라고 알려준다.
             drone.SetOwner(transform);
+            drone.SetMetaMultiplier(metaMultiplier);
             owned[type] = drone;
 
             // 드론이 하나 늘었으니 모든 드론의 배치 위치를 다시 계산한다.

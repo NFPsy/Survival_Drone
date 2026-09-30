@@ -21,6 +21,11 @@ namespace SurvivalDrone.Drones
         // 최대 레벨(5)에 도달해서 "변신"했을 때 추가로 곱해지는 보너스 배율.
         [SerializeField] private float transformedBonusMultiplier = 1.2f;
 
+        // 뽑기로 얻은 드론의 "등급 × 강화" 배율 (격납고에서 장착한 드론에만 들어온다). 기본은 1배(변화 없음).
+        // 판 안 레벨업 배율(GetScale)에 한 번 더 곱해진다. 값은 판을 시작할 때 DroneManager가 정해준다.
+        // 직렬화(인스펙터/씬 저장) 대상이 아니라서 씬·프리팹에 옛 값이 남아 코드 기본값을 덮어쓰는 일이 없다.
+        private float metaMultiplier = 1f;
+
         // 이 드론의 주인(플레이어)의 Transform. 이 위치를 기준으로 따라다닌다.
         [SerializeField] protected Transform owner;
 
@@ -38,6 +43,15 @@ namespace SurvivalDrone.Drones
 
         // 최대 레벨에 도달했는지 여부 ("변신"한 상태인지).
         public bool IsTransformed => level >= maxLevel;
+
+        // 외부에서 읽을 수 있는 등급 × 강화 배율.
+        public float MetaMultiplier => metaMultiplier;
+
+        // DroneManager가 판 시작 때 장착한 드론의 등급 × 강화 배율을 넣어줄 때 사용. 0 이하 값은 무시한다.
+        public void SetMetaMultiplier(float multiplier)
+        {
+            if (multiplier > 0f) metaMultiplier = multiplier;
+        }
 
         // DroneManager가 드론을 생성한 직후 주인을 지정해줄 때 사용.
         public void SetOwner(Transform newOwner)
@@ -67,14 +81,18 @@ namespace SurvivalDrone.Drones
         }
 
         // 현재 레벨을 기준으로 "몇 배 강해졌는지"를 계산하는 함수.
-        // 예: 레벨 3이면 1 + 0.28*(3-1) = 1.56배. 자식 클래스(MeleeDrone 등)가 데미지, 속도 등에 곱해서 사용.
+        // 예: 레벨 3이면 1 + 0.16*(3-1) = 1.32배. 자식 클래스(MeleeDrone 등)가 데미지, 속도 등에 곱해서 사용.
+        // 뽑기로 얻은 등급 × 강화 배율(metaMultiplier)도 여기서 함께 곱한다 —
+        // 모든 드론이 능력치를 이 함수의 값으로 계산하기 때문에, 한 곳만 고치면 판 안 레벨업과 같은 능력치 전부에 반영된다.
         protected float GetScale()
         {
             float scale = 1f + statGrowthPerLevel * (level - 1);
 
             // 최대 레벨(변신 상태)이면 추가 보너스 배율을 한 번 더 곱해준다.
             if (IsTransformed) scale *= transformedBonusMultiplier;
-            return scale;
+
+            // 뽑기 등급·강화 배율 (장착하지 않은 드론이나 메타 시스템이 없으면 1배).
+            return scale * metaMultiplier;
         }
 
         // 플레이어가 "오버드라이브"(액티브 스킬)를 켰을 때 공격 속도가 몇 배가 되는지 알려주는 값.
