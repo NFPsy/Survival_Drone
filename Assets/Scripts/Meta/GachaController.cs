@@ -33,6 +33,9 @@ namespace SurvivalDrone.Meta
         public int PityCount => _system != null ? _system.PityCount : 0;
         public int PityLimit => _gachaTable != null ? _gachaTable.PityCount : 0;
 
+        // 확률 공개 팝업처럼 "규칙 수치를 화면에 보여줘야 하는" 곳이 같은 데이터 파일을 읽을 수 있게 열어둔다.
+        public GachaTable Table => _gachaTable;
+
         public int SingleCost => _gachaTable != null ? _gachaTable.SingleCost : 0;
         public int TenPullCost => _gachaTable != null ? _gachaTable.TenPullCost : 0;
 
