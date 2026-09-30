@@ -49,6 +49,7 @@ namespace SurvivalDrone.EditorTools
             var gridSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/UI_GridPattern.png");
 
             scene = default;
+            if (!EditorSafety.CanRunEditModeTool("씬 생성 도구")) return null;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return null;
             scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 

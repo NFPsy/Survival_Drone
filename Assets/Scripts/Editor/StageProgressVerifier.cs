@@ -19,6 +19,8 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Verify Stage")]
         public static void Verify()
         {
+            if (!EditorSafety.CanRunEditModeTool("Verify Stage")) return;
+
             var stages = new StageData[StagePaths.Length];
             for (int i = 0; i < StagePaths.Length; i++)
             {

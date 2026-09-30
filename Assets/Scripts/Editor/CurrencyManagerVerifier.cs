@@ -14,6 +14,8 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Verify Currency")]
         public static void Verify()
         {
+            if (!EditorSafety.CanRunEditModeTool("Verify Currency")) return;
+
             var table = AssetDatabase.LoadAssetAtPath<CurrencyTable>(TablePath);
             if (table == null)
             {

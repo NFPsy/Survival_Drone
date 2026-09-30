@@ -14,6 +14,8 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Verify PlayLog")]
         public static void Verify()
         {
+            if (!EditorSafety.CanRunEditModeTool("Verify PlayLog")) return;
+
             var growth = AssetDatabase.LoadAssetAtPath<DroneGrowthTable>("Assets/Data/Meta/DroneGrowthTable.asset");
             var gacha = AssetDatabase.LoadAssetAtPath<GachaTable>("Assets/Data/Meta/GachaTable.asset");
             var currencyTable = AssetDatabase.LoadAssetAtPath<CurrencyTable>("Assets/Data/Meta/CurrencyTable.asset");
@@ -50,8 +52,8 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(empty.Contains("판 수 0") && empty.Contains("아직 뽑기를 한 번도 안 함"), "판·뽑기가 없을 때 요약이 '판 수 0 / 아직 뽑기를 한 번도 안 함'");
 
                 // ---- 판 결과 (첫 뽑기 전에 2판) ----
-                PlayLog.RecordMatch(data, 1, false, 125.4f, 6, 2, 100, 15, 80);
-                PlayLog.RecordMatch(data, 1, true, 600f, 14, 5, 100, 40, 200);
+                PlayLog.RecordMatch(data, 1, false, 125.4f, 140f, 6, 2, 100, 15, 80);
+                PlayLog.RecordMatch(data, 1, true, 600f, 689f, 14, 5, 100, 40, 200);
 
                 // ---- 뽑기 (10연 1번, 1회 1번, 막힘 1번) ----
                 PlayLog.RecordPull(data, true, 2700, new[] { 6, 3, 1, 0 }, 3, 2, 60, 0, 10, 70);
@@ -72,7 +74,12 @@ namespace SurvivalDrone.EditorTools
 
                 // ---- 요약 문장 ----
                 string summary = PlayLog.BuildSummaryText(data);
-                fails += Check(summary.Contains("판 수 2 (클리어 1, 클리어율 50.0%)") && summary.Contains("평균 생존 6:02"), "요약: 판 수 2, 클리어율 50.0%, 평균 생존 6:02");
+                fails += Check(summary.Contains("판 수 2 (클리어 1, 클리어율 50.0%)"), "요약: 판 수 2, 클리어율 50.0%");
+                fails += Check(summary.Contains("실패한 판 평균 생존: 2:05 (1판") && !summary.Contains("평균 생존 6:02"),
+                    "요약: 실패한 판 평균 생존 2:05 (클리어한 판 600초가 섞인 평균은 더 이상 보여주지 않음)");
+                fails += Check(summary.Contains("판당 평균 실제 소요 시간: 6:54 (2판") && summary.Contains("클리어한 판 평균 실제 소요 시간: 11:29 (1판"),
+                    "요약: 판당 평균 실제 소요 6:54 (140초·689초 평균), 클리어한 판 11:29");
+                fails += Check(!summary.Contains("※"), "모든 판에 시간 기록이 있으면 '※ 시간 통계는 일부만' 안내가 없음");
                 fails += Check(summary.Contains("판당 평균 보상: 코어 27.5 / 크레딧 140.0"), "요약: 판당 평균 보상 코어 27.5 / 크레딧 140.0");
                 fails += Check(summary.Contains("뽑기 총 11회 (1회 1번, 10연 1번) · SSR 1개") && summary.Contains("첫 뽑기 전에 플레이한 판 수: 2"), "요약: 뽑기 총 11회, SSR 1개, 첫 뽑기 전 2판");
 
@@ -80,7 +87,7 @@ namespace SurvivalDrone.EditorTools
                 string export = PlayLog.BuildExportText(data, "0.1.0", "WebGLPlayer");
                 fails += Check(export.Contains("=== 드론 지휘관 테스트 기록 ===") && export.Contains($"테스터: {firstId}") && export.Contains("내보낸 시각: 2026-10-09 13:05:07"),
                     "내보내기 머리말: 제목, 테스터 번호, 내보낸 시각");
-                fails += Check(export.Contains("| match | 스테이지=1 결과=클리어 생존=600.0초 도달레벨=14 드론수=5 내전투력=100 보상코어=40 보상크레딧=200") &&
+                fails += Check(export.Contains("| match | 스테이지=1 결과=클리어 생존=600.0초 실제소요=689.0초 도달레벨=14 드론수=5 내전투력=100 보상코어=40 보상크레딧=200") &&
                                export.Contains("| pull | 종류=10연 사용코어=2700 N=6 R=3 SR=1 SSR=0 신규=3 승급=2 조각=60 남은코어=0 천장=10/70") &&
                                export.Contains("| equip | 슬롯=2 드론=비움 내전투력=100") && export.Contains("| unlock | 스테이지=2"),
                     "내보내기 본문에 판·뽑기·장착·해금 기록이 모두 들어 있음");
@@ -88,11 +95,25 @@ namespace SurvivalDrone.EditorTools
                 // ---- 저장 형식 ----
                 string json = JsonUtility.ToJson(data);
                 var loaded = JsonUtility.FromJson<SaveData>(json);
-                fails += Check(loaded.playLog.Count == data.playLog.Count && loaded.testerId == data.testerId && loaded.logStats.matches == 2 && loaded.logStats.matchesBeforeFirstPull == 2,
+                fails += Check(loaded.playLog.Count == data.playLog.Count && loaded.testerId == data.testerId && loaded.logStats.matches == 2 && loaded.logStats.matchesBeforeFirstPull == 2
+                               && loaded.logStats.timedMatches == 2 && Mathf.Approximately(loaded.logStats.timedRealSeconds, 829f),
                     "JSON 저장/불러오기 왕복 후에도 기록·테스터 번호·누적 숫자가 그대로");
                 var oldSave = JsonUtility.FromJson<SaveData>("{\"saveVersion\":1,\"core\":100}");
                 fails += Check(oldSave.playLog != null && oldSave.logStats != null && oldSave.logStats.matchesBeforeFirstPull == -1 && oldSave.testerId == "",
                     "기록 항목이 없는 옛 저장 파일도 안전하게 읽힘 (첫 뽑기 전 판 수 = -1)");
+
+                // ---- 옛 기록(시간 기록이 없는 판)이 섞여 있을 때 ----
+                var legacy = new SaveData();
+                legacy.logStats.matches = 3;   // 예전에 기록된 3판(클리어 2): 실제 소요 시간 없음
+                legacy.logStats.clears = 2;
+                PlayLog.RecordMatch(legacy, 1, false, 100f, 130f, 5, 2, 100, 15, 80);
+                string legacySummary = PlayLog.BuildSummaryText(legacy);
+                fails += Check(legacySummary.Contains("판 수 4 (클리어 2, 클리어율 50.0%)") && legacySummary.Contains("실패한 판 평균 생존: 1:40 (1판") &&
+                               legacySummary.Contains("판당 평균 실제 소요 시간: 2:10 (1판") && legacySummary.Contains("※ 시간 통계는 실제 소요 시간 기록이 생긴 뒤의 1판만 집계 (전체 4판)"),
+                    "옛 판이 섞여도 시간 통계는 새로 기록된 판만 집계하고 그 사실을 안내 (1판 기준: 실패 생존 1:40, 실제 소요 2:10)");
+                var noFail = new SaveData();
+                PlayLog.RecordMatch(noFail, 1, true, 600f, 700f, 10, 5, 100, 40, 200);
+                fails += Check(PlayLog.BuildSummaryText(noFail).Contains("실패한 판 평균 생존: 실패한 판 없음"), "실패한 판이 없으면 '실패한 판 없음'으로 표시");
 
                 // ---- 최대 개수 ----
                 var big = new SaveData();

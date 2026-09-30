@@ -31,5 +31,19 @@ namespace SurvivalDrone.Meta
 
         // 드론 강화 성공 횟수
         public int upgrades;
+
+        // ---- 판 시간 통계 (이 기능이 생긴 뒤에 기록된 판만 집계한다) ----
+        // 예전에 기록된 판에는 "실제 소요 시간"이 없어서, 옛 판까지 섞으면 평균이 틀어지기 때문에 새 판만 따로 센다.
+        // 시간 기록이 있는 판 수, 그 판들의 실제 소요 시간 합계(일시정지·레벨업 선택 화면 포함, 초)
+        public int timedMatches;
+        public float timedRealSeconds;
+
+        // 시간 기록이 있는 판 중 클리어한 판 수와 그 실제 소요 시간 합계
+        public int timedClears;
+        public float timedClearRealSeconds;
+
+        // 시간 기록이 있는 판 중 실패한 판 수와 그 생존 시간(게임 시간) 합계
+        public int timedFails;
+        public float timedFailSurviveSeconds;
     }
 }

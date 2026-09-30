@@ -70,7 +70,8 @@ namespace SurvivalDrone.Meta
         }
 
         // 한 판이 끝났을 때.
-        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit)
+        //  surviveSeconds = 게임 시간(시간이 멈춘 동안은 세지 않음), realSeconds = 실제로 걸린 시간(일시정지·레벨업 선택 화면 포함)
+        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit)
         {
             var s = data.logStats;
             s.matches++;
@@ -79,8 +80,21 @@ namespace SurvivalDrone.Meta
             s.rewardCoreTotal += rewardCore;
             s.rewardCreditTotal += rewardCredit;
 
+            s.timedMatches++;
+            s.timedRealSeconds += realSeconds;
+            if (cleared)
+            {
+                s.timedClears++;
+                s.timedClearRealSeconds += realSeconds;
+            }
+            else
+            {
+                s.timedFails++;
+                s.timedFailSurviveSeconds += surviveSeconds;
+            }
+
             Add(data, "match",
-                $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
+                $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
                 $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}");
         }
 
@@ -129,9 +143,24 @@ namespace SurvivalDrone.Meta
             if (s.matches > 0)
             {
                 float clearRate = (float)s.clears / s.matches * 100f;
-                float avgSurvive = s.totalSurviveSeconds / s.matches;
-                builder.AppendLine($"- 판 수 {s.matches} (클리어 {s.clears}, 클리어율 {clearRate:F1}%) · 평균 생존 {FormatSeconds(avgSurvive)}");
+                builder.AppendLine($"- 판 수 {s.matches} (클리어 {s.clears}, 클리어율 {clearRate:F1}%)");
                 builder.AppendLine($"- 판당 평균 보상: 코어 {(float)s.rewardCoreTotal / s.matches:F1} / 크레딧 {(float)s.rewardCreditTotal / s.matches:F1}");
+
+                // 판 길이 판단에 쓰는 시간 통계. 클리어한 판(생존이 항상 판 길이)이 섞이면 평균 생존이 의미가 없어서 따로 보여준다.
+                if (s.timedFails > 0)
+                    builder.AppendLine($"- 실패한 판 평균 생존: {FormatSeconds(s.timedFailSurviveSeconds / s.timedFails)} ({s.timedFails}판, 게임 시간 기준)");
+                else if (s.timedMatches > 0)
+                    builder.AppendLine("- 실패한 판 평균 생존: 실패한 판 없음");
+
+                if (s.timedMatches > 0)
+                {
+                    builder.AppendLine($"- 판당 평균 실제 소요 시간: {FormatSeconds(s.timedRealSeconds / s.timedMatches)} ({s.timedMatches}판, 일시정지·레벨업 선택 화면 포함)");
+                    if (s.timedClears > 0)
+                        builder.AppendLine($"- 클리어한 판 평균 실제 소요 시간: {FormatSeconds(s.timedClearRealSeconds / s.timedClears)} ({s.timedClears}판)");
+                }
+
+                if (s.timedMatches < s.matches)
+                    builder.AppendLine($"  ※ 시간 통계는 실제 소요 시간 기록이 생긴 뒤의 {s.timedMatches}판만 집계 (전체 {s.matches}판)");
             }
             else
             {

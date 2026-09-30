@@ -29,6 +29,13 @@ namespace SurvivalDrone.Core
 
         public float MatchDuration => matchDuration;
 
+        // 판을 시작한 실제 시각(Time.realtimeSinceStartup 기준). 실제 소요 시간을 재기 위한 기준점이다.
+        private float _matchStartRealtime;
+
+        // 이번 판에 실제로 걸린 시간(초). 게임 시간(ElapsedTime)과 달리 일시정지·레벨업 선택 화면에서 멈춘 시간도 포함한다.
+        // 판이 끝나는 순간에 정해지고, 그 전에는 0이다. 테스트(CBT) 기록에 남겨서 "한 판이 실제로 몇 분인지" 판단하는 근거로 쓴다.
+        public float RealElapsedSeconds { get; private set; }
+
         // 이번 판이 끝났을 때 받은 보상. 결과 화면이 "획득 보상" 패널에 보여준다. (판이 끝나기 전에는 0)
         public int RewardCore { get; private set; }
         public int RewardCredit { get; private set; }
@@ -49,6 +56,7 @@ namespace SurvivalDrone.Core
         {
             // 씬에서 가장 먼저 생성될 때 자기 자신을 Instance에 등록.
             Instance = this;
+            _matchStartRealtime = Time.realtimeSinceStartup;
         }
 
         private void Start()
@@ -97,6 +105,7 @@ namespace SurvivalDrone.Core
             Time.timeScale = 0f;
             // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
+            RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;
             StageProgress.Instance?.RecordMatchResult(false, ElapsedTime);
             GrantReward(false);
             AudioManager.Instance?.PlaySfx(defeatSound);
@@ -112,6 +121,7 @@ namespace SurvivalDrone.Core
             // 승리 시점은 항상 매치 길이(600초) 근처라 F0로 찍으면 콘솔의 "중복 묶기"에 걸려
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
+            RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;
             StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
             GrantReward(true);
             AudioManager.Instance?.PlaySfx(victorySound);

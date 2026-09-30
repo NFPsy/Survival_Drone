@@ -118,7 +118,9 @@ namespace SurvivalDrone.UI
             int rewardCore = gameManager != null ? gameManager.RewardCore : 0;
             int rewardCredit = gameManager != null ? gameManager.RewardCredit : 0;
 
-            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, level, droneCount, combatPower, rewardCore, rewardCredit);
+            float realSeconds = gameManager != null ? gameManager.RealElapsedSeconds : 0f;
+
+            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit);
             SaveManager.Save();
         }
 

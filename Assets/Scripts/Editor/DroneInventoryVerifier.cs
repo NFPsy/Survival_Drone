@@ -14,6 +14,8 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Verify Inventory")]
         public static void Verify()
         {
+            if (!EditorSafety.CanRunEditModeTool("Verify Inventory")) return;
+
             var growth = AssetDatabase.LoadAssetAtPath<DroneGrowthTable>("Assets/Data/Meta/DroneGrowthTable.asset");
             var gacha = AssetDatabase.LoadAssetAtPath<GachaTable>("Assets/Data/Meta/GachaTable.asset");
             var currencyTable = AssetDatabase.LoadAssetAtPath<CurrencyTable>("Assets/Data/Meta/CurrencyTable.asset");

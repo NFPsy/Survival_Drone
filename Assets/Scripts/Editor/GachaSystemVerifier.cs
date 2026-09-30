@@ -31,6 +31,8 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Verify GachaSystem")]
         public static void Verify()
         {
+            if (!EditorSafety.CanRunEditModeTool("Verify GachaSystem")) return;
+
             var table = AssetDatabase.LoadAssetAtPath<GachaTable>(TablePath);
             if (table == null)
             {
