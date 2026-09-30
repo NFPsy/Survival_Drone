@@ -126,9 +126,10 @@ namespace SurvivalDrone.Meta
             return true;
         }
 
-        // 한 판이 끝났을 때 보상을 지급한다. 클리어면 클리어 보상, 실패면 (더 적은) 실패 보상.
+        // 한 판이 끝났을 때 보상을 지급한다. 클리어면 스테이지별 클리어 보상, 실패면 버틴 시간에 비례한 보상(1분 미만이면 없음).
+        // 계산 규칙은 CurrencyTable.CalculateMatchReward에 있다.
         // 지급한 양을 out으로 돌려줘서 결과 화면의 "획득 보상" 패널에 그대로 쓸 수 있다.
-        public void GrantMatchReward(bool cleared, out int rewardCore, out int rewardCredit)
+        public void GrantMatchReward(bool cleared, int stageNumber, float surviveSeconds, float matchSeconds, out int rewardCore, out int rewardCredit)
         {
             rewardCore = 0;
             rewardCredit = 0;
@@ -139,12 +140,12 @@ namespace SurvivalDrone.Meta
                 return;
             }
 
-            rewardCore = cleared ? _table.ClearCore : _table.FailCore;
-            rewardCredit = cleared ? _table.ClearCredit : _table.FailCredit;
+            _table.CalculateMatchReward(cleared, stageNumber, surviveSeconds, matchSeconds, out rewardCore, out rewardCredit);
 
-            Debug.Log($"[Currency] 판 보상 ({(cleared ? "클리어" : "실패")}): 코어 +{rewardCore}, 크레딧 +{rewardCredit}");
-            AddCore(rewardCore);
-            AddCredit(rewardCredit);
+            Debug.Log($"[Currency] 판 보상 ({(cleared ? "클리어" : "실패")}, 스테이지 {stageNumber}, 생존 {surviveSeconds:F1}초): 코어 +{rewardCore}, 크레딧 +{rewardCredit}");
+            // 금액이 0이면 AddCore/AddCredit이 경고를 남기므로, 받을 것이 있을 때만 지급한다.
+            if (rewardCore > 0) AddCore(rewardCore);
+            if (rewardCredit > 0) AddCredit(rewardCredit);
         }
 
         // 0 이하의 금액은 실수(버그)이므로 무시하고 경고를 남긴다.

@@ -129,7 +129,7 @@ namespace SurvivalDrone.Core
             OnStateChanged?.Invoke(State);
         }
 
-        // 판이 끝났을 때 재화 보상을 지급한다. 클리어면 클리어 보상, 실패면 (더 적은) 실패 보상.
+        // 판이 끝났을 때 재화 보상을 지급한다. 클리어면 스테이지별 클리어 보상, 실패면 버틴 시간에 비례한 보상(1분 미만이면 없음).
         // 결과 화면(OnStateChanged를 받는 쪽)이 지급된 양을 읽을 수 있도록, 이벤트를 보내기 전에 호출해야 한다.
         // CurrencyManager가 없으면(InGame 씬만 단독으로 실행한 경우) 보상 없이 넘어간다.
         private void GrantReward(bool cleared)
@@ -140,7 +140,9 @@ namespace SurvivalDrone.Core
                 return;
             }
 
-            CurrencyManager.Instance.GrantMatchReward(cleared, out int core, out int credit);
+            // 스테이지 번호는 1부터 시작한다. 로비를 거치지 않고 InGame만 실행한 경우(StageProgress 없음)에는 스테이지 1로 본다.
+            int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 1;
+            CurrencyManager.Instance.GrantMatchReward(cleared, stageNumber, ElapsedTime, matchDuration, out int core, out int credit);
             RewardCore = core;
             RewardCredit = credit;
         }
