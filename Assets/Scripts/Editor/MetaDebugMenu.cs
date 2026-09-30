@@ -1,3 +1,4 @@
+using System.IO;
 using SurvivalDrone.Meta;
 using UnityEditor;
 using UnityEngine;
@@ -50,6 +51,29 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Delete Save File")]
         private static void DeleteSave()
         {
+            // 지우면 되돌릴 수 없으므로, 지우기 전에 "지금 어떤 저장이 있는지"를 보여 주고 한 번 더 확인한다.
+            // (직접 플레이해서 생긴 저장을 실수로 지우는 사고를 막기 위한 장치)
+            if (!File.Exists(SaveManager.FilePath))
+            {
+                EditorUtility.DisplayDialog("저장 파일 삭제", "지울 저장 파일이 없습니다.", "확인");
+                return;
+            }
+
+            string summary = "(내용을 읽지 못했습니다)";
+            try
+            {
+                var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(SaveManager.FilePath));
+                summary = $"코어 {data.core}, 크레딧 {data.credit}, 보유 드론 {data.ownedDrones.Count}종, 해금 스테이지 {data.unlockedStageCount}개, 테스터 {data.testerId}, 기록 {data.playLog.Count}줄";
+            }
+            catch (System.Exception) { }
+
+            string modified = File.GetLastWriteTime(SaveManager.FilePath).ToString("yyyy-MM-dd HH:mm:ss");
+            bool confirmed = EditorUtility.DisplayDialog(
+                "저장 파일 삭제",
+                $"이 저장 파일을 삭제합니다. 되돌릴 수 없습니다.\n\n{summary}\n마지막 수정: {modified}\n\n직접 플레이해서 생긴 저장이 아닌지 확인하세요.",
+                "삭제", "취소");
+            if (!confirmed) return;
+
             SaveManager.DeleteSave();
         }
     }
