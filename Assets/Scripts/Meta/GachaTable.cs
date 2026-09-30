@@ -38,6 +38,15 @@ namespace SurvivalDrone.Meta
         [SerializeField] private int _duplicateShardsSR = 30;
         [SerializeField] private int _duplicateShardsSSR = 50;
 
+        // ---- 뽑기 결과 연출 시간 (초) ----
+        // 결과 카드 한 장이 공개되기까지 걸리는 시간. 높은 등급일수록 오래 기다리게 해서 두근거림을 만든다.
+        // 결과 화면(UI)이 이 값을 읽어서 쓴다. (N 0.4 / R 0.6 / SR 1.0 / SSR 2.0)
+        [Header("뽑기 결과 연출 시간 (초)")]
+        [SerializeField] private float _revealSecondsN = 0.4f;
+        [SerializeField] private float _revealSecondsR = 0.6f;
+        [SerializeField] private float _revealSecondsSR = 1.0f;
+        [SerializeField] private float _revealSecondsSSR = 2.0f;
+
         // ---- 천장 ----
         // 누적 뽑기 횟수가 이 값에 도달하는 순간 SSR을 확정으로 준다. SSR을 얻으면 누적 횟수는 0으로 돌아간다.
         [Header("천장")]
@@ -58,6 +67,19 @@ namespace SurvivalDrone.Meta
                 case GachaRarity.SR: return _rateSR;
                 case GachaRarity.SSR: return _rateSSR;
                 default: return 0f;
+            }
+        }
+
+        // 이 등급의 카드를 공개하는 연출에 걸리는 시간(초).
+        public float GetRevealSeconds(GachaRarity rarity)
+        {
+            switch (rarity)
+            {
+                case GachaRarity.N: return _revealSecondsN;
+                case GachaRarity.R: return _revealSecondsR;
+                case GachaRarity.SR: return _revealSecondsSR;
+                case GachaRarity.SSR: return _revealSecondsSSR;
+                default: return 0.4f;
             }
         }
 

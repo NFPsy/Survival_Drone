@@ -22,4 +22,8 @@ MonoBehaviour:
   _duplicateShardsR: 20
   _duplicateShardsSR: 30
   _duplicateShardsSSR: 50
+  _revealSecondsN: 0.4
+  _revealSecondsR: 0.6
+  _revealSecondsSR: 1
+  _revealSecondsSSR: 2
   _pityCount: 70

@@ -12,7 +12,7 @@ namespace SurvivalDrone.UI
     // MainMenuController처럼 정해진 이름의 자식 오브젝트를 찾아서 연결한다. 못 찾아도 경고만 남기고 나머지는 계속 동작한다.
     //
     // 화면에 적히는 확률·가격·천장 횟수는 전부 GachaTable에서 읽는다 ("표기 = 실제" 원칙).
-    // 아직 없는 것: 뽑기 결과 연출 화면 (지금은 화면 아래에 결과를 한 줄로 요약해서 보여준다).
+    // 뽑기가 성공하면 결과 연출 화면(GachaResultUI)을 띄운다.
     public class GachaUI : MonoBehaviour
     {
         // 뒤로 버튼을 누르면 돌아갈 씬.
@@ -29,7 +29,7 @@ namespace SurvivalDrone.UI
         private Text _ratesText;
         private Text _pityText;
         private RectTransform _pityBarFill;
-        private Text _summaryText;
+        private GachaResultUI _resultUI;
 
         private Button _singleButton;
         private Text _singlePriceText;
@@ -46,7 +46,6 @@ namespace SurvivalDrone.UI
             _coreText = FindText("TopBar/CoreText");
             _ratesText = FindText("RatesPanel/RatesText");
             _pityText = FindText("PityText");
-            _summaryText = FindText("SummaryText");
 
             var fill = transform.Find("PityBar/Fill");
             _pityBarFill = fill != null ? fill.GetComponent<RectTransform>() : null;
@@ -70,6 +69,14 @@ namespace SurvivalDrone.UI
             }
             else Debug.LogWarning("[Gacha] 뽑기 화면에서 'ProbabilityPopup'을 찾지 못했습니다.");
 
+            var resultTransform = transform.Find("ResultPanel");
+            if (resultTransform != null)
+            {
+                _resultUI = resultTransform.GetComponent<GachaResultUI>();
+                resultTransform.gameObject.SetActive(false);
+            }
+            else Debug.LogWarning("[Gacha] 뽑기 화면에서 'ResultPanel'을 찾지 못했습니다.");
+
             var insufficient = transform.Find("InsufficientPopup");
             if (insufficient != null)
             {
@@ -81,8 +88,6 @@ namespace SurvivalDrone.UI
                 _insufficientPopup.SetActive(false);
             }
             else Debug.LogWarning("[Gacha] 뽑기 화면에서 'InsufficientPopup'을 찾지 못했습니다.");
-
-            if (_summaryText != null) _summaryText.text = "";
         }
 
         private void OnEnable()
@@ -154,37 +159,14 @@ namespace SurvivalDrone.UI
                 return;
             }
 
-            ShowSummary(report);
             Refresh();
+            if (_resultUI != null) _resultUI.Show(report, isTen);
         }
 
         private void ShowInsufficient()
         {
             if (_insufficientMessage != null) _insufficientMessage.text = "코어가 부족합니다";
             if (_insufficientPopup != null) _insufficientPopup.SetActive(true);
-        }
-
-        // 결과 연출 화면이 생기기 전까지, 이번 뽑기 결과를 화면 아래에 한 줄로 요약한다.
-        private void ShowSummary(GachaPullReport report)
-        {
-            if (_summaryText == null) return;
-
-            int[] counts = new int[4];
-            int newCount = 0, promoted = 0, shards = 0;
-            for (int i = 0; i < report.pulls.Length; i++)
-            {
-                counts[(int)report.pulls[i].rarity]++;
-                if (report.outcomes[i].outcome == PullOutcome.New) newCount++;
-                else if (report.outcomes[i].outcome == PullOutcome.Promoted) promoted++;
-                shards += report.outcomes[i].shardsGained;
-            }
-
-            _summaryText.text =
-                $"최근 뽑기   <color={RarityColors.ToHex(GachaRarity.SSR)}>SSR {counts[3]}</color>  " +
-                $"<color={RarityColors.ToHex(GachaRarity.SR)}>SR {counts[2]}</color>  " +
-                $"<color={RarityColors.ToHex(GachaRarity.R)}>R {counts[1]}</color>  " +
-                $"<color={RarityColors.ToHex(GachaRarity.N)}>N {counts[0]}</color>" +
-                $"      신규 {newCount}   승급 {promoted}   조각 +{shards}";
         }
 
         // ---- 도우미 ----

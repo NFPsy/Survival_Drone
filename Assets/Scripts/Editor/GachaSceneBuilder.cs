@@ -13,8 +13,8 @@ namespace SurvivalDrone.EditorTools
     //
     // 화면 배치 (1920x1080 기준, 가운데가 기준점):
     //   위: 뒤로 버튼 / 코어 잔액
-    //   배너 → 등급 확률 요약(+ 확률 보기) → 천장 게이지 → 최근 뽑기 요약 → 아래: 1회 / 10연 버튼
-    //   팝업 2개(확률 공개, 코어 부족)는 평소엔 꺼져 있다.
+    //   배너 → 등급 확률 요약(+ 확률 보기) → 천장 게이지 → 아래: 1회 / 10연 버튼
+    //   팝업 2개(확률 공개, 코어 부족)와 뽑기 결과 화면은 평소엔 꺼져 있다.
     public static class GachaSceneBuilder
     {
         private const string ScenePath = "Assets/Scenes/Gacha.unity";
@@ -65,11 +65,6 @@ namespace SurvivalDrone.EditorTools
             pityFill.rectTransform.offsetMin = Vector2.zero;
             pityFill.rectTransform.offsetMax = Vector2.zero;
 
-            // ---- 최근 뽑기 요약 (결과 연출 화면이 생기기 전까지 쓰는 한 줄) ----
-            var summary = NewText("SummaryText", root, "", 30, LightText, SansFont, TextAnchor.MiddleCenter);
-            summary.supportRichText = true;
-            Place(summary.rectTransform, Center, Center, Center, new Vector2(0f, -170f), new Vector2(1400f, 46f));
-
             // ---- 뽑기 버튼 ----
             // 1회 뽑기는 보조 버튼(어두운 색), 10연은 할인이 있어 권하는 주요 버튼(시안색)으로 구분한다.
             var single = NewButton("BtnPullSingle", root, "", 40, ButtonColor, LightText);
@@ -107,10 +102,64 @@ namespace SurvivalDrone.EditorTools
             Place(lackOk.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 36f), new Vector2(240f, 68f));
             lackRoot.gameObject.SetActive(false);
 
+            // ---- 뽑기 결과 화면 (뽑기가 성공하면 화면 전체를 덮으며 나타난다) ----
+            var resultPanel = NewImage("ResultPanel", root, new Color(0.03f, 0.04f, 0.06f, 1f)); // 완전 불투명: 뒤의 뽑기 화면이 비쳐 보이지 않게
+            Stretch(resultPanel.rectTransform);
+            var resultTitle = NewText("TitleText", resultPanel.transform, "뽑기 결과", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
+            Place(resultTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -30f), new Vector2(800f, 70f));
+
+            var resultContainer = NewRect("CardContainer", resultPanel.transform);
+            Place(resultContainer, Center, Center, Center, new Vector2(0f, 5f), new Vector2(1500f, 600f));
+            var grid = resultContainer.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(270f, 280f);
+            grid.spacing = new Vector2(24f, 24f);
+            grid.childAlignment = TextAnchor.MiddleCenter;
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 5;
+
+            // 카드 견본: 꺼 둔 채로 두고, 뽑기 결과가 나올 때마다 장 수만큼 복제한다.
+            var cardTemplate = NewImage("CardTemplate", resultPanel.transform, ButtonColor);
+            Place(cardTemplate.rectTransform, Center, Center, Center, Vector2.zero, new Vector2(270f, 280f));
+            AddOutline(cardTemplate.gameObject, OutlineColor);
+            var cardBack = NewText("Back", cardTemplate.transform, "?", 110, MutedText, MonoFont, TextAnchor.MiddleCenter);
+            Stretch(cardBack.rectTransform);
+            var cardFace = NewRect("Face", cardTemplate.transform);
+            Stretch(cardFace);
+            var rarityText = NewText("RarityText", cardFace, "SSR", 76, RarityColors.Gold, MonoFont, TextAnchor.MiddleCenter);
+            Place(rarityText.rectTransform, Center, Center, Center, new Vector2(0f, 60f), new Vector2(250f, 90f));
+            var droneNameText = NewText("DroneNameText", cardFace, "근접 드론", 38, LightText, SansFont, TextAnchor.MiddleCenter);
+            Place(droneNameText.rectTransform, Center, Center, Center, new Vector2(0f, -20f), new Vector2(250f, 50f));
+            var tagText = NewText("TagText", cardFace, "NEW", 28, Cyan, SansFont, TextAnchor.MiddleCenter);
+            Place(tagText.rectTransform, Center, Center, Center, new Vector2(0f, -85f), new Vector2(250f, 44f));
+            cardTemplate.gameObject.SetActive(false);
+
+            var skip = NewButton("BtnSkip", resultPanel.transform, "스킵  >>", 30, ButtonColor, LightText);
+            Place(skip.rectTransform, TopRight, TopRight, TopRight, new Vector2(-40f, -30f), new Vector2(220f, 64f));
+
+            var confirm = NewButton("BtnConfirm", resultPanel.transform, "확인", 38, ButtonColor, LightText);
+            Place(confirm.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(-230f, 40f), new Vector2(380f, 96f));
+            var again = NewButton("BtnAgain", resultPanel.transform, "", 40, Cyan, DarkText);
+            Place(again.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(230f, 40f), new Vector2(380f, 96f));
+            var againDefaultText = again.transform.Find("Text");
+            if (againDefaultText != null) Object.DestroyImmediate(againDefaultText.gameObject);
+            var againLabel = NewText("LabelText", again.transform, "10연 다시 뽑기", 34, DarkText, SansFont, TextAnchor.MiddleCenter);
+            Place(againLabel.rectTransform, Center, Center, Center, new Vector2(0f, 16f), new Vector2(360f, 44f));
+            var againPrice = NewText("PriceText", again.transform, "0 코어", 28, DarkText, SansFont, TextAnchor.MiddleCenter);
+            Place(againPrice.rectTransform, Center, Center, Center, new Vector2(0f, -22f), new Vector2(360f, 40f));
+
+            // SSR이 공개되는 순간 화면 전체를 금색으로 번쩍이게 하는 얇은 막 (평소엔 완전 투명, 클릭도 막지 않는다)
+            var flash = NewImage("Flash", resultPanel.transform, new Color(RarityColors.Gold.r, RarityColors.Gold.g, RarityColors.Gold.b, 0f));
+            Stretch(flash.rectTransform);
+            flash.raycastTarget = false;
+
+            var resultUI = resultPanel.gameObject.AddComponent<GachaResultUI>();
+            resultPanel.gameObject.SetActive(false);
+
             // ---- 뽑기 화면 컨트롤러 ----
             var gachaUI = root.gameObject.AddComponent<GachaUI>();
             SetClickSound(gachaUI);
             SetClickSound(probabilityPopup);
+            SetClickSound(resultUI);
 
             SaveAndRegister(scene, ScenePath);
             Debug.Log($"[Gacha] 뽑기 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");
