@@ -115,6 +115,13 @@ namespace SurvivalDrone.EditorTools
                 // 근접 R Lv5: 50 × 1.10 × (1 + 0.06×4) = 68.2, 저격 SR Lv1: 50 × 1.25 = 62.5 → 합 130.7 → 131
                 fails += Check(inventory.TotalCombatPower == 131, $"전투력 = 근접 R Lv5(68.2) + 저격 SR Lv1(62.5) = 131 (실제 {inventory.TotalCombatPower})");
 
+                // 성능 배율은 등급 배율 × 강화 배율로 나뉘어 읽힌다 (격납고가 "등급 ×1.10 · 강화 ×1.24"처럼 나눠 보여줄 때 쓴다)
+                fails += Check(Mathf.Approximately(inventory.GetGradeMultiplier(DroneType.Melee), 1.1f) &&
+                               Mathf.Approximately(inventory.GetLevelMultiplier(DroneType.Melee), 1.24f) &&
+                               Mathf.Approximately(inventory.GetStatMultiplier(DroneType.Melee), 1.1f * 1.24f) &&
+                               inventory.GetStatMultiplier(DroneType.Collector) == 0f,
+                    $"근접 R Lv5 배율: 등급 ×{inventory.GetGradeMultiplier(DroneType.Melee):0.00} × 강화 ×{inventory.GetLevelMultiplier(DroneType.Melee):0.00} = ×{inventory.GetStatMultiplier(DroneType.Melee):0.000}, 미보유는 0");
+
                 // SSR Lv5 두 개면 약 180
                 var ssrData = new SaveData();
                 var ssrCurrency = currencyObject.AddComponent<CurrencyManager>();

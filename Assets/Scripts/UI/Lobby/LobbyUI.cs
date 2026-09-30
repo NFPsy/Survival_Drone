@@ -12,13 +12,14 @@ namespace SurvivalDrone.UI
     // MainMenuController와 같은 방식으로, 정해진 이름의 자식 오브젝트를 찾아서 연결한다.
     // 못 찾아도 경고 로그만 남기고 나머지는 계속 동작한다.
     //
-    // 아직 없는 것: 3D 프리뷰, 격납고/상점 버튼 (해당 화면을 만들 때 추가).
+    // 아직 없는 것: 3D 프리뷰, 상점 버튼 (해당 화면을 만들 때 추가).
     public class LobbyUI : MonoBehaviour
     {
         // 출격 버튼을 누르면 불러올 플레이 씬, 뒤로 버튼을 누르면 돌아갈 씬.
         [SerializeField] private string gameplaySceneName = "InGame";
         [SerializeField] private string mainMenuSceneName = "MainMenu";
         [SerializeField] private string gachaSceneName = "Gacha";
+        [SerializeField] private string hangarSceneName = "Hangar";
 
         [SerializeField] private AudioClip clickSound;
 
@@ -32,6 +33,7 @@ namespace SurvivalDrone.UI
         private Button _launchButton;
         private Button _stageListButton;
         private Button _gachaButton;
+        private Button _hangarButton;
         private StageSelectUI _stageSelect;
 
         // 로비 카드에 지금 보여주는 스테이지 위치. 화살표로 넘겨 보다가 잠긴 스테이지를 볼 수도 있어서
@@ -57,6 +59,7 @@ namespace SurvivalDrone.UI
             WireButton(transform, "BtnBack", () => { PlayClick(); SceneManager.LoadScene(mainMenuSceneName); });
             _stageListButton = WireButton(transform, "BtnStageList", () => { PlayClick(); ShowStageSelect(true); });
             _gachaButton = WireButton(transform, "BtnGacha", () => { PlayClick(); SceneManager.LoadScene(gachaSceneName); });
+            _hangarButton = WireButton(transform, "BtnHangar", () => { PlayClick(); SceneManager.LoadScene(hangarSceneName); });
 
             var selectTransform = transform.Find("StageSelectPanel");
             if (selectTransform != null)
@@ -160,6 +163,7 @@ namespace SurvivalDrone.UI
             if (_launchButton != null) _launchButton.gameObject.SetActive(!show);
             if (_stageListButton != null) _stageListButton.gameObject.SetActive(!show);
             if (_gachaButton != null) _gachaButton.gameObject.SetActive(!show);
+            if (_hangarButton != null) _hangarButton.gameObject.SetActive(!show);
 
             // 패널을 닫고 돌아왔을 때 카드가 방금 고른 스테이지를 보여주도록 다시 그린다.
             if (!show)

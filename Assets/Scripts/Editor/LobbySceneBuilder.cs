@@ -52,9 +52,11 @@ namespace SurvivalDrone.EditorTools
             var back = NewButton("BtnBack", root, "메인 메뉴", 30, ButtonColor, LightText);
             Place(back.rectTransform, BottomLeft, BottomLeft, BottomLeft, new Vector2(50f, 50f), new Vector2(260f, 70f));
 
-            // 오른쪽 아래: 다른 화면으로 가는 버튼들 (격납고·상점은 해당 화면을 만들 때 추가)
+            // 오른쪽 아래: 다른 화면으로 가는 버튼들 (상점은 해당 화면을 만들 때 추가)
             var gacha = NewButton("BtnGacha", root, "뽑기", 30, ButtonColor, LightText);
             Place(gacha.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-50f, 50f), new Vector2(260f, 70f));
+            var hangar = NewButton("BtnHangar", root, "격납고", 30, ButtonColor, LightText);
+            Place(hangar.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-330f, 50f), new Vector2(260f, 70f));
 
             // ---- 스테이지 선택 패널 (평소에는 꺼져 있고, "스테이지 목록"을 누르면 뜬다) ----
             var panel = NewImage("StageSelectPanel", root, PanelColor);

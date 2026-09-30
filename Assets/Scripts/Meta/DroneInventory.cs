@@ -227,13 +227,22 @@ namespace SurvivalDrone.Meta
 
         // ---------------- 전투력 ----------------
 
-        // 드론 하나가 판 시작 때 기본 스탯에 곱해지는 배율 = 등급 배율 × (1 + 레벨당 보너스 × (레벨 - 1)). 미보유면 0.
-        public float GetStatMultiplier(DroneType type)
+        // 등급 배율 (N ×1.00 ~ SSR ×1.45). 미보유면 0. 격납고가 "성능 = 등급 × 강화"로 나눠 보여줄 때 쓴다.
+        public float GetGradeMultiplier(DroneType type)
         {
             var owned = FindOwned(type);
-            if (!_isReady || owned == null) return 0f;
-            return _growthTable.GetGradeMultiplier(owned.rarity) * (1f + _growthTable.LevelBonusPerLevel * (owned.level - 1));
+            return _isReady && owned != null ? _growthTable.GetGradeMultiplier(owned.rarity) : 0f;
         }
+
+        // 강화 배율 = 1 + 레벨당 보너스 × (레벨 - 1) (Lv1 ×1.00 ~ Lv5 ×1.24). 미보유면 0.
+        public float GetLevelMultiplier(DroneType type)
+        {
+            var owned = FindOwned(type);
+            return _isReady && owned != null ? 1f + _growthTable.LevelBonusPerLevel * (owned.level - 1) : 0f;
+        }
+
+        // 드론 하나가 판 시작 때 기본 스탯에 곱해지는 배율 = 등급 배율 × 강화 배율. 미보유면 0.
+        public float GetStatMultiplier(DroneType type) => GetGradeMultiplier(type) * GetLevelMultiplier(type);
 
         // 드론 하나의 전투력 = 기본 전투력 × 스탯 배율 (소수점 포함).
         public float GetPower(DroneType type) => _isReady ? _growthTable.BasePower * GetStatMultiplier(type) : 0f;
