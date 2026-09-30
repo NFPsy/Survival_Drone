@@ -181,6 +181,7 @@ namespace SurvivalDrone.Meta
             owned.shards -= shardCost;
             owned.level++;
             Debug.Log($"[Inventory] 강화 성공: {type} Lv{owned.level - 1} → Lv{owned.level} (조각 -{shardCost}, 크레딧 -{creditCost}, 전투력 {TotalCombatPower})");
+            PlayLog.RecordUpgrade(_data, type.ToString(), owned.level, TotalCombatPower);
             Changed();
             return UpgradeResult.Success;
         }
@@ -209,6 +210,7 @@ namespace SurvivalDrone.Meta
             _data.equippedDrones[slot] = (int)type;
 
             Debug.Log($"[Inventory] 장착: 슬롯 {slot + 1} = {type} (전투력 {TotalCombatPower})");
+            PlayLog.RecordEquip(_data, slot + 1, type.ToString(), TotalCombatPower);
             Changed();
             return true;
         }
@@ -221,6 +223,7 @@ namespace SurvivalDrone.Meta
 
             _data.equippedDrones[slot] = -1;
             Debug.Log($"[Inventory] 장착 해제: 슬롯 {slot + 1} (전투력 {TotalCombatPower})");
+            PlayLog.RecordEquip(_data, slot + 1, null, TotalCombatPower);
             Changed();
             return true;
         }

@@ -52,6 +52,10 @@ namespace SurvivalDrone.EditorTools
             var back = NewButton("BtnBack", root, "메인 메뉴", 30, ButtonColor, LightText);
             Place(back.rectTransform, BottomLeft, BottomLeft, BottomLeft, new Vector2(50f, 50f), new Vector2(260f, 70f));
 
+            // 테스트(CBT) 기간용 버튼: 플레이 기록을 복사하거나 파일로 저장해서 보내는 창을 연다. (정식 출시 전에 숨긴다)
+            var logButton = NewButton("BtnLog", root, "테스트 로그", 30, ButtonColor, MutedText);
+            Place(logButton.rectTransform, BottomLeft, BottomLeft, BottomLeft, new Vector2(330f, 50f), new Vector2(260f, 70f));
+
             // 오른쪽 아래: 다른 화면으로 가는 버튼들 (상점은 해당 화면을 만들 때 추가)
             var gacha = NewButton("BtnGacha", root, "뽑기", 30, ButtonColor, LightText);
             Place(gacha.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-50f, 50f), new Vector2(260f, 70f));
@@ -91,10 +95,32 @@ namespace SurvivalDrone.EditorTools
             Place(panelLaunch.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(190f, 40f), new Vector2(300f, 76f));
             panel.gameObject.SetActive(false);
 
+            // ---- 테스트 로그 창 (평소엔 꺼져 있고, "테스트 로그"를 누르면 뜬다) ----
+            var logBox = NewPopup("TestLogPopup", root, new Vector2(1100f, 760f), out var logRoot);
+            var logTitle = NewText("TitleText", logBox, "테스트 로그", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
+            Place(logTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(900f, 64f));
+            var logHint = NewText("HintText", logBox, "테스트에 참여해 주셔서 고맙습니다! 아래 버튼으로 기록을 복사하거나 파일로 저장해서 보내 주세요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
+            Place(logHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(1000f, 40f));
+            var logPreview = NewText("PreviewText", logBox, "", 24, LightText, MonoFont, TextAnchor.UpperLeft);
+            logPreview.horizontalOverflow = HorizontalWrapMode.Wrap;
+            logPreview.verticalOverflow = VerticalWrapMode.Truncate;
+            Place(logPreview.rectTransform, Center, Center, Center, new Vector2(0f, 30f), new Vector2(1000f, 420f));
+            var logStatus = NewText("StatusText", logBox, "", 26, Cyan, SansFont, TextAnchor.MiddleCenter);
+            Place(logStatus.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 150f), new Vector2(1040f, 40f));
+            var logCopy = NewButton("BtnCopy", logBox, "복사", 32, Cyan, DarkText);
+            Place(logCopy.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(-340f, 45f), new Vector2(300f, 76f));
+            var logSave = NewButton("BtnSave", logBox, "파일로 저장", 32, ButtonColor, LightText);
+            Place(logSave.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 45f), new Vector2(300f, 76f));
+            var logClose = NewButton("BtnClose", logBox, "닫기", 32, ButtonColor, LightText);
+            Place(logClose.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(340f, 45f), new Vector2(300f, 76f));
+            var testLogPopup = logRoot.gameObject.AddComponent<TestLogPopup>();
+            logRoot.gameObject.SetActive(false);
+
             // ---- 로비 컨트롤러 ----
             var lobbyUI = root.gameObject.AddComponent<LobbyUI>();
             SetClickSound(lobbyUI);
             SetClickSound(panel.GetComponent<StageSelectUI>());
+            SetClickSound(testLogPopup);
 
             SaveAndRegister(scene, ScenePath);
             Debug.Log($"[Stage] 로비 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");

@@ -103,6 +103,8 @@ namespace SurvivalDrone.Meta
             if (!_currency.TrySpendCore(cost))
             {
                 Debug.Log($"[Gacha] 코어 부족으로 {count}회 뽑기를 하지 못했습니다 (필요 {cost}, 보유 {_currency.Core})");
+                PlayLog.RecordPullBlocked(_data, count == GachaSystem.TenPullCount, cost, _currency.Core);
+                if (_saveOnChange) SaveManager.Save();
                 return GachaPullReport.Failed(GachaPullFailure.InsufficientCore, PityCount);
             }
 
@@ -140,6 +142,11 @@ namespace SurvivalDrone.Meta
             Debug.Log($"[Gacha] {count}회 뽑기 완료: N {rarityCounts[0]} / R {rarityCounts[1]} / SR {rarityCounts[2]} / SSR {rarityCounts[3]}" +
                       $" · 신규 {newCount} · 승급 {promotedCount} · 조각 +{shards}" +
                       $" · 코어 -{cost} → 잔액 {_currency.Core} · 천장 {_system.PityCount}/{PityLimit}");
+
+            // 테스트(CBT) 기록에도 남긴다. 이 함수는 저장 데이터를 쓴 뒤에 불리므로, 기록은 아래에서 한 번 더 저장한다.
+            PlayLog.RecordPull(_data, count == GachaSystem.TenPullCount, cost, rarityCounts, newCount, promotedCount, shards,
+                               _currency.Core, _system.PityCount, PityLimit);
+            if (_saveOnChange) SaveManager.Save();
         }
     }
 }

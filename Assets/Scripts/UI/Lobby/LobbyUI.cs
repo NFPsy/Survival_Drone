@@ -34,6 +34,8 @@ namespace SurvivalDrone.UI
         private Button _stageListButton;
         private Button _gachaButton;
         private Button _hangarButton;
+        private Button _logButton;
+        private TestLogPopup _testLogPopup;
         private StageSelectUI _stageSelect;
 
         // 로비 카드에 지금 보여주는 스테이지 위치. 화살표로 넘겨 보다가 잠긴 스테이지를 볼 수도 있어서
@@ -60,6 +62,15 @@ namespace SurvivalDrone.UI
             _stageListButton = WireButton(transform, "BtnStageList", () => { PlayClick(); ShowStageSelect(true); });
             _gachaButton = WireButton(transform, "BtnGacha", () => { PlayClick(); SceneManager.LoadScene(gachaSceneName); });
             _hangarButton = WireButton(transform, "BtnHangar", () => { PlayClick(); SceneManager.LoadScene(hangarSceneName); });
+            _logButton = WireButton(transform, "BtnLog", () => { PlayClick(); if (_testLogPopup != null) _testLogPopup.Open(); });
+
+            var logTransform = transform.Find("TestLogPopup");
+            if (logTransform != null)
+            {
+                _testLogPopup = logTransform.GetComponent<TestLogPopup>();
+                logTransform.gameObject.SetActive(false);
+            }
+            else Debug.LogWarning("[Save] 로비에서 'TestLogPopup'을 찾지 못했습니다.");
 
             var selectTransform = transform.Find("StageSelectPanel");
             if (selectTransform != null)
@@ -164,6 +175,7 @@ namespace SurvivalDrone.UI
             if (_stageListButton != null) _stageListButton.gameObject.SetActive(!show);
             if (_gachaButton != null) _gachaButton.gameObject.SetActive(!show);
             if (_hangarButton != null) _hangarButton.gameObject.SetActive(!show);
+            if (_logButton != null) _logButton.gameObject.SetActive(!show);
 
             // 패널을 닫고 돌아왔을 때 카드가 방금 고른 스테이지를 보여주도록 다시 그린다.
             if (!show)

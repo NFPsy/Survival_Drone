@@ -112,6 +112,7 @@ namespace SurvivalDrone.Meta
             {
                 _data.unlockedStageCount = index + 2;
                 unlockedNext = true;
+                PlayLog.RecordUnlock(_data, index + 2);
             }
 
             Debug.Log($"[Stage] 스테이지 {index + 1} {(cleared ? "클리어" : "실패")}: 생존 {survivalSeconds:F1}초" +

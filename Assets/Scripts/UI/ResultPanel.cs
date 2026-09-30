@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using SurvivalDrone.Core;
 using SurvivalDrone.Player;
 using SurvivalDrone.Drones;
+using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
 {
@@ -100,6 +101,25 @@ namespace SurvivalDrone.UI
             if (statsText != null) statsText.text = BuildStatsText();
 
             ShowReward();
+            RecordMatchLog(won);
+        }
+
+        // 테스트(CBT) 기록에 이번 판 결과를 남긴다. (스테이지, 결과, 생존 시간, 도달 레벨, 내 전투력, 받은 보상)
+        // 메타 시스템 없이 InGame만 단독 실행한 경우에는 남길 저장 데이터가 없으므로 건너뛴다.
+        private void RecordMatchLog(bool won)
+        {
+            if (CurrencyManager.Instance == null) return;
+
+            int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
+            int combatPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;
+            float elapsed = gameManager != null ? gameManager.ElapsedTime : 0f;
+            int level = playerExperience != null ? playerExperience.Level : 1;
+            int droneCount = droneManager != null ? droneManager.OwnedCount : 0;
+            int rewardCore = gameManager != null ? gameManager.RewardCore : 0;
+            int rewardCredit = gameManager != null ? gameManager.RewardCredit : 0;
+
+            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, level, droneCount, combatPower, rewardCore, rewardCredit);
+            SaveManager.Save();
         }
 
         // 획득 보상 영역을 켜고 숫자 올라가는 연출을 시작한다.

@@ -23,6 +23,16 @@ namespace SurvivalDrone.Meta
         // 크레딧(소프트 재화)의 현재 보유량.
         public int credit;
 
+        // ---- 테스트(CBT) 기록 ----
+        // 테스터를 구분하는 임의의 짧은 번호 (이름이나 개인정보가 아니다). 처음 켤 때 한 번 만들어진다.
+        public string testerId = "";
+
+        // 기록 문장 목록. 최대 개수를 넘으면 오래된 것부터 지운다.
+        public List<string> playLog = new List<string>();
+
+        // 기록의 누적 숫자 (요약에 쓴다).
+        public PlayLogStats logStats = new PlayLogStats();
+
         // 천장 카운트: 마지막 SSR 이후 누적 뽑기 횟수. SSR이 나오면 0으로 돌아가고, 게임을 껐다 켜도 이어진다.
         public int gachaPityCount;
 
