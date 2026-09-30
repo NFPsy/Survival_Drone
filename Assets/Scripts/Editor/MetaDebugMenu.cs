@@ -27,6 +27,25 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Add 1000 Credit (Play mode)", true)]
         private static bool AddCreditValidate() => Application.isPlaying && CurrencyManager.Instance != null;
 
+        // 뽑기 화면이 생기기 전에 뽑기 흐름을 직접 눌러 볼 수 있는 메뉴. 결과는 콘솔에 [Gacha] 로그로 찍힌다.
+        [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x1 (Play mode)")]
+        private static void PullSingle()
+        {
+            GachaController.Instance.PullSingle();
+        }
+
+        [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x1 (Play mode)", true)]
+        private static bool PullSingleValidate() => Application.isPlaying && GachaController.Instance != null;
+
+        [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x10 (Play mode)")]
+        private static void PullTen()
+        {
+            GachaController.Instance.PullTen();
+        }
+
+        [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x10 (Play mode)", true)]
+        private static bool PullTenValidate() => Application.isPlaying && GachaController.Instance != null;
+
         // 저장 파일을 지운다. 게임을 실행 중이 아닐 때 눌러야 다음 실행이 완전히 새 데이터로 시작한다.
         [MenuItem("SurvivalDrone/Meta/Debug/Delete Save File")]
         private static void DeleteSave()
