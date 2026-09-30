@@ -18,4 +18,8 @@ MonoBehaviour:
   _rateSSR: 2.5
   _singleCost: 300
   _tenPullCost: 2700
+  _duplicateShardsN: 10
+  _duplicateShardsR: 20
+  _duplicateShardsSR: 30
+  _duplicateShardsSSR: 50
   _pityCount: 70

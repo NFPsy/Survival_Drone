@@ -29,6 +29,15 @@ namespace SurvivalDrone.Meta
         [SerializeField] private int _singleCost = 300;    // 1회 뽑기
         [SerializeField] private int _tenPullCost = 2700;  // 10연 뽑기 (9회 가격 = 10% 할인)
 
+        // ---- 중복 시 조각 환산 ----
+        // 이미 가진 드론과 같거나 낮은 등급이 또 나오면, 그 등급에 해당하는 만큼 설계도 조각을 준다.
+        // 조각은 드론 강화에 쓴다. (N 10 / R 20 / SR 30 / SSR 50)
+        [Header("중복 시 조각 환산")]
+        [SerializeField] private int _duplicateShardsN = 10;
+        [SerializeField] private int _duplicateShardsR = 20;
+        [SerializeField] private int _duplicateShardsSR = 30;
+        [SerializeField] private int _duplicateShardsSSR = 50;
+
         // ---- 천장 ----
         // 누적 뽑기 횟수가 이 값에 도달하는 순간 SSR을 확정으로 준다. SSR을 얻으면 누적 횟수는 0으로 돌아간다.
         [Header("천장")]
@@ -49,6 +58,19 @@ namespace SurvivalDrone.Meta
                 case GachaRarity.SR: return _rateSR;
                 case GachaRarity.SSR: return _rateSSR;
                 default: return 0f;
+            }
+        }
+
+        // 같은 등급이 중복으로 나왔을 때 받는 조각 수.
+        public int GetDuplicateShards(GachaRarity rarity)
+        {
+            switch (rarity)
+            {
+                case GachaRarity.N: return _duplicateShardsN;
+                case GachaRarity.R: return _duplicateShardsR;
+                case GachaRarity.SR: return _duplicateShardsSR;
+                case GachaRarity.SSR: return _duplicateShardsSSR;
+                default: return 0;
             }
         }
 

@@ -12,7 +12,7 @@ namespace SurvivalDrone.UI
     // MainMenuController와 같은 방식으로, 정해진 이름의 자식 오브젝트를 찾아서 연결한다.
     // 못 찾아도 경고 로그만 남기고 나머지는 계속 동작한다.
     //
-    // 아직 없는 것: 내 전투력 표시와 3D 프리뷰(드론 보유 시스템 DroneInventory를 만들 때 추가), 뽑기/격납고/상점 탭.
+    // 아직 없는 것: 3D 프리뷰, 뽑기/격납고/상점 탭 (해당 화면을 만들 때 추가).
     public class LobbyUI : MonoBehaviour
     {
         // 출격 버튼을 누르면 불러올 플레이 씬, 뒤로 버튼을 누르면 돌아갈 씬.
@@ -81,6 +81,9 @@ namespace SurvivalDrone.UI
             if (StageProgress.Instance != null) StageProgress.Instance.OnSelectionChanged += HandleSelectionChanged;
             else Debug.LogWarning("[Stage] 로비에서 StageProgress를 찾지 못했습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");
 
+            if (DroneInventory.Instance != null) DroneInventory.Instance.OnInventoryChanged += RefreshStageCard;
+            else Debug.LogWarning("[Inventory] 로비에서 DroneInventory를 찾지 못했습니다. 내 전투력이 0으로 표시됩니다.");
+
             _viewIndex = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex : 0;
             RefreshCurrency();
             RefreshStageCard();
@@ -94,6 +97,7 @@ namespace SurvivalDrone.UI
                 CurrencyManager.Instance.OnCreditChanged -= HandleCreditChanged;
             }
             if (StageProgress.Instance != null) StageProgress.Instance.OnSelectionChanged -= HandleSelectionChanged;
+            if (DroneInventory.Instance != null) DroneInventory.Instance.OnInventoryChanged -= RefreshStageCard;
         }
 
         // ---- 재화 ----
@@ -134,7 +138,8 @@ namespace SurvivalDrone.UI
             if (progress == null || _cardView == null) return;
 
             bool unlocked = progress.IsUnlocked(_viewIndex);
-            _cardView.Show(progress.GetStage(_viewIndex), progress.GetBestSurvivalSeconds(_viewIndex), unlocked);
+            int myPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;
+            _cardView.Show(progress.GetStage(_viewIndex), progress.GetBestSurvivalSeconds(_viewIndex), unlocked, myPower);
 
             if (_prevButton != null) _prevButton.interactable = _viewIndex > 0;
             if (_nextButton != null) _nextButton.interactable = _viewIndex < progress.StageCount - 1;

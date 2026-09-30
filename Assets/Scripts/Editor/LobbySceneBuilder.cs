@@ -147,15 +147,16 @@ namespace SurvivalDrone.EditorTools
             Debug.Log($"[Stage] 로비 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");
         }
 
-        // 카드 안에 들어가는 글자 칸 6개를 만든다. scale은 카드 크기에 맞춘 글자 크기 배율(로비 큰 카드 1.0, 작은 카드 0.63).
+        // 카드 안에 들어가는 글자 칸 7개를 만든다. scale은 카드 크기에 맞춘 글자 크기 배율(로비 큰 카드 1.0, 작은 카드 0.63).
         private static void FillCardTexts(Transform card, float scale)
         {
-            AddCardText(card, "StageNumberText", "STAGE 1", 36, _monoFont, 150f, scale);
-            AddCardText(card, "StageNameText", "스테이지 이름", 64, _sansFont, 70f, scale);
-            AddCardText(card, "PowerText", "권장 전투력", 34, _sansFont, -30f, scale);
-            AddCardText(card, "MultiplierText", "적 체력·피해", 30, _sansFont, -85f, scale);
-            AddCardText(card, "BestTimeText", "최고 생존", 30, _sansFont, -140f, scale);
-            AddCardText(card, "LockText", "잠금", 32, _sansFont, -200f, scale);
+            AddCardText(card, "StageNumberText", "STAGE 1", 36, _monoFont, 170f, scale);
+            AddCardText(card, "StageNameText", "스테이지 이름", 64, _sansFont, 100f, scale);
+            AddCardText(card, "PowerText", "권장 전투력", 34, _sansFont, 30f, scale);
+            AddCardText(card, "MyPowerText", "내 전투력", 34, _sansFont, -20f, scale);
+            AddCardText(card, "MultiplierText", "적 체력·피해", 30, _sansFont, -75f, scale);
+            AddCardText(card, "BestTimeText", "최고 생존", 30, _sansFont, -125f, scale);
+            AddCardText(card, "LockText", "잠금", 32, _sansFont, -190f, scale);
         }
 
         private static void AddCardText(Transform card, string name, string content, int fontSize, Font font, float y, float scale)

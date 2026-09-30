@@ -46,12 +46,14 @@ namespace SurvivalDrone.UI
         {
             BuildCardsIfNeeded();
             if (StageProgress.Instance != null) StageProgress.Instance.OnSelectionChanged += HandleSelectionChanged;
+            if (DroneInventory.Instance != null) DroneInventory.Instance.OnInventoryChanged += Refresh;
             Refresh();
         }
 
         private void OnDisable()
         {
             if (StageProgress.Instance != null) StageProgress.Instance.OnSelectionChanged -= HandleSelectionChanged;
+            if (DroneInventory.Instance != null) DroneInventory.Instance.OnInventoryChanged -= Refresh;
         }
 
         // 패널이 처음 열릴 때 견본을 스테이지 개수만큼 복제해서 카드를 만든다.
@@ -107,10 +109,11 @@ namespace SurvivalDrone.UI
             var progress = StageProgress.Instance;
             if (progress == null) return;
 
+            int myPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;
             foreach (var card in _cards)
             {
                 bool unlocked = progress.IsUnlocked(card.index);
-                card.view.Show(progress.GetStage(card.index), progress.GetBestSurvivalSeconds(card.index), unlocked);
+                card.view.Show(progress.GetStage(card.index), progress.GetBestSurvivalSeconds(card.index), unlocked, myPower);
 
                 if (card.outline != null)
                 {
