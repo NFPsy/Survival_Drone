@@ -37,11 +37,20 @@ namespace SurvivalDrone.UI
             }
         }
 
-        // 볼륨 슬라이더를 움직일 때마다 호출. 바로 적용하고 다음 실행을 위해 저장까지 한다.
+        // 볼륨 슬라이더를 움직일 때마다 호출. 바로 적용하고 저장할 값을 기록해 둔다.
         private void HandleVolumeChanged(float value)
         {
             AudioListener.volume = value;
             PlayerPrefs.SetFloat(VolumeKey, value);
+        }
+
+        // 설정 패널이 닫힐 때(또는 씬이 바뀔 때) 기록해 둔 값을 실제로 저장한다.
+        // 슬라이더를 움직이는 동안은 매번 저장하지 않고 이때 한 번만 저장한다.
+        // 웹(WebGL) 빌드에서는 Save()를 불러야 브라우저 저장소로 옮겨지는데, 게임 종료 시점에 자동 저장되기를
+        // 기대할 수 없다(탭을 닫으면 종료 알림이 오지 않을 수 있음). PC에서도 무해하다.
+        private void OnDisable()
+        {
+            PlayerPrefs.Save();
         }
     }
 }

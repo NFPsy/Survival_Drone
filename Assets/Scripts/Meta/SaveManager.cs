@@ -9,7 +9,8 @@ namespace SurvivalDrone.Meta
     //  - 에디터에서는 Window 기준 C:\Users\사용자\AppData\LocalLow\회사명\게임명\ 아래에 생긴다.
     //
     // 주의(WebGL 배포): 브라우저 게임에서는 이 폴더가 브라우저 저장소(IndexedDB)로 대체된다.
-    // 새로고침·재접속 후에도 저장이 남는지는 WebGL 빌드로 따로 확인해야 한다. (노션 코딩 규칙 14번)
+    // 파일을 쓴 뒤 브라우저 저장소로 옮기는 동기화가 자동이 아니라서, 저장할 때마다 WebGLFileSync.Flush()를 부른다.
+    // (웹 빌드가 아니면 아무 일도 하지 않는다.) 새로고침·재접속 후에도 저장이 남는지는 WebGL 빌드로 확인해야 한다. (노션 코딩 규칙 14번)
     public static class SaveManager
     {
         private const string FileName = "save.json";
@@ -64,6 +65,7 @@ namespace SurvivalDrone.Meta
             try
             {
                 File.WriteAllText(FilePath, JsonUtility.ToJson(_data, true));
+                WebGLFileSync.Flush();
             }
             catch (System.Exception e)
             {
@@ -75,7 +77,11 @@ namespace SurvivalDrone.Meta
         public static void DeleteSave()
         {
             _data = null;
-            if (File.Exists(FilePath)) File.Delete(FilePath);
+            if (File.Exists(FilePath))
+            {
+                File.Delete(FilePath);
+                WebGLFileSync.Flush();
+            }
             Debug.Log($"[Save] 저장 파일을 삭제했습니다 ({FilePath})");
         }
     }
