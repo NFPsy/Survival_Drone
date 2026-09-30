@@ -29,6 +29,10 @@ namespace SurvivalDrone.Core
 
         public float MatchDuration => matchDuration;
 
+        // 이번 판이 끝났을 때 받은 보상. 결과 화면이 "획득 보상" 패널에 보여준다. (판이 끝나기 전에는 0)
+        public int RewardCore { get; private set; }
+        public int RewardCredit { get; private set; }
+
         // 게임이 시작된 뒤 흐른 시간(초). Update()에서 매 프레임 누적된다.
         public float ElapsedTime { get; private set; }
 
@@ -94,6 +98,7 @@ namespace SurvivalDrone.Core
             // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
             StageProgress.Instance?.RecordMatchResult(false, ElapsedTime);
+            GrantReward(false);
             AudioManager.Instance?.PlaySfx(defeatSound);
             OnStateChanged?.Invoke(State);
         }
@@ -108,9 +113,26 @@ namespace SurvivalDrone.Core
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
             StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
+            GrantReward(true);
             AudioManager.Instance?.PlaySfx(victorySound);
             GameEvents.RaiseMatchWon();
             OnStateChanged?.Invoke(State);
+        }
+
+        // 판이 끝났을 때 재화 보상을 지급한다. 클리어면 클리어 보상, 실패면 (더 적은) 실패 보상.
+        // 결과 화면(OnStateChanged를 받는 쪽)이 지급된 양을 읽을 수 있도록, 이벤트를 보내기 전에 호출해야 한다.
+        // CurrencyManager가 없으면(InGame 씬만 단독으로 실행한 경우) 보상 없이 넘어간다.
+        private void GrantReward(bool cleared)
+        {
+            if (CurrencyManager.Instance == null)
+            {
+                Debug.LogWarning("[Currency] CurrencyManager가 없어 판 보상을 지급하지 못했습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");
+                return;
+            }
+
+            CurrencyManager.Instance.GrantMatchReward(cleared, out int core, out int credit);
+            RewardCore = core;
+            RewardCredit = credit;
         }
     }
 }
