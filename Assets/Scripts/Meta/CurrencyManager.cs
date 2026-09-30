@@ -126,6 +126,9 @@ namespace SurvivalDrone.Meta
             return true;
         }
 
+        // 실패했을 때 이 시간(초) 미만으로 버티면 보상이 없다. 결과 화면이 "왜 보상이 없는지" 안내할 때 읽는다.
+        public float FailMinSurviveSeconds => _table != null ? _table.FailMinSurviveSeconds : 0f;
+
         // 한 판이 끝났을 때 보상을 지급한다. 클리어면 스테이지별 클리어 보상, 실패면 버틴 시간에 비례한 보상(1분 미만이면 없음).
         // 계산 규칙은 CurrencyTable.CalculateMatchReward에 있다.
         // 지급한 양을 out으로 돌려줘서 결과 화면의 "획득 보상" 패널에 그대로 쓸 수 있다.

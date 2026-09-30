@@ -45,6 +45,9 @@ namespace SurvivalDrone.UI
         [SerializeField] private Text coreRewardText;
         [SerializeField] private Text creditRewardText;
 
+        // 너무 일찍 져서 보상이 0일 때 "왜 없는지" 알려주는 한 줄 안내 (보상이 있으면 숨긴다).
+        [SerializeField] private Text noRewardHintText;
+
         // 보상 숫자가 0에서 목표값까지 올라가는 데 걸리는 시간(초).
         [SerializeField] private float rewardCountUpSeconds = 0.8f;
 
@@ -100,7 +103,7 @@ namespace SurvivalDrone.UI
 
             if (statsText != null) statsText.text = BuildStatsText();
 
-            ShowReward();
+            ShowReward(won);
             RecordMatchLog(won);
         }
 
@@ -126,15 +129,33 @@ namespace SurvivalDrone.UI
 
         // 획득 보상 영역을 켜고 숫자 올라가는 연출을 시작한다.
         // 보상이 없으면(CurrencyManager 없이 InGame만 단독 실행한 경우) 영역 자체를 숨긴다.
-        private void ShowReward()
+        private void ShowReward(bool won)
         {
             int core = gameManager != null ? gameManager.RewardCore : 0;
             int credit = gameManager != null ? gameManager.RewardCredit : 0;
+
+            // 져서 보상이 0이면 이유를 알려준다. 기준 시간은 보상 계산이 쓰는 값(CurrencyTable)을 그대로 읽어서 표기와 실제가 어긋나지 않게 한다.
+            // (CurrencyManager가 없으면 InGame만 단독 실행한 경우라 안내하지 않는다)
+            if (noRewardHintText != null)
+            {
+                bool noReward = core <= 0 && credit <= 0;
+                bool show = !won && noReward && CurrencyManager.Instance != null;
+                noRewardHintText.gameObject.SetActive(show);
+                if (show) noRewardHintText.text = BuildNoRewardHint(CurrencyManager.Instance.FailMinSurviveSeconds);
+            }
 
             if (rewardBox != null) rewardBox.SetActive(core > 0 || credit > 0);
             if (core <= 0 && credit <= 0) return;
 
             StartCoroutine(CountUpRoutine(core, credit));
+        }
+
+        // "1분 이상 버텨야 보상을 받을 수 있어요" 형태의 안내 문구. 60초의 배수면 "n분", 아니면 "n초"로 적는다.
+        private static string BuildNoRewardHint(float minSurviveSeconds)
+        {
+            int seconds = Mathf.RoundToInt(minSurviveSeconds);
+            string amount = seconds % 60 == 0 ? $"{seconds / 60}분" : $"{seconds}초";
+            return $"{amount} 이상 버텨야 보상을 받을 수 있어요";
         }
 
         // 코어·크레딧 숫자를 0에서 목표값까지 올린다.

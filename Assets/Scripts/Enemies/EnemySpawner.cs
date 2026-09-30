@@ -26,7 +26,7 @@ namespace SurvivalDrone.Enemies
         // 일반 적 5종 중 보스를 제외한 나머지(약한/튼튼한/빠른/강한) 목록.
         [SerializeField] private List<EnemyEntry> enemyEntries = new List<EnemyEntry>();
 
-        // 보스는 별도로 관리 (9분에 딱 한 번만 등장하므로 목록이 아니라 단일 항목).
+        // 보스는 별도로 관리 (후반에 딱 한 번만 등장하므로 목록이 아니라 단일 항목).
         [SerializeField] private EnemyEntry bossEntry;
 
         // 플레이어를 중심으로 이 거리(반지름)에 있는 원 위에서 적을 스폰한다 (화면 밖에서 나타나도록).
@@ -46,14 +46,15 @@ namespace SurvivalDrone.Enemies
         // ── 아래는 기획서 6장 "시간대별 난이도 곡선" 표를 코드 값으로 옮긴 부분 ──
         [Header("난이도 곡선 (기획서 6장)")]
 
-        // 중반 구간이 시작되는 시점(초). 90초 = 1분 30초. (120초로도 여전히 쉽다는 피드백으로 추가로 앞당김)
-        [SerializeField] private float midPhaseStart = 90f;
+        // 한 판(적이 나오는 6분)을 2분 / 2분 / 2분으로 나눈 구간 시작 시점.
+        // 중반 구간이 시작되는 시점(초). 120초 = 2분.
+        [SerializeField] private float midPhaseStart = 120f;
 
-        // 후반 구간이 시작되는 시점(초). 360초 = 6분.
-        [SerializeField] private float latePhaseStart = 360f;
+        // 후반 구간이 시작되는 시점(초). 240초 = 4분.
+        [SerializeField] private float latePhaseStart = 240f;
 
-        // 보스가 등장하는 시점(초). 540초 = 9분.
-        [SerializeField] private float bossSpawnTime = 540f;
+        // 보스가 등장하는 시점(초). 324초 = 5분 24초 (예전 10분 판의 9분 = 90% 지점을 6분 판에 같은 비율로 옮긴 값).
+        [SerializeField] private float bossSpawnTime = 324f;
 
         // 각 구간에서 "1초에 몇 마리씩" 새로 나오는지의 범위 (최소~최대).
         [SerializeField] private Vector2 earlySpawnPerSecond = new Vector2(1.5f, 2.5f);
@@ -84,6 +85,17 @@ namespace SurvivalDrone.Enemies
 
             // 게임이 시작된 뒤 흐른 시간을 가져온다.
             float elapsed = GameManager.Instance.ElapsedTime;
+
+            // 죽어서 파괴된(null이 된) 적들을 목록에서 정리하고, 남은 적 수를 화면 표시용으로 알려준다.
+            alive.RemoveAll(e => e == null);
+            GameManager.Instance.SetRemainingEnemies(alive.Count);
+
+            // 적이 나오는 시간이 끝났다: 더 이상 스폰하지 않고, 남은 적을 모두 처치했으면 승리 처리.
+            if (GameManager.Instance.SpawningEnded)
+            {
+                if (alive.Count == 0) GameManager.Instance.ReportAllEnemiesDefeated();
+                return;
+            }
 
             // 아직 보스가 안 나왔고, 보스 등장 시점이 되었다면 보스를 한 번 스폰하고 이번 프레임은 종료.
             if (!bossSpawned && elapsed >= bossSpawnTime)
@@ -128,9 +140,6 @@ namespace SurvivalDrone.Enemies
                 string[] phaseNames = { "초반", "중반", "후반" };
                 Debug.Log($"[Spawner] {phaseNames[phase]} 구간 진입 - 경과 시간 {elapsed:F0}초 (스폰 {rateRange.x}~{rateRange.y}/초, 최대 {maxAlive}마리)");
             }
-
-            // 이미 죽어서 파괴된(null이 된) 적들을 목록에서 정리.
-            alive.RemoveAll(e => e == null);
 
             // 이미 최대 마릿수에 도달했으면 더 이상 스폰하지 않는다.
             if (alive.Count >= maxAlive) return;

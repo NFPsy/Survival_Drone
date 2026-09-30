@@ -94,13 +94,20 @@ namespace SurvivalDrone.UI
             // 타이머는 매 프레임 계속 줄어들기 때문에, 이벤트 방식이 아니라 여기서 직접 갱신한다.
             if (timerText != null && GameManager.Instance != null)
             {
+                // 적이 나오는 시간이 끝나면 시간 대신 "남은 적 수"를 보여준다(다 잡으면 승리).
+                if (GameManager.Instance.SpawningEnded)
+                {
+                    timerText.text = $"남은 적 {GameManager.Instance.RemainingEnemies}";
+                    return;
+                }
+
                 float t = GameManager.Instance.TimeRemaining;
 
                 // 초 단위 시간을 "분:초" 형태로 변환.
                 int minutes = Mathf.FloorToInt(t / 60f);
                 int seconds = Mathf.FloorToInt(t % 60f);
 
-                // "00:00" 형식으로 자릿수를 맞춰서 표시 (예: 9분 5초 -> "09:05").
+                // "00:00" 형식으로 자릿수를 맞춰서 표시 (예: 5분 5초 -> "05:05").
                 timerText.text = $"{minutes:00}:{seconds:00}";
             }
         }

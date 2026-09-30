@@ -15,8 +15,9 @@ namespace SurvivalDrone.Core
         // 어디서든 GameManager.Instance로 이 스크립트에 접근할 수 있게 해주는 정적 변수.
         public static GameManager Instance { get; private set; }
 
-        // 한 판의 길이(초). 기획서 기준 8~10분이라 기본값을 600초(10분)로 설정.
-        [SerializeField] private float matchDuration = 600f;
+        // 적이 나오는 시간(초) = 한 판의 "기본 길이". 기본값 360초(6분).
+        // 이 시간이 지나면 적이 더 나오지 않고, 남아 있는 적을 모두 처치해야 승리한다(EnemySpawner가 확인).
+        [SerializeField] private float matchDuration = 360f;
 
         // 승리했을 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
         [SerializeField] private AudioClip victorySound;
@@ -43,8 +44,25 @@ namespace SurvivalDrone.Core
         // 게임이 시작된 뒤 흐른 시간(초). Update()에서 매 프레임 누적된다.
         public float ElapsedTime { get; private set; }
 
-        // 남은 시간 = 전체 시간 - 흐른 시간. 0보다 작아지지 않도록 Mathf.Max로 보정.
+        // 적이 나오는 남은 시간 = 전체 시간 - 흐른 시간. 0보다 작아지지 않도록 Mathf.Max로 보정.
         public float TimeRemaining => Mathf.Max(0f, matchDuration - ElapsedTime);
+
+        // 적이 나오는 시간이 끝났는지. true가 된 뒤에는 새 적이 나오지 않고, 남은 적을 모두 잡으면 승리한다.
+        public bool SpawningEnded => ElapsedTime >= matchDuration;
+
+        // 지금 살아 있는 적의 수. EnemySpawner가 매 프레임 알려준다(화면 위쪽 "남은 적" 표시용).
+        public int RemainingEnemies { get; private set; }
+
+        public void SetRemainingEnemies(int count)
+        {
+            RemainingEnemies = count;
+        }
+
+        // 적이 나오는 시간이 끝난 뒤 마지막 적까지 모두 처치했을 때 EnemySpawner가 부른다. 승리 처리를 시작한다.
+        public void ReportAllEnemiesDefeated()
+        {
+            Win();
+        }
 
         // 현재 매치 상태. 기본값은 진행 중(Playing).
         public MatchState State { get; private set; } = MatchState.Playing;
@@ -87,13 +105,9 @@ namespace SurvivalDrone.Core
             if (State != MatchState.Playing) return;
 
             // 매 프레임 지난 시간(Time.deltaTime)만큼 누적.
+            // 시간이 다 돼도 바로 승리하지 않는다: 적이 나오는 시간이 끝난 뒤 남은 적을 모두 잡았을 때
+            // EnemySpawner가 ReportAllEnemiesDefeated()를 불러 승리 처리한다.
             ElapsedTime += Time.deltaTime;
-
-            // 시간이 다 되면 승리 처리.
-            if (ElapsedTime >= matchDuration)
-            {
-                Win();
-            }
         }
 
         // 플레이어 사망 신호를 받았을 때 실행되는 함수.
@@ -118,7 +132,7 @@ namespace SurvivalDrone.Core
             if (State != MatchState.Playing) return;
             State = MatchState.Won;
             Time.timeScale = 0f;
-            // 승리 시점은 항상 매치 길이(600초) 근처라 F0로 찍으면 콘솔의 "중복 묶기"에 걸려
+            // 승리 시점은 항상 비슷한 시간(적이 나오는 시간 직후)이라 F0로 찍으면 콘솔의 "중복 묶기"에 걸려
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
             RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;

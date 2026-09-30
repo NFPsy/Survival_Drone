@@ -17,6 +17,6 @@ MonoBehaviour:
   maxHealth: 95
   moveSpeed: 3.5
   contactDamage: 18
-  unlockTime: 360
+  unlockTime: 240
   xpReward: 4
   debugColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
