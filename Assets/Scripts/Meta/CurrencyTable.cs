@@ -51,7 +51,7 @@ namespace SurvivalDrone.Meta
         //  - 클리어: 클리어 보상 전부.
         //  - 실패: 생존 시간이 _failMinSurviveSeconds(60초) 미만이면 0.
         //          그 이후에는 (생존 시간 - 60초) ÷ (판 길이 - 60초) 만큼의 비율로 클리어 보상을 받는다.
-        //          예) 판 길이 360초, 210초 생존 → (210-60) ÷ (360-60) = 50% → 스테이지 1이면 코어 50, 크레딧 100.
+        //          예) 판 길이 600초, 330초 생존 → (330-60) ÷ (600-60) = 50% → 스테이지 1이면 코어 50, 크레딧 100.
         //          (판 길이 = 적이 나오는 시간. 그 뒤 남은 적을 잡는 시간에 죽어도 100%를 넘지 않는다.)
         public void CalculateMatchReward(bool cleared, int stageNumber, float surviveSeconds, float matchSeconds, out int core, out int credit)
         {

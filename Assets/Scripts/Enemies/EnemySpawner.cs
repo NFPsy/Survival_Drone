@@ -46,15 +46,15 @@ namespace SurvivalDrone.Enemies
         // ── 아래는 기획서 6장 "시간대별 난이도 곡선" 표를 코드 값으로 옮긴 부분 ──
         [Header("난이도 곡선 (기획서 6장)")]
 
-        // 한 판(적이 나오는 6분)을 2분 / 2분 / 2분으로 나눈 구간 시작 시점.
-        // 중반 구간이 시작되는 시점(초). 120초 = 2분.
-        [SerializeField] private float midPhaseStart = 120f;
+        // 한 판(적이 나오는 10분)을 초반 / 중반 / 후반으로 나눈 구간 시작 시점.
+        // 중반 구간이 시작되는 시점(초). 90초 = 1분 30초. (120초로도 여전히 쉽다는 피드백으로 앞당긴 값)
+        [SerializeField] private float midPhaseStart = 90f;
 
-        // 후반 구간이 시작되는 시점(초). 240초 = 4분.
-        [SerializeField] private float latePhaseStart = 240f;
+        // 후반 구간이 시작되는 시점(초). 360초 = 6분.
+        [SerializeField] private float latePhaseStart = 360f;
 
-        // 보스가 등장하는 시점(초). 324초 = 5분 24초 (예전 10분 판의 9분 = 90% 지점을 6분 판에 같은 비율로 옮긴 값).
-        [SerializeField] private float bossSpawnTime = 324f;
+        // 보스가 등장하는 시점(초). 540초 = 9분.
+        [SerializeField] private float bossSpawnTime = 540f;
 
         // 각 구간에서 "1초에 몇 마리씩" 새로 나오는지의 범위 (최소~최대).
         [SerializeField] private Vector2 earlySpawnPerSecond = new Vector2(1.5f, 2.5f);

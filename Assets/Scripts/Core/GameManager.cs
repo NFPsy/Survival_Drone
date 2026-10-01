@@ -15,9 +15,9 @@ namespace SurvivalDrone.Core
         // 어디서든 GameManager.Instance로 이 스크립트에 접근할 수 있게 해주는 정적 변수.
         public static GameManager Instance { get; private set; }
 
-        // 적이 나오는 시간(초) = 한 판의 "기본 길이". 기본값 360초(6분).
+        // 적이 나오는 시간(초) = 한 판의 "기본 길이". 기본값 600초(10분).
         // 이 시간이 지나면 적이 더 나오지 않고, 남아 있는 적을 모두 처치해야 승리한다(EnemySpawner가 확인).
-        [SerializeField] private float matchDuration = 360f;
+        [SerializeField] private float matchDuration = 600f;
 
         // 승리했을 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
         [SerializeField] private AudioClip victorySound;

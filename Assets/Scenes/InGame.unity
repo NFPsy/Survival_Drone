@@ -295,9 +295,9 @@ MonoBehaviour:
   bossWarningSound: {fileID: 8300000, guid: 2fcbd336c7797de4d8271a9efca2733a, type: 3}
   eliteChance: 0.08
   eliteUnlockTime: 30
-  midPhaseStart: 120
-  latePhaseStart: 240
-  bossSpawnTime: 324
+  midPhaseStart: 90
+  latePhaseStart: 360
+  bossSpawnTime: 540
   earlySpawnPerSecond: {x: 1.5, y: 2.5}
   midSpawnPerSecond: {x: 3, y: 4}
   lateSpawnPerSecond: {x: 5, y: 6}
@@ -1819,7 +1819,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3088ad28b9745264d9e75599db92c73e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Core.GameManager
-  matchDuration: 360
+  matchDuration: 600
   victorySound: {fileID: 8300000, guid: aa9fdca97df571b409f328900e3a7ff0, type: 3}
   defeatSound: {fileID: 8300000, guid: e992c1a6d671ab44b9b70c5a051b8ae5, type: 3}
   inGameMusic: {fileID: 8300000, guid: f3d476e323fb2ba45b07639e3ef77f63, type: 3}

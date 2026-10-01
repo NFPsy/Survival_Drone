@@ -84,7 +84,7 @@ namespace SurvivalDrone.EditorTools
                                && Mathf.Approximately(table.FailMinSurviveSeconds, 60f),
                     $"판 보상 표 = 클리어 코어 {table.GetClearCore(1)}/{table.GetClearCore(2)}/{table.GetClearCore(3)}, 크레딧 {table.GetClearCredit(1)}/{table.GetClearCredit(2)}/{table.GetClearCredit(3)}, 실패 최소 생존 {table.FailMinSurviveSeconds}초");
 
-                // 8) 보상 계산: 클리어는 스테이지별 전액 (범위 밖 스테이지 번호는 마지막 칸 값). 판 길이는 적이 나오는 시간 360초.
+                // 8) 보상 계산: 클리어는 스테이지별 전액 (범위 밖 스테이지 번호는 마지막 칸 값). 계산 확인용으로 판 길이를 360초로 넘긴다 (실제 게임의 판 길이와는 무관).
                 table.CalculateMatchReward(true, 1, 400f, 360f, out int c, out int cr);
                 bool clear1 = c == 100 && cr == 200;
                 table.CalculateMatchReward(true, 2, 400f, 360f, out c, out cr);
