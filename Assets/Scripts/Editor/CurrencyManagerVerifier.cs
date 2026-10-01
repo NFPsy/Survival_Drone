@@ -128,10 +128,40 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(failCore == 50 && failCredit == 100 && manager.Core == coreBefore + 50 && manager.Credit == creditBefore + 100,
                     $"210초 실패 지급 코어 +{failCore}, 크레딧 +{failCredit}");
 
-                // 11) 저장 형식(JSON) 왕복: 글자로 바꿨다가 되돌려도 값이 같다
+                // 11) 마일스톤: 번호마다 계정 전체에서 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
+                coreBefore = manager.Core;
+                int m0 = manager.TryClaimMilestone(0);
+                int m0Again = manager.TryClaimMilestone(0);
+                int m1 = manager.TryClaimMilestone(1);
+                int mClear = manager.TryClaimMilestone(MatchMilestones.ClearIndex);
+                int mClearAgain = manager.TryClaimMilestone(MatchMilestones.ClearIndex);
+                int mBad = manager.TryClaimMilestone(99);
+                fails += Check(m0 == MatchMilestones.Cores[0] && m1 == MatchMilestones.Cores[1] && mClear == MatchMilestones.Cores[2]
+                               && m0Again == 0 && mClearAgain == 0 && mBad == 0
+                               && manager.Core == coreBefore + MatchMilestones.Cores[0] + MatchMilestones.Cores[1] + MatchMilestones.Cores[2],
+                    $"마일스톤 지급 3분 +{m0} / 6분 +{m1} / 처음 클리어 +{mClear}, 재청구·잘못된 번호는 0 (재청구 {m0Again}/{mClearAgain}, 잘못된 번호 {mBad})");
+
+                // 12) 일일 퀘스트: 달성 전에는 못 받고, 달성하면 한 번만 받고, 다음 날이 되면 기록이 초기화되어 다시 받을 수 있다
+                const string day1 = "2026-10-01", day2 = "2026-10-02";
+                coreBefore = manager.Core;
+                int q0Early = manager.TryClaimDailyQuest(0, day1);
+                DailyQuests.MarkDone(data, 0, day1);
+                int q0 = manager.TryClaimDailyQuest(0, day1);
+                int q0Again = manager.TryClaimDailyQuest(0, day1);
+                int q1NotDone = manager.TryClaimDailyQuest(1, day1);
+                int qBad = manager.TryClaimDailyQuest(99, day1);
+                fails += Check(q0Early == 0 && q0 == DailyQuests.Cores[0] && q0Again == 0 && q1NotDone == 0 && qBad == 0 && manager.Core == coreBefore + DailyQuests.Cores[0],
+                    $"일일 퀘스트: 달성 전 {q0Early} / 달성 후 +{q0} / 재청구 {q0Again} / 미달성 {q1NotDone} / 잘못된 번호 {qBad}");
+                bool resetOk = !DailyQuests.IsDone(data, 0, day2) && !DailyQuests.IsClaimed(data, 0, day2);
+                DailyQuests.MarkDone(data, 2, day2);
+                int q2NextDay = manager.TryClaimDailyQuest(2, day2);
+                fails += Check(resetOk && q2NextDay == DailyQuests.Cores[2], $"다음 날(날짜 변경) 기록 초기화 후 새 퀘스트 +{q2NextDay}");
+
+                // 13) 저장 형식(JSON) 왕복: 글자로 바꿨다가 되돌려도 값이 같다 (받은 마일스톤 기록 포함)
                 string json = JsonUtility.ToJson(data);
                 var loaded = JsonUtility.FromJson<SaveData>(json);
-                fails += Check(loaded.core == data.core && loaded.credit == data.credit && loaded.isCurrencyInitialized == data.isCurrencyInitialized,
+                fails += Check(loaded.core == data.core && loaded.credit == data.credit && loaded.isCurrencyInitialized == data.isCurrencyInitialized
+                               && loaded.milestoneClaimedMask == data.milestoneClaimedMask && data.milestoneClaimedMask == 7,
                     $"JSON 저장/불러오기 왕복 일치: {json}");
             }
             finally

@@ -1,3 +1,4 @@
+using SurvivalDrone.Meta;
 using SurvivalDrone.UI;
 using UnityEditor;
 using UnityEngine;
@@ -62,6 +63,10 @@ namespace SurvivalDrone.EditorTools
             var hangar = NewButton("BtnHangar", root, "격납고", 30, ButtonColor, LightText);
             Place(hangar.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-330f, 50f), new Vector2(260f, 70f));
 
+            var quest = NewButton("BtnQuest", root, "일일 퀘스트", 30, ButtonColor, LightText);
+            // 오른쪽 아래 "뽑기" 버튼 바로 위. (같은 줄 가운데로 옮기면 출격 버튼과 겹친다)
+            Place(quest.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-50f, 140f), new Vector2(260f, 70f));
+
             // ---- 스테이지 선택 패널 (평소에는 꺼져 있고, "스테이지 목록"을 누르면 뜬다) ----
             var panel = NewImage("StageSelectPanel", root, PanelColor);
             Place(panel.rectTransform, Center, Center, Center, new Vector2(0f, 20f), new Vector2(1640f, 800f));
@@ -116,11 +121,35 @@ namespace SurvivalDrone.EditorTools
             var testLogPopup = logRoot.gameObject.AddComponent<TestLogPopup>();
             logRoot.gameObject.SetActive(false);
 
+            // ---- 일일 퀘스트 창 (평소엔 꺼져 있고, "일일 퀘스트"를 누르면 뜬다) ----
+            var questBox = NewPopup("DailyQuestPopup", root, new Vector2(1000f, 640f), out var questRoot);
+            var questTitle = NewText("TitleText", questBox, "일일 퀘스트", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
+            Place(questTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(800f, 64f));
+            var questHint = NewText("HintText", questBox, "매일 자정에 초기화돼요. 한 판에서 달성하면 여기서 코어를 받을 수 있어요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
+            Place(questHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(940f, 40f));
+            for (int i = 0; i < 3; i++)
+            {
+                var row = NewImage($"Row{i}", questBox, ButtonColor);
+                Place(row.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -180f - i * 110f), new Vector2(880f, 90f));
+                AddOutline(row.gameObject, OutlineColor);
+                var rowTitle = NewText("TitleText", row.transform, DailyQuests.Titles[i], 34, LightText, SansFont, TextAnchor.MiddleLeft);
+                Place(rowTitle.rectTransform, Center, Center, Center, new Vector2(-190f, 0f), new Vector2(380f, 60f));
+                var rowReward = NewText("RewardText", row.transform, $"코어 +{DailyQuests.Cores[i]}", 30, Cyan, SansFont, TextAnchor.MiddleRight);
+                Place(rowReward.rectTransform, Center, Center, Center, new Vector2(110f, 0f), new Vector2(240f, 60f));
+                var claimButton = NewButton("BtnClaim", row.transform, "진행 중", 30, ButtonColor, MutedText);
+                Place(claimButton.rectTransform, Center, Center, Center, new Vector2(340f, 0f), new Vector2(180f, 64f));
+            }
+            var questClose = NewButton("BtnClose", questBox, "닫기", 32, ButtonColor, LightText);
+            Place(questClose.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 40f), new Vector2(300f, 76f));
+            var questPopup = questRoot.gameObject.AddComponent<DailyQuestPopup>();
+            questRoot.gameObject.SetActive(false);
+
             // ---- 로비 컨트롤러 ----
             var lobbyUI = root.gameObject.AddComponent<LobbyUI>();
             SetClickSound(lobbyUI);
             SetClickSound(panel.GetComponent<StageSelectUI>());
             SetClickSound(testLogPopup);
+            SetClickSound(questPopup);
 
             SaveAndRegister(scene, ScenePath);
             Debug.Log($"[Stage] 로비 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");

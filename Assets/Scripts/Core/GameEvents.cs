@@ -22,11 +22,15 @@ namespace SurvivalDrone.Core
         // 매치(한 판)를 승리로 종료했을 때 발생하는 이벤트.
         public static event Action OnMatchWon;
 
-        // 아래 4개 함수는 이벤트를 "발생시키는" 역할만 한다.
+        // 미니 보스를 처치했을 때 발생하는 이벤트. 레벨업 UI가 받아서 보상 선택지(3지선다)를 한 번 보여준다.
+        public static event Action OnMiniBossKilled;
+
+        // 아래 함수들은 이벤트를 "발생시키는" 역할만 한다.
         // ?.Invoke()는 이 이벤트를 구독하는 곳이 하나도 없어도 에러 없이 안전하게 넘어가기 위한 문법.
         public static void RaiseEnemyKilled(Vector3 position, bool wasElite = false) => OnEnemyKilled?.Invoke(position, wasElite);
         public static void RaisePlayerLevelUp(int newLevel) => OnPlayerLevelUp?.Invoke(newLevel);
         public static void RaisePlayerDied() => OnPlayerDied?.Invoke();
         public static void RaiseMatchWon() => OnMatchWon?.Invoke();
+        public static void RaiseMiniBossKilled() => OnMiniBossKilled?.Invoke();
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using SurvivalDrone.Core;
+using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.Enemies
 {
@@ -56,6 +57,16 @@ namespace SurvivalDrone.Enemies
         // 보스가 등장하는 시점(초). 540초 = 9분.
         [SerializeField] private float bossSpawnTime = 540f;
 
+        [Header("미니 보스 (3분·6분)")]
+
+        // 미니 보스가 나오는 시간은 마일스톤과 같다(MatchMilestones.Seconds: 3분, 6분). 잡으면 드론 선택지(3지선다)를 한 번 준다.
+        // 아직 전용 모델이 없어서 보스 프리팹을 작게 줄여 임시로 쓴다. 아래 값은 그때그때 보스 체력에 곱하는 배율이다.
+        // 3분 미니 보스 = 보스 체력의 50%, 6분 미니 보스 = 80%. (순서대로 3분, 6분)
+        [SerializeField] private float[] miniBossHealthMultipliers = { 0.5f, 0.8f };
+
+        // 미니 보스의 겉보기 크기 배율 (보스보다 작아 보이게).
+        [SerializeField] private float miniBossScale = 0.6f;
+
         // 각 구간에서 "1초에 몇 마리씩" 새로 나오는지의 범위 (최소~최대).
         [SerializeField] private Vector2 earlySpawnPerSecond = new Vector2(1.5f, 2.5f);
         [SerializeField] private Vector2 midSpawnPerSecond = new Vector2(3f, 4f);
@@ -74,6 +85,9 @@ namespace SurvivalDrone.Enemies
 
         // 보스를 이미 스폰했는지 여부 (한 판에 한 번만 나오게 하기 위한 플래그).
         private bool bossSpawned;
+
+        // 미니 보스를 이미 스폰했는지 (3분, 6분 순서). 한 판에 각각 한 번만 나오게 한다.
+        private readonly bool[] miniBossSpawned = new bool[MatchMilestones.Seconds.Length];
 
         // 마지막으로 로그를 찍은 구간 번호 (0=초반, 1=중반, 2=후반). 구간이 바뀔 때 한 번만 로그를 남기기 위함.
         private int loggedPhase = -1;
@@ -94,6 +108,18 @@ namespace SurvivalDrone.Enemies
             if (GameManager.Instance.SpawningEnded)
             {
                 if (alive.Count == 0) GameManager.Instance.ReportAllEnemiesDefeated();
+                return;
+            }
+
+            // 미니 보스 등장 시점(3분, 6분)이 되었다면 한 마리 스폰하고 이번 프레임은 종료.
+            for (int i = 0; i < miniBossSpawned.Length; i++)
+            {
+                if (miniBossSpawned[i] || elapsed < MatchMilestones.Seconds[i]) continue;
+                miniBossSpawned[i] = true;
+                float healthMultiplier = i < miniBossHealthMultipliers.Length ? miniBossHealthMultipliers[i] : 1f;
+                Debug.Log($"[Spawner] 미니 보스 등장 - 경과 시간 {elapsed:F0}초 (체력 배율 {healthMultiplier})");
+                SurvivalDrone.UI.HUDNotice.Instance?.Show("미니 보스 출현!  처치하면 드론 선택 보상");
+                SpawnEnemy(bossEntry, false, healthMultiplier);
                 return;
             }
 
@@ -183,7 +209,8 @@ namespace SurvivalDrone.Enemies
 
         // 실제로 적 하나를 생성(Instantiate)하는 함수.
         // allowElite: 이 적이 엘리트로 승격될 수 있는지. 보스는 이미 충분히 강하므로 false로 넘긴다.
-        private void SpawnEnemy(EnemyEntry entry, bool allowElite = true)
+        // miniBossHealthMultiplier: 0보다 크면 이 적을 미니 보스로 만들고 체력에 이 배율을 곱한다. (0이면 일반 적/보스)
+        private void SpawnEnemy(EnemyEntry entry, bool allowElite = true, float miniBossHealthMultiplier = 0f)
         {
             if (entry == null || entry.prefab == null || player == null) return;
 
@@ -206,6 +233,9 @@ namespace SurvivalDrone.Enemies
                 {
                     ai.MakeElite();
                 }
+
+                // 미니 보스 표시도 Initialize()보다 먼저 해야 체력 배율이 반영된다.
+                if (miniBossHealthMultiplier > 0f) ai.MakeMiniBoss(miniBossHealthMultiplier, miniBossScale);
 
                 ai.Initialize(entry.definition, player, xpOrbPrefab, HandleEnemyDeath);
                 alive.Add(ai);

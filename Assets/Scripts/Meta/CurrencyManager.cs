@@ -151,6 +151,35 @@ namespace SurvivalDrone.Meta
             if (rewardCredit > 0) AddCredit(rewardCredit);
         }
 
+        // 마일스톤 보상(MatchMilestones 번호)을 아직 안 받았다면 코어를 지급하고 지급한 양을 돌려준다.
+        // 이미 받았거나 번호가 잘못됐으면 아무것도 하지 않고 0을 돌려준다. (계정 전체에서 번호마다 한 번만)
+        public int TryClaimMilestone(int index)
+        {
+            if (_data == null || index < 0 || index >= MatchMilestones.Cores.Length) return 0;
+
+            int bit = 1 << index;
+            if ((_data.milestoneClaimedMask & bit) != 0) return 0;
+
+            _data.milestoneClaimedMask |= bit;
+            int core = MatchMilestones.Cores[index];
+            Debug.Log($"[Currency] 마일스톤 {index} 달성: 코어 +{core}");
+            AddCore(core);
+            return core;
+        }
+
+        // 오늘 달성한 일일 퀘스트(DailyQuests 번호)의 코어를 받는다. 달성하지 않았거나 이미 받았으면 0을 돌려준다.
+        // today는 검증용(비우면 기기의 오늘 날짜).
+        public int TryClaimDailyQuest(int index, string today = null)
+        {
+            if (_data == null || !DailyQuests.IsDone(_data, index, today) || DailyQuests.IsClaimed(_data, index, today)) return 0;
+
+            _data.dailyQuestClaimedMask |= 1 << index;
+            int core = DailyQuests.Cores[index];
+            Debug.Log($"[Currency] 일일 퀘스트 {index} 보상: 코어 +{core}");
+            AddCore(core);
+            return core;
+        }
+
         // 0 이하의 금액은 실수(버그)이므로 무시하고 경고를 남긴다.
         private bool IsValidAmount(int amount, string action)
         {

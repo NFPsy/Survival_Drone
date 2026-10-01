@@ -67,8 +67,20 @@ namespace SurvivalDrone.Enemies
         // 엘리트 표시용 색상 (시안색 — 게임 전체의 강조색과 맞춤).
         [SerializeField] private Color eliteTint = new Color(0.31f, 0.847f, 0.91f);
 
+        // ── 미니 보스 관련 ──
+        // 미니 보스는 판 도중(3분·6분)에 한 마리씩 나오는 "중간 보스"다. 잡으면 드론 선택지(3지선다)를 한 번 더 준다.
+        // 체력 배율은 MakeMiniBoss()에서 받는다 (스폰 시점마다 다르게 하기 위해). 일반 적은 1배.
+        private bool isMiniBoss;
+        private float healthMultiplier = 1f;
+
+        // 미니 보스 표시용 색상 (주황 — 엘리트의 시안색, 보스와 구분되도록).
+        [SerializeField] private Color miniBossTint = new Color(1f, 0.55f, 0.2f);
+
         // 외부에서 이 적이 엘리트인지 확인할 수 있게 해주는 프로퍼티.
         public bool IsElite => isElite;
+
+        // 외부에서 이 적이 미니 보스인지 확인할 수 있게 해주는 프로퍼티.
+        public bool IsMiniBoss => isMiniBoss;
 
         // 외부에서 이 적의 종류 데이터를 읽을 수 있게 해주는 프로퍼티.
         public EnemyDefinition Definition => definition;
@@ -95,6 +107,9 @@ namespace SurvivalDrone.Enemies
             //  피하지 않고 노리게 된다.)
             if (isElite) scaledMaxHealth *= eliteHealthMultiplier;
 
+            // 미니 보스는 스폰 시점별로 정해진 체력 배율을 곱한다 (일반 적은 1배라 그대로).
+            scaledMaxHealth *= healthMultiplier;
+
             health = GetComponent<Health>();
             // 엘리트 배율이 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
             health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
@@ -113,22 +128,39 @@ namespace SurvivalDrone.Enemies
             transform.localScale *= eliteScaleMultiplier;
 
             // 색을 시안색 계열로 물들여서 일반 적과 구분되게 한다.
-            // MaterialPropertyBlock을 쓰는 이유: 머티리얼 원본을 복제하지 않고 이 오브젝트만
-            // 색을 바꿀 수 있어서, 엘리트가 여러 마리 나와도 메모리 낭비가 없다.
-            // (피격 시 색 번쩍임을 담당하는 DamageFlash도 같은 방식을 쓴다)
+            ApplyTint(eliteTint);
+        }
+
+        // 이 적을 "미니 보스"로 만든다. MakeElite()와 마찬가지로 Initialize()보다 먼저 불러야 체력 배율이 반영된다.
+        // healthMultiplierValue: 이 적 종류의 기본 체력에 곱할 배율, scaleMultiplier: 겉보기 크기 배율.
+        // 지금은 전용 모델이 없어서 EnemySpawner가 보스 프리팹을 작게 줄여서 임시로 쓴다.
+        public void MakeMiniBoss(float healthMultiplierValue, float scaleMultiplier)
+        {
+            isMiniBoss = true;
+            healthMultiplier = healthMultiplierValue;
+            transform.localScale *= scaleMultiplier;
+            ApplyTint(miniBossTint);
+        }
+
+        // 이 적의 모든 렌더러를 지정한 색으로 물들인다. (엘리트·미니 보스 표시용)
+        // MaterialPropertyBlock을 쓰는 이유: 머티리얼 원본을 복제하지 않고 이 오브젝트만
+        // 색을 바꿀 수 있어서, 여러 마리가 나와도 메모리 낭비가 없다.
+        // (피격 시 색 번쩍임을 담당하는 DamageFlash도 같은 방식을 쓴다)
+        private void ApplyTint(Color tint)
+        {
             var renderers = GetComponentsInChildren<Renderer>();
             var block = new MaterialPropertyBlock();
             foreach (var r in renderers)
             {
                 r.GetPropertyBlock(block);
-                block.SetColor("_BaseColor", eliteTint);
+                block.SetColor("_BaseColor", tint);
                 r.SetPropertyBlock(block);
             }
 
-            // 피격 시 색이 번쩍였다가 되돌아갈 "원래 색"도 엘리트 색으로 바꿔준다.
-            // 이걸 안 해주면 한 대 맞는 순간 원래 흰색으로 되돌아가서 엘리트 표시가 사라진다.
+            // 피격 시 색이 번쩍였다가 되돌아갈 "원래 색"도 같은 색으로 바꿔준다.
+            // 이걸 안 해주면 한 대 맞는 순간 원래 흰색으로 되돌아가서 표시가 사라진다.
             var flash = GetComponent<Core.DamageFlash>();
-            if (flash != null) flash.SetBaseColor(eliteTint);
+            if (flash != null) flash.SetBaseColor(tint);
         }
 
         // 오브젝트가 활성화될 때 살아있는 적 목록에 자신을 추가.
@@ -185,6 +217,9 @@ namespace SurvivalDrone.Enemies
             // 게임 전체에 "적이 죽었다"는 신호를 보낸다.
             // 엘리트였는지도 함께 알려줘서, 오버드라이브 게이지를 얼마나 채울지 판단하게 한다.
             GameEvents.RaiseEnemyKilled(transform.position, isElite);
+
+            // 미니 보스였다면 보상 선택지(3지선다)를 띄우라고 알린다.
+            if (isMiniBoss) GameEvents.RaiseMiniBossKilled();
 
             // 죽은 위치에 XP 오브를 하나 만들고, 이 적의 xpReward 값을 지급하도록 설정.
             if (xpOrbPrefab != null)

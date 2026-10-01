@@ -108,6 +108,47 @@ namespace SurvivalDrone.Core
             // 시간이 다 돼도 바로 승리하지 않는다: 적이 나오는 시간이 끝난 뒤 남은 적을 모두 잡았을 때
             // EnemySpawner가 ReportAllEnemiesDefeated()를 불러 승리 처리한다.
             ElapsedTime += Time.deltaTime;
+
+            CheckTimeMilestones();
+        }
+
+        // 이번 판에서 이미 확인한(도달 처리한) 시간 마일스톤. 3분·6분 순서이고, 한 판에 한 번만 확인하기 위한 표시다.
+        private readonly bool[] _milestoneReached = new bool[MatchMilestones.Seconds.Length];
+
+        // 이번 판에서 마일스톤으로 받은 코어 합계. 판이 끝났을 때 결과 화면의 "획득 보상"에 더해서 보여준다.
+        private int _milestoneCore;
+
+        // 3분·6분에 도달했는지 확인하고, 계정에서 처음 도달한 것이면 코어를 지급한다.
+        // 이미 받은 마일스톤이면 CurrencyManager가 0을 돌려줘서 조용히 넘어간다.
+        private void CheckTimeMilestones()
+        {
+            for (int i = 0; i < MatchMilestones.Seconds.Length; i++)
+            {
+                if (_milestoneReached[i] || ElapsedTime < MatchMilestones.Seconds[i]) continue;
+                _milestoneReached[i] = true;
+                RecordDailyQuestDone(i);
+                ClaimMilestone(i, $"{Mathf.RoundToInt(MatchMilestones.Seconds[i] / 60f)}분 달성");
+            }
+        }
+
+        // 일일 퀘스트를 달성 처리하고 저장한다. 퀘스트 번호(0: 3분, 1: 6분, 2: 클리어)는 마일스톤 번호와 같다.
+        // 코어는 로비의 일일 퀘스트 창에서 "받기"를 눌러야 지급된다.
+        private void RecordDailyQuestDone(int questIndex)
+        {
+            DailyQuests.MarkDone(SaveManager.Data, questIndex);
+            SaveManager.Save();
+        }
+
+        // 마일스톤 하나를 받는다. 처음 받는 것이면 합계에 더하고 화면에 안내 문구를 띄운다.
+        private void ClaimMilestone(int index, string title)
+        {
+            if (CurrencyManager.Instance == null) return;
+
+            int core = CurrencyManager.Instance.TryClaimMilestone(index);
+            if (core <= 0) return;
+
+            _milestoneCore += core;
+            SurvivalDrone.UI.HUDNotice.Instance?.Show($"마일스톤 {title}!  코어 +{core}");
         }
 
         // 플레이어 사망 신호를 받았을 때 실행되는 함수.
@@ -137,6 +178,9 @@ namespace SurvivalDrone.Core
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
             RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;
             StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
+            // 계정에서 처음 클리어했다면 "처음 클리어" 마일스톤 코어도 받는다. (결과 화면 합계에 포함되도록 보상 지급 전에 처리)
+            ClaimMilestone(MatchMilestones.ClearIndex, "처음 클리어");
+            RecordDailyQuestDone(MatchMilestones.ClearIndex);
             GrantReward(true);
             AudioManager.Instance?.PlaySfx(victorySound);
             GameEvents.RaiseMatchWon();
@@ -148,6 +192,9 @@ namespace SurvivalDrone.Core
         // CurrencyManager가 없으면(InGame 씬만 단독으로 실행한 경우) 보상 없이 넘어간다.
         private void GrantReward(bool cleared)
         {
+            // 판 도중 마일스톤으로 이미 받은 코어는 결과 화면의 "획득 보상"에 포함해서 보여준다. (재화는 받을 때 이미 지급됨)
+            RewardCore = _milestoneCore;
+
             if (CurrencyManager.Instance == null)
             {
                 Debug.LogWarning("[Currency] CurrencyManager가 없어 판 보상을 지급하지 못했습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");
@@ -157,7 +204,7 @@ namespace SurvivalDrone.Core
             // 스테이지 번호는 1부터 시작한다. 로비를 거치지 않고 InGame만 실행한 경우(StageProgress 없음)에는 스테이지 1로 본다.
             int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 1;
             CurrencyManager.Instance.GrantMatchReward(cleared, stageNumber, ElapsedTime, matchDuration, out int core, out int credit);
-            RewardCore = core;
+            RewardCore = core + _milestoneCore;
             RewardCredit = credit;
         }
     }

@@ -47,12 +47,16 @@ namespace SurvivalDrone.LevelUp
         {
             // 플레이어가 레벨업할 때마다 HandleLevelUp 함수가 자동으로 호출되도록 연결.
             if (playerExperience != null) playerExperience.OnLevelUp += HandleLevelUp;
+
+            // 미니 보스를 잡았을 때도 같은 선택 화면을 한 번 보여준다.
+            GameEvents.OnMiniBossKilled += HandleMiniBossKilled;
         }
 
         private void OnDisable()
         {
             // 오브젝트가 사라질 때는 반드시 구독을 해제해야 한다.
             if (playerExperience != null) playerExperience.OnLevelUp -= HandleLevelUp;
+            GameEvents.OnMiniBossKilled -= HandleMiniBossKilled;
         }
 
         private void Start()
@@ -65,6 +69,17 @@ namespace SurvivalDrone.LevelUp
         private void HandleLevelUp(int newLevel)
         {
             ShowOptions();
+        }
+
+        // 미니 보스 보상으로 받을 선택 화면이 밀려 있는 횟수. 이미 선택 화면이 떠 있을 때 미니 보스를 잡으면 하나 쌓아두고,
+        // 지금 화면의 선택이 끝난 뒤에 이어서 보여준다. (화면이 겹쳐서 앞의 선택이 사라지는 것을 막기 위함)
+        private int pendingBonusChoices;
+
+        // 미니 보스를 처치했을 때 호출된다. 선택 화면이 비어 있으면 바로 보여주고, 떠 있으면 다음으로 미룬다.
+        private void HandleMiniBossKilled()
+        {
+            if (panel != null && panel.activeSelf) pendingBonusChoices++;
+            else ShowOptions();
         }
 
         // 선택지 3개를 화면에 만들어서 보여주는 함수.
@@ -210,6 +225,13 @@ namespace SurvivalDrone.LevelUp
             // 선택이 끝났으니 패널을 끄고, 멈춰뒀던 시간을 다시 흐르게 한다.
             if (panel != null) panel.SetActive(false);
             Time.timeScale = 1f;
+
+            // 미니 보스 보상 선택이 밀려 있었다면 이어서 하나 더 보여준다.
+            if (pendingBonusChoices > 0)
+            {
+                pendingBonusChoices--;
+                ShowOptions();
+            }
         }
     }
 }

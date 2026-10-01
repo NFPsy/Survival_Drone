@@ -23,6 +23,18 @@ namespace SurvivalDrone.Meta
         // 크레딧(소프트 재화)의 현재 보유량.
         public int credit;
 
+        // 이미 받은 마일스톤 보상을 비트로 기록한다 (MatchMilestones의 번호 n이면 n번째 비트).
+        // 예: 3분(0번)과 6분(1번)을 받았으면 3. 계정 전체에서 한 번씩만 받기 위한 표시다.
+        public int milestoneClaimedMask;
+
+        // ---- 일일 퀘스트 ----
+        // 퀘스트 기록이 어느 날짜의 것인지 ("2026-10-01"). 오늘과 다르면 아래 기록을 초기화한다.
+        public string dailyQuestDate = "";
+
+        // 오늘 달성한 퀘스트(비트, DailyQuests의 번호 n이면 n번째 비트)와 이미 코어를 받은 퀘스트.
+        public int dailyQuestDoneMask;
+        public int dailyQuestClaimedMask;
+
         // ---- 테스트(CBT) 기록 ----
         // 테스터를 구분하는 임의의 짧은 번호 (이름이나 개인정보가 아니다). 처음 켤 때 한 번 만들어진다.
         public string testerId = "";
