@@ -153,9 +153,9 @@ namespace SurvivalDrone.EditorTools
                 int mClear = manager.TryClaimMilestone(0, MatchMilestones.ClearIndex);
                 int mClearAgain = manager.TryClaimMilestone(0, MatchMilestones.ClearIndex);
                 int mBad = manager.TryClaimMilestone(0, 99);
-                fails += Check(m0 == MatchMilestones.Cores[0] && m1 == MatchMilestones.Cores[1] && mClear == MatchMilestones.Cores[2]
+                fails += Check(m0 == MatchMilestones.GetCore(0, 0) && m1 == MatchMilestones.GetCore(0, 1) && mClear == MatchMilestones.GetCore(0, 2)
                                && m0Again == 0 && mClearAgain == 0 && mBad == 0
-                               && manager.Core == coreBefore + MatchMilestones.Cores[0] + MatchMilestones.Cores[1] + MatchMilestones.Cores[2],
+                               && manager.Core == coreBefore + MatchMilestones.GetCore(0, 0) + MatchMilestones.GetCore(0, 1) + MatchMilestones.GetCore(0, 2),
                     $"마일스톤 지급 3분 +{m0} / 6분 +{m1} / 처음 클리어 +{mClear}, 재청구·잘못된 번호는 0 (재청구 {m0Again}/{mClearAgain}, 잘못된 번호 {mBad})");
 
                 // 스테이지 2(번호 1)는 스테이지 1과 따로: 스테이지 1에서 다 받았어도 스테이지 2는 처음부터 다시 달성하고 받을 수 있다
@@ -170,13 +170,13 @@ namespace SurvivalDrone.EditorTools
                                && manager.Core == coreBefore + MatchMilestones.GetCore(1, 0) && MatchMilestones.IsClaimed(data, 0, 0),
                     $"마일스톤: 스테이지마다 따로 — 스테이지 2는 달성 전 {s2Early} / 달성 후 +{s2First} / 재청구 {s2Again}, 스테이지 3 달성 전 {s3Early}, 스테이지 1 기록은 그대로");
 
-                // 스테이지가 오를수록 보상이 늘어난다: 스테이지 1 = 100/150/300, 스테이지 2 = 150/225/450, 스테이지 3 = 200/300/600 (범위 밖 스테이지는 마지막 값)
+                // 스테이지가 오를수록 보상이 늘어난다: 스테이지 1 = 100/150/300, 스테이지 2 = 150/300/400, 스테이지 3 = 300/400/500 (범위 밖 스테이지는 마지막 값)
                 bool stage1Core = MatchMilestones.GetCore(0, 0) == 100 && MatchMilestones.GetCore(0, 1) == 150 && MatchMilestones.GetCore(0, 2) == 300;
-                bool stage2Core = MatchMilestones.GetCore(1, 0) == 150 && MatchMilestones.GetCore(1, 1) == 225 && MatchMilestones.GetCore(1, 2) == 450;
-                bool stage3Core = MatchMilestones.GetCore(2, 0) == 200 && MatchMilestones.GetCore(2, 1) == 300 && MatchMilestones.GetCore(2, 2) == 600;
-                bool stage99Core = MatchMilestones.GetCore(99, 0) == 200;
+                bool stage2Core = MatchMilestones.GetCore(1, 0) == 150 && MatchMilestones.GetCore(1, 1) == 300 && MatchMilestones.GetCore(1, 2) == 400;
+                bool stage3Core = MatchMilestones.GetCore(2, 0) == 300 && MatchMilestones.GetCore(2, 1) == 400 && MatchMilestones.GetCore(2, 2) == 500;
+                bool stage99Core = MatchMilestones.GetCore(99, 0) == 300;
                 fails += Check(stage1Core && stage2Core && stage3Core && stage99Core,
-                    "마일스톤 코어: 스테이지 1 = 100/150/300, 스테이지 2 = 150/225/450, 스테이지 3 = 200/300/600 (범위 밖 스테이지는 스테이지 3 값)");
+                    "마일스톤 코어: 스테이지 1 = 100/150/300, 스테이지 2 = 150/300/400, 스테이지 3 = 300/400/500 (범위 밖 스테이지는 스테이지 3 값)");
 
                 // 12) 일일 퀘스트: 달성 전에는 못 받고, 달성하면 한 번만 받고, 다음 날이 되면 기록이 초기화되어 다시 받을 수 있다
                 const string day1 = "2026-10-01", day2 = "2026-10-02";

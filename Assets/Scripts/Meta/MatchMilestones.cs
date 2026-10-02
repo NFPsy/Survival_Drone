@@ -13,30 +13,34 @@ namespace SurvivalDrone.Meta
         // 3분, 6분 마일스톤이 열리는 시간(초).
         public static readonly float[] Seconds = { 180f, 360f };
 
-        // 마일스톤별 코어 보상의 기본값(스테이지 1 기준). 0번 = 3분, 1번 = 6분, 2번 = 처음 클리어.
-        // 실제로 받는 양은 스테이지 배율(StageMultipliers)을 곱한 GetCore로 구한다.
-        public static readonly int[] Cores = { 100, 150, 300 };
+        // 스테이지별 마일스톤 코어 보상. 바깥 칸 = 스테이지 1, 2, 3 순서(스테이지가 오를수록 더 준다),
+        // 안쪽 칸 = 0번 3분, 1번 6분, 2번 처음 클리어. 스테이지 칸이 모자라면 마지막 스테이지 값을 쓴다.
+        //   스테이지 1: 100 / 150 / 300 (합계 550)
+        //   스테이지 2: 150 / 300 / 400 (합계 850)
+        //   스테이지 3: 300 / 400 / 500 (합계 1,200)
+        private static readonly int[][] CoresByStage =
+        {
+            new[] { 100, 150, 300 },
+            new[] { 150, 300, 400 },
+            new[] { 300, 400, 500 },
+        };
 
-        // 스테이지 1, 2, 3 순서의 보상 배율. 스테이지가 오를수록 더 준다 (1배 / 1.5배 / 2배).
-        // 배열 칸이 모자란 스테이지는 마지막 칸 값을 쓴다.
-        public static readonly float[] StageMultipliers = { 1f, 1.5f, 2f };
-
-        // 스테이지(0부터)의 마일스톤(번호 index) 코어 보상. 예) 스테이지 2의 3분 = 100 × 1.5 = 150.
+        // 스테이지(0부터)의 마일스톤(번호 index) 코어 보상. 예) 스테이지 2의 6분 = 300.
         public static int GetCore(int stageIndex, int index)
         {
-            float multiplier = StageMultipliers[System.Math.Max(0, System.Math.Min(stageIndex, StageMultipliers.Length - 1))];
-            return (int)System.Math.Round(Cores[index] * multiplier);
+            int stage = System.Math.Max(0, System.Math.Min(stageIndex, CoresByStage.Length - 1));
+            return CoresByStage[stage][index];
         }
 
-        // 로비 마일스톤 창에 보여줄 이름과 달성 조건 문구. (Cores와 같은 순서)
+        // 로비 마일스톤 창에 보여줄 이름과 달성 조건 문구. (마일스톤 번호 순서)
         public static readonly string[] Titles = { "3분", "6분", "클리어" };
         public static readonly string[] Conditions = { "3분 이상 생존에서 획득", "6분 이상 생존에서 획득", "처음 클리어에서 획득" };
 
-        // 처음 클리어 마일스톤의 번호 (Cores 배열에서의 위치).
+        // 처음 클리어 마일스톤의 번호 (스테이지 안에서의 위치).
         public const int ClearIndex = 2;
 
         // 마일스톤 개수 (스테이지 하나당).
-        public static int Count => Cores.Length;
+        public static int Count => Titles.Length;
 
         private static bool IsValid(int stageIndex, int index) => stageIndex >= 0 && index >= 0 && index < Count;
 
