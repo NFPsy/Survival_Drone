@@ -150,24 +150,31 @@ namespace SurvivalDrone.EditorTools
 
             // ---- 마일스톤 창 (평소엔 꺼져 있고, "마일스톤"을 누르면 뜬다) ----
             // 3분 / 6분 / 클리어 칸을 고르면 아래에 보상과 조건이 나오고, 달성한 칸에서 "획득"을 눌러 코어를 받는다.
-            var msBox = NewPopup("MilestonePopup", root, new Vector2(1000f, 720f), out var msRoot);
+            // 마일스톤은 스테이지마다 따로 받으므로, 위쪽에서 스테이지(1~3)를 먼저 고른다.
+            var msBox = NewPopup("MilestonePopup", root, new Vector2(1000f, 820f), out var msRoot);
             var msTitle = NewText("TitleText", msBox, "마일스톤", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
             Place(msTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(800f, 64f));
-            var msHint = NewText("HintText", msBox, "계정 전체에서 한 번씩만 받을 수 있어요. 판에서 달성하면 여기서 코어를 받아요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
+            var msHint = NewText("HintText", msBox, "스테이지마다 한 번씩 받을 수 있어요. 판에서 달성하면 여기서 코어를 받아요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
             Place(msHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(940f, 40f));
+            const int milestoneStageCount = 3;
+            for (int s = 0; s < milestoneStageCount; s++)
+            {
+                var stageTab = NewButton($"StageTab{s}", msBox, $"스테이지 {s + 1}", 28, ButtonColor, LightText);
+                Place(stageTab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((s - 1) * 290f, -165f), new Vector2(270f, 64f));
+            }
             for (int i = 0; i < MatchMilestones.Count; i++)
             {
                 var tab = NewButton($"Tab{i}", msBox, MatchMilestones.Titles[i], 52, ButtonColor, LightText);
-                Place(tab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((i - 1) * 300f, -180f), new Vector2(260f, 200f));
+                Place(tab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((i - 1) * 300f, -260f), new Vector2(260f, 200f));
                 var tabStatus = NewText("StatusText", tab.transform, "미달성", 28, MutedText, SansFont, TextAnchor.MiddleCenter);
                 Place(tabStatus.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 18f), new Vector2(240f, 40f));
             }
             var msRewardLabel = NewText("RewardLabel", msBox, "보상", 28, MutedText, SansFont, TextAnchor.MiddleCenter);
-            Place(msRewardLabel.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -410f), new Vector2(400f, 40f));
+            Place(msRewardLabel.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -490f), new Vector2(400f, 40f));
             var msReward = NewText("RewardText", msBox, "코어 +0", 46, Cyan, SansFont, TextAnchor.MiddleCenter);
-            Place(msReward.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -455f), new Vector2(700f, 64f));
+            Place(msReward.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -535f), new Vector2(700f, 64f));
             var msCondition = NewText("ConditionText", msBox, "", 28, LightText, SansFont, TextAnchor.MiddleCenter);
-            Place(msCondition.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -530f), new Vector2(800f, 44f));
+            Place(msCondition.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -610f), new Vector2(900f, 44f));
             var msClaim = NewButton("BtnClaim", msBox, "획득", 32, ButtonColor, MutedText);
             Place(msClaim.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(-170f, 40f), new Vector2(300f, 76f));
             var msClose = NewButton("BtnClose", msBox, "닫기", 32, ButtonColor, LightText);

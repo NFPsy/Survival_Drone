@@ -139,17 +139,19 @@ namespace SurvivalDrone.Core
             SaveManager.Save();
         }
 
-        // 마일스톤 하나를 "달성"으로 기록하고, 처음 달성한 것이면 화면에 안내 문구를 띄운다.
-        // 이미 달성했거나 받은 마일스톤이면 조용히 넘어간다. (InGame만 실행한 경우도 저장 파일을 건드리지 않도록 건너뜀)
+        // 마일스톤 하나를 "달성"으로 기록하고, 처음 달성한 것이면 화면에 안내 문구를 띄운다. 마일스톤은 스테이지마다 따로라서
+        // 지금 플레이 중인 스테이지의 기록에 적는다. 이미 달성했거나 받은 마일스톤이면 조용히 넘어간다.
+        // (InGame만 실행한 경우도 저장 파일을 건드리지 않도록 건너뜀)
         private void MarkMilestoneDone(int index, string title)
         {
             if (CurrencyManager.Instance == null) return;
 
+            int stageIndex = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex : 0;
             var data = SaveManager.Data;
-            if (!MatchMilestones.MarkDone(data, index)) return;
+            if (!MatchMilestones.MarkDone(data, stageIndex, index)) return;
 
             SaveManager.Save();
-            SurvivalDrone.UI.HUDNotice.Instance?.Show($"마일스톤 {title}!  로비에서 코어 +{MatchMilestones.Cores[index]}를 받을 수 있어요");
+            SurvivalDrone.UI.HUDNotice.Instance?.Show($"스테이지 {stageIndex + 1} 마일스톤 {title}!  로비에서 코어 +{MatchMilestones.Cores[index]}를 받을 수 있어요");
         }
 
         // 플레이어 사망 신호를 받았을 때 실행되는 함수.

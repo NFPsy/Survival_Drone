@@ -151,15 +151,15 @@ namespace SurvivalDrone.Meta
             if (rewardCredit > 0) AddCredit(rewardCredit);
         }
 
-        // 달성한 마일스톤 보상(MatchMilestones 번호)의 코어를 받는다. 지급한 양을 돌려준다.
-        // 아직 달성하지 못했거나, 이미 받았거나, 번호가 잘못됐으면 아무것도 하지 않고 0을 돌려준다. (계정 전체에서 번호마다 한 번만)
-        public int TryClaimMilestone(int index)
+        // 달성한 마일스톤 보상(스테이지 번호 stageIndex, MatchMilestones 번호 index)의 코어를 받는다. 지급한 양을 돌려준다.
+        // 아직 달성하지 못했거나, 이미 받았거나, 번호가 잘못됐으면 아무것도 하지 않고 0을 돌려준다. (스테이지마다 번호마다 한 번만)
+        public int TryClaimMilestone(int stageIndex, int index)
         {
-            if (_data == null || !MatchMilestones.IsDone(_data, index) || MatchMilestones.IsClaimed(_data, index)) return 0;
+            if (_data == null || !MatchMilestones.IsDone(_data, stageIndex, index) || MatchMilestones.IsClaimed(_data, stageIndex, index)) return 0;
 
-            _data.milestoneClaimedMask |= 1 << index;
+            MatchMilestones.MarkClaimed(_data, stageIndex, index);
             int core = MatchMilestones.Cores[index];
-            Debug.Log($"[Currency] 마일스톤 {index} 달성: 코어 +{core}");
+            Debug.Log($"[Currency] 스테이지 {stageIndex + 1} 마일스톤 {index} 달성: 코어 +{core}");
             AddCore(core);
             return core;
         }

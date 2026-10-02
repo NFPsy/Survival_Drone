@@ -23,12 +23,15 @@ namespace SurvivalDrone.Meta
         // 크레딧(소프트 재화)의 현재 보유량.
         public int credit;
 
-        // 달성한 마일스톤을 비트로 기록한다 (MatchMilestones의 번호 n이면 n번째 비트). 달성만 하고 아직 코어를 안 받은 것도 포함.
-        // 로비의 마일스톤 창에서 "획득"을 눌러야 코어를 받는다.
-        public int milestoneDoneMask;
+        // ---- 마일스톤 (스테이지마다 따로) ----
+        // 스테이지마다 3분 / 6분 / 처음 클리어 마일스톤을 한 번씩 받는다. 리스트의 n번째 칸 = 스테이지 n+1의 기록이고,
+        // 값은 비트다 (MatchMilestones의 번호 n이면 n번째 비트). 예: 3분(0번)과 6분(1번)을 받았으면 3.
+        // "달성"은 판에서 자동으로 기록되고, 로비의 마일스톤 창에서 "획득"을 눌러야 코어를 받는다("수령").
+        public List<int> stageMilestoneDoneMasks = new List<int>();
+        public List<int> stageMilestoneClaimedMasks = new List<int>();
 
-        // 이미 받은 마일스톤 보상을 비트로 기록한다 (MatchMilestones의 번호 n이면 n번째 비트).
-        // 예: 3분(0번)과 6분(1번)을 받았으면 3. 계정 전체에서 한 번씩만 받기 위한 표시다.
+        // 옛 저장 호환용: 스테이지를 나누기 전에는 계정 전체에 하나만 기록했다. 지금은 이 값을 스테이지 1의 기록으로 읽는다.
+        public int milestoneDoneMask;
         public int milestoneClaimedMask;
 
         // ---- 일일 퀘스트 ----

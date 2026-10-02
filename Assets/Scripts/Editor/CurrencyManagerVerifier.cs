@@ -128,35 +128,48 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(failCore == 0 && failCredit == 100 && manager.Core == coreBefore && manager.Credit == creditBefore + 100,
                     $"210초 실패 지급 코어 +{failCore} (잔액 그대로), 크레딧 +{failCredit}");
 
-                // 11) 마일스톤: 달성해야 받을 수 있고(받기를 눌러야 지급), 번호마다 계정 전체에서 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
+                // 11) 마일스톤: 스테이지마다 따로. 달성해야 받을 수 있고(받기를 눌러야 지급), 번호마다 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
+                //     아래 앞부분은 스테이지 1(번호 0)로 확인한다.
                 coreBefore = manager.Core;
-                int mEarly = manager.TryClaimMilestone(0) + manager.TryClaimMilestone(1) + manager.TryClaimMilestone(MatchMilestones.ClearIndex);
-                fails += Check(mEarly == 0 && manager.Core == coreBefore && !MatchMilestones.IsDone(data, 0),
+                int mEarly = manager.TryClaimMilestone(0, 0) + manager.TryClaimMilestone(0, 1) + manager.TryClaimMilestone(0, MatchMilestones.ClearIndex);
+                fails += Check(mEarly == 0 && manager.Core == coreBefore && !MatchMilestones.IsDone(data, 0, 0),
                     $"마일스톤: 달성 전에는 받을 수 없음 (받은 코어 {mEarly}, 잔액 그대로)");
 
-                bool newDone = MatchMilestones.MarkDone(data, 0);
-                bool againDone = MatchMilestones.MarkDone(data, 0);
-                MatchMilestones.MarkDone(data, 1);
-                MatchMilestones.MarkDone(data, MatchMilestones.ClearIndex);
-                bool badDone = MatchMilestones.MarkDone(data, 99);
-                fails += Check(newDone && !againDone && !badDone && manager.Core == coreBefore && MatchMilestones.IsDone(data, 0) && !MatchMilestones.IsClaimed(data, 0),
+                bool newDone = MatchMilestones.MarkDone(data, 0, 0);
+                bool againDone = MatchMilestones.MarkDone(data, 0, 0);
+                MatchMilestones.MarkDone(data, 0, 1);
+                MatchMilestones.MarkDone(data, 0, MatchMilestones.ClearIndex);
+                bool badDone = MatchMilestones.MarkDone(data, 0, 99) || MatchMilestones.MarkDone(data, -1, 0);
+                fails += Check(newDone && !againDone && !badDone && manager.Core == coreBefore && MatchMilestones.IsDone(data, 0, 0) && !MatchMilestones.IsClaimed(data, 0, 0),
                     "마일스톤: 달성 기록은 한 번만 새로 기록되고, 달성만으로는 코어가 들어오지 않음");
 
-                // 옛 저장(달성 기록 없이 받은 기록만 있는 파일)도 달성한 것으로 읽힌다
+                // 옛 저장(스테이지를 나누기 전, 계정 전체로 기록하던 파일)은 스테이지 1의 기록으로 읽힌다. 달성 기록 없이 받은 기록만 있어도 달성으로 본다.
                 var legacy = new SaveData { milestoneClaimedMask = 1 };
-                fails += Check(MatchMilestones.IsDone(legacy, 0) && MatchMilestones.IsClaimed(legacy, 0) && !MatchMilestones.IsDone(legacy, 1),
-                    "마일스톤: 받은 기록만 있는 옛 저장도 안전하게 읽힘");
+                fails += Check(MatchMilestones.IsDone(legacy, 0, 0) && MatchMilestones.IsClaimed(legacy, 0, 0) && !MatchMilestones.IsDone(legacy, 0, 1) && !MatchMilestones.IsDone(legacy, 1, 0),
+                    "마일스톤: 옛 저장(계정 전체 기록)은 스테이지 1의 기록으로 안전하게 읽힘");
 
-                int m0 = manager.TryClaimMilestone(0);
-                int m0Again = manager.TryClaimMilestone(0);
-                int m1 = manager.TryClaimMilestone(1);
-                int mClear = manager.TryClaimMilestone(MatchMilestones.ClearIndex);
-                int mClearAgain = manager.TryClaimMilestone(MatchMilestones.ClearIndex);
-                int mBad = manager.TryClaimMilestone(99);
+                int m0 = manager.TryClaimMilestone(0, 0);
+                int m0Again = manager.TryClaimMilestone(0, 0);
+                int m1 = manager.TryClaimMilestone(0, 1);
+                int mClear = manager.TryClaimMilestone(0, MatchMilestones.ClearIndex);
+                int mClearAgain = manager.TryClaimMilestone(0, MatchMilestones.ClearIndex);
+                int mBad = manager.TryClaimMilestone(0, 99);
                 fails += Check(m0 == MatchMilestones.Cores[0] && m1 == MatchMilestones.Cores[1] && mClear == MatchMilestones.Cores[2]
                                && m0Again == 0 && mClearAgain == 0 && mBad == 0
                                && manager.Core == coreBefore + MatchMilestones.Cores[0] + MatchMilestones.Cores[1] + MatchMilestones.Cores[2],
                     $"마일스톤 지급 3분 +{m0} / 6분 +{m1} / 처음 클리어 +{mClear}, 재청구·잘못된 번호는 0 (재청구 {m0Again}/{mClearAgain}, 잘못된 번호 {mBad})");
+
+                // 스테이지 2(번호 1)는 스테이지 1과 따로: 스테이지 1에서 다 받았어도 스테이지 2는 처음부터 다시 달성하고 받을 수 있다
+                coreBefore = manager.Core;
+                int s2Early = manager.TryClaimMilestone(1, 0);
+                bool s2NotDone = !MatchMilestones.IsDone(data, 1, 0) && !MatchMilestones.IsClaimed(data, 1, 0);
+                MatchMilestones.MarkDone(data, 1, 0);
+                int s2First = manager.TryClaimMilestone(1, 0);
+                int s2Again = manager.TryClaimMilestone(1, 0);
+                int s3Early = manager.TryClaimMilestone(2, 0);
+                fails += Check(s2Early == 0 && s2NotDone && s2First == MatchMilestones.Cores[0] && s2Again == 0 && s3Early == 0
+                               && manager.Core == coreBefore + MatchMilestones.Cores[0] && MatchMilestones.IsClaimed(data, 0, 0),
+                    $"마일스톤: 스테이지마다 따로 — 스테이지 2는 달성 전 {s2Early} / 달성 후 +{s2First} / 재청구 {s2Again}, 스테이지 3 달성 전 {s3Early}, 스테이지 1 기록은 그대로");
 
                 // 12) 일일 퀘스트: 달성 전에는 못 받고, 달성하면 한 번만 받고, 다음 날이 되면 기록이 초기화되어 다시 받을 수 있다
                 const string day1 = "2026-10-01", day2 = "2026-10-02";
@@ -178,8 +191,9 @@ namespace SurvivalDrone.EditorTools
                 string json = JsonUtility.ToJson(data);
                 var loaded = JsonUtility.FromJson<SaveData>(json);
                 fails += Check(loaded.core == data.core && loaded.credit == data.credit && loaded.isCurrencyInitialized == data.isCurrencyInitialized
-                               && loaded.milestoneClaimedMask == data.milestoneClaimedMask && data.milestoneClaimedMask == 7
-                               && loaded.milestoneDoneMask == data.milestoneDoneMask,
+                               && loaded.stageMilestoneClaimedMasks.Count == data.stageMilestoneClaimedMasks.Count
+                               && loaded.stageMilestoneClaimedMasks[0] == 7 && loaded.stageMilestoneClaimedMasks[1] == 1
+                               && loaded.stageMilestoneDoneMasks.Count == data.stageMilestoneDoneMasks.Count,
                     $"JSON 저장/불러오기 왕복 일치: {json}");
             }
             finally
