@@ -14,6 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.CurrencyTable
   _startCore: 2700
   _startCredit: 0
-  _clearCoreByStage: 6400000096000000c8000000
   _clearCreditByStage: c80000002c01000090010000
   _failMinSurviveSeconds: 60

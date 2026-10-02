@@ -18,12 +18,11 @@ namespace SurvivalDrone.Meta
         [SerializeField] private int _startCredit = 0;
 
         // ---- 한 판이 끝났을 때의 보상 ----
-        // 클리어 보상: 코어(100 / 150 / 200)와 크레딧(200 / 300 / 400) 모두 스테이지가 오를수록 늘어난다.
-        // 실패 보상은 **크레딧만** 준다(코어는 0). 따로 숫자를 두지 않고, 클리어 크레딧에 "얼마나 오래 버텼는지"를 곱해서 계산한다(아래 CalculateMatchReward).
-        // 실패한 판에서 코어를 얻는 길은 마일스톤(3분·6분 도달)뿐이다.
-        [Header("판 보상 (클리어)")]
-        // 아래 두 배열은 스테이지 1, 2, 3 순서. 배열 칸이 모자란 스테이지는 마지막 칸 값을 쓴다.
-        [SerializeField] private int[] _clearCoreByStage = { 100, 150, 200 };
+        // 판 보상은 **크레딧만** 준다. 클리어하면 크레딧(200 / 300 / 400)이 스테이지가 오를수록 늘어나고, 코어는 주지 않는다.
+        // 실패 보상도 크레딧만이고, 따로 숫자를 두지 않고 클리어 크레딧에 "얼마나 오래 버텼는지"를 곱해서 계산한다(아래 CalculateMatchReward).
+        // 코어는 마일스톤(3분·6분 도달, 처음 클리어)과 일일 퀘스트로만 얻는다.
+        [Header("판 보상 (클리어 크레딧)")]
+        // 스테이지 1, 2, 3 순서. 배열 칸이 모자란 스테이지는 마지막 칸 값을 쓴다.
         [SerializeField] private int[] _clearCreditByStage = { 200, 300, 400 };
 
         // 실패했을 때: 이 시간(초) 미만으로 버티면 보상이 없다. 일부러 금방 죽어서 재화를 모으는 것을 막기 위한 값.
@@ -33,9 +32,6 @@ namespace SurvivalDrone.Meta
         public int StartCore => _startCore;
         public int StartCredit => _startCredit;
         public float FailMinSurviveSeconds => _failMinSurviveSeconds;
-
-        // 해당 스테이지(1부터 시작)를 클리어했을 때 받는 코어.
-        public int GetClearCore(int stageNumber) => GetByStage(_clearCoreByStage, stageNumber);
 
         // 해당 스테이지(1부터 시작)를 클리어했을 때 받는 크레딧.
         public int GetClearCredit(int stageNumber) => GetByStage(_clearCreditByStage, stageNumber);
@@ -49,33 +45,32 @@ namespace SurvivalDrone.Meta
         }
 
         // 한 판의 보상을 계산한다 (재화를 실제로 주지는 않고 숫자만 돌려준다).
-        //  - 클리어: 클리어 보상 전부.
-        //  - 실패: 코어는 항상 0. 크레딧은 생존 시간이 _failMinSurviveSeconds(60초) 미만이면 0.
+        //  - 코어는 클리어든 실패든 항상 0이다 (코어는 마일스톤·일일 퀘스트로만 얻는다).
+        //  - 클리어: 클리어 크레딧 전부.
+        //  - 실패: 크레딧은 생존 시간이 _failMinSurviveSeconds(60초) 미만이면 0.
         //          그 이후에는 (생존 시간 - 60초) ÷ (판 길이 - 60초) 만큼의 비율로 클리어 크레딧을 받는다.
         //          예) 판 길이 600초, 330초 생존 → (330-60) ÷ (600-60) = 50% → 스테이지 1이면 코어 0, 크레딧 100.
         //          (판 길이 = 적이 나오는 시간. 그 뒤 남은 적을 잡는 시간에 죽어도 100%를 넘지 않는다.)
         public void CalculateMatchReward(bool cleared, int stageNumber, float surviveSeconds, float matchSeconds, out int core, out int credit)
         {
-            int fullCore = GetClearCore(stageNumber);
+            // 코어는 판 보상으로 주지 않는다 (클리어도 실패도 0).
+            core = 0;
             int fullCredit = GetClearCredit(stageNumber);
 
             if (cleared)
             {
-                core = fullCore;
                 credit = fullCredit;
                 return;
             }
 
             if (surviveSeconds < _failMinSurviveSeconds)
             {
-                core = 0;
                 credit = 0;
                 return;
             }
 
             float span = matchSeconds - _failMinSurviveSeconds;
             float ratio = span > 0f ? Mathf.Clamp01((surviveSeconds - _failMinSurviveSeconds) / span) : 1f;
-            core = 0; // 실패해도 코어는 주지 않는다 (코어는 마일스톤으로만)
             credit = Mathf.RoundToInt(fullCredit * ratio);
         }
     }
