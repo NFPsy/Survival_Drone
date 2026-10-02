@@ -30,6 +30,9 @@ namespace SurvivalDrone.Core
         // 지금 진행 중인 번쩍임 코루틴 (중복 실행 방지를 위해 저장해둔다).
         private Coroutine flashRoutine;
 
+        // 번쩍임이 끝나야 하는 시각(Time.time 기준). 연속으로 맞으면 이 시각만 뒤로 미룬다.
+        private float flashEndTime;
+
         // MaterialPropertyBlock을 쓰면 머티리얼 에셋 자체를 복제하지 않고도
         // 오브젝트별로 다른 색을 잠깐 보여줄 수 있어서, 적이 아무리 많아도 메모리 낭비가 없다.
         private MaterialPropertyBlock propertyBlock;
@@ -52,6 +55,8 @@ namespace SurvivalDrone.Core
         private void OnDisable()
         {
             health.OnDamaged -= HandleDamaged;
+            // 오브젝트가 꺼지면 코루틴도 함께 멈추므로, 다음에 켜졌을 때 새로 시작할 수 있게 기록을 비운다.
+            flashRoutine = null;
         }
 
         // propertyBlock/targetRenderer가 아직 준비 안 됐으면 그때그때 채워주는 함수.
@@ -95,16 +100,18 @@ namespace SurvivalDrone.Core
             EnsureInitialized();
             if (targetRenderer == null) return;
 
-            // 연속으로 맞아서 번쩍임이 겹치면 이전 것을 취소하고 새로 시작한다.
-            if (flashRoutine != null) StopCoroutine(flashRoutine);
-            flashRoutine = StartCoroutine(FlashRoutine());
+            // 번쩍임을 끝낼 시각을 "지금 + flashDuration"으로 정한다. 연속으로 맞으면 이 시각이 계속 뒤로 밀린다.
+            // 이미 번쩍이는 중이면 코루틴을 새로 만들지 않고 끝나는 시각만 바꾼다. (한 번 휘두를 때 적 여러 마리를 맞히는
+            // 근접·폭발 드론이 있어서, 맞을 때마다 코루틴과 대기 객체를 새로 만들면 메모리 쓰레기가 많이 생겼다)
+            flashEndTime = Time.time + flashDuration;
+            if (flashRoutine == null) flashRoutine = StartCoroutine(FlashRoutine());
         }
 
-        // 색을 flashColor로 바꿨다가, 잠깐 기다린 뒤 원래 색으로 되돌리는 코루틴.
+        // 색을 flashColor로 바꿨다가, 끝나는 시각이 될 때까지 기다린 뒤 원래 색으로 되돌리는 코루틴.
         private IEnumerator FlashRoutine()
         {
             SetColor(flashColor);
-            yield return new WaitForSeconds(flashDuration);
+            while (Time.time < flashEndTime) yield return null;
             SetColor(originalColor);
             flashRoutine = null;
         }

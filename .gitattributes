@@ -1,0 +1,38 @@
+# 줄바꿈 규칙: 모든 텍스트 파일은 저장소 안에서도, 내 컴퓨터에서도 LF로 통일한다.
+# (이 파일이 없으면 윈도우에서 커밋할 때마다 "LF will be replaced by CRLF" 경고가 뜨고,
+#  컴퓨터마다 줄바꿈이 달라져서 같은 파일이 바뀐 것처럼 보일 수 있다.)
+* text=auto eol=lf
+
+# 유니티가 글자로 저장하는 파일들 (씬, 프리팹, 에셋, 메타 파일, 코드)
+*.cs        text eol=lf diff=csharp
+*.shader    text eol=lf
+*.cginc     text eol=lf
+*.hlsl      text eol=lf
+*.asmdef    text eol=lf
+*.unity     text eol=lf merge=unityyamlmerge
+*.prefab    text eol=lf merge=unityyamlmerge
+*.asset     text eol=lf merge=unityyamlmerge
+*.mat       text eol=lf merge=unityyamlmerge
+*.anim      text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.meta      text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.jslib     text eol=lf
+
+# 그림·소리·3D 모델·글꼴 같은 바이너리 파일: 줄바꿈을 건드리지 않는다.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.tga   binary
+*.psd   binary
+*.webp  binary
+*.fbx   binary
+*.blend binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.ttf   binary
+*.otf   binary
+*.dll   binary
+*.pdf   binary

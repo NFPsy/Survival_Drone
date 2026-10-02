@@ -89,23 +89,40 @@ namespace SurvivalDrone.UI
             if (levelText != null && playerExperience != null) levelText.text = $"Lv. {playerExperience.Level}";
         }
 
+        // 타이머 글자에 마지막으로 적어 둔 값. 값이 그대로면 글자를 다시 만들지 않기 위한 기억이다.
+        // (글자를 새로 만들면 매번 메모리 쓰레기가 생기는데, 초 단위로만 바뀌는 시간을 매 프레임 새로 만들 필요가 없다.)
+        // -1은 "아직 아무것도 안 적었음"이라는 뜻.
+        private int shownSeconds = -1;
+        private int shownEnemies = -1;
+
         private void Update()
         {
             // 타이머는 매 프레임 계속 줄어들기 때문에, 이벤트 방식이 아니라 여기서 직접 갱신한다.
+            // 다만 화면에 보이는 값이 바뀐 프레임에만 글자를 새로 적는다.
             if (timerText != null && GameManager.Instance != null)
             {
                 // 적이 나오는 시간이 끝나면 시간 대신 "남은 적 수"를 보여준다(다 잡으면 승리).
                 if (GameManager.Instance.SpawningEnded)
                 {
-                    timerText.text = $"남은 적 {GameManager.Instance.RemainingEnemies}";
+                    int enemies = GameManager.Instance.RemainingEnemies;
+                    if (enemies != shownEnemies)
+                    {
+                        shownEnemies = enemies;
+                        shownSeconds = -1;
+                        timerText.text = $"남은 적 {enemies}";
+                    }
                     return;
                 }
 
-                float t = GameManager.Instance.TimeRemaining;
+                // 남은 시간을 초 단위로 내림한 값. 이 값이 그대로면 화면 글자도 그대로다.
+                int totalSeconds = Mathf.FloorToInt(GameManager.Instance.TimeRemaining);
+                if (totalSeconds == shownSeconds) return;
+                shownSeconds = totalSeconds;
+                shownEnemies = -1;
 
                 // 초 단위 시간을 "분:초" 형태로 변환.
-                int minutes = Mathf.FloorToInt(t / 60f);
-                int seconds = Mathf.FloorToInt(t % 60f);
+                int minutes = totalSeconds / 60;
+                int seconds = totalSeconds % 60;
 
                 // "00:00" 형식으로 자릿수를 맞춰서 표시 (예: 5분 5초 -> "05:05").
                 timerText.text = $"{minutes:00}:{seconds:00}";

@@ -226,6 +226,8 @@ namespace SurvivalDrone.Enemies
             {
                 var orbObj = Instantiate(xpOrbPrefab, transform.position, Quaternion.identity);
                 var orb = orbObj.GetComponent<XPOrb>();
+                // 구슬이 플레이어를 직접 찾지 않아도 되도록, 이 적이 쫓던 플레이어를 넘겨준다.
+                if (orb != null) orb.SetTarget(target);
                 if (orb != null && definition != null)
                 {
                     // 엘리트는 XP도 몇 배로 준다 (잡는 데 오래 걸린 만큼 보상).

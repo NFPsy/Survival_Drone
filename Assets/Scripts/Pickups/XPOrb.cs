@@ -35,10 +35,19 @@ namespace SurvivalDrone.Pickups
             xpValue = value;
         }
 
+        // 적이 죽을 때(EnemyAI에서) 쫓아갈 플레이어를 직접 알려준다.
+        // 구슬이 첫 프레임마다 "Player" 태그로 씬 전체를 뒤져서 찾지 않아도 되게 하려는 것이다. (적이 많을수록 낭비가 컸다)
+        public void SetTarget(Transform player)
+        {
+            if (player == null) return;
+            target = player;
+            playerXP = player.GetComponent<PlayerExperience>();
+        }
+
         private void Update()
         {
-            // 아직 플레이어를 찾지 못했다면 "Player" 태그를 가진 오브젝트를 찾아서 저장.
-            // (매 프레임 찾지 않고 한 번만 찾도록 캐싱하는 방식)
+            // 아직 플레이어를 모른다면(SetTarget으로 받지 못한 경우) "Player" 태그를 가진 오브젝트를 찾아서 저장.
+            // (매 프레임 찾지 않고 한 번만 찾도록 캐싱하는 방식. 안전장치로 남겨 둔 것이다)
             if (target == null)
             {
                 var playerObj = GameObject.FindGameObjectWithTag("Player");
