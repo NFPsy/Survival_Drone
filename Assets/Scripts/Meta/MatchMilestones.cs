@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace SurvivalDrone.Meta
 {
     // 한 판의 "마일스톤"(중간 목표) 수치 모음.
-    // 마일스톤 = 정해진 목표에 도달하면 받을 수 있는 코어 보상. **스테이지마다** 각각 딱 한 번씩 받는다.
+    // 마일스톤 = 정해진 목표에 도달하면 받을 수 있는 코어 보상. **스테이지마다** 각각 딱 한 번씩 받고, 스테이지가 오를수록 보상이 늘어난다.
     //  - 0번: 3분 도달, 1번: 6분 도달 (판 도중에 "달성"으로 기록됨)
     //  - 2번: 처음 클리어 (판이 끝날 때 "달성"으로 기록됨)
     // 달성은 판에서 자동으로 기록되지만, 코어는 로비의 마일스톤 창에서 "획득"을 눌러야 받는다. (일일 퀘스트와 같은 방식)
@@ -13,8 +13,20 @@ namespace SurvivalDrone.Meta
         // 3분, 6분 마일스톤이 열리는 시간(초).
         public static readonly float[] Seconds = { 180f, 360f };
 
-        // 마일스톤별 코어 보상. 0번 = 3분, 1번 = 6분, 2번 = 처음 클리어. 모든 스테이지가 같은 값을 쓴다.
+        // 마일스톤별 코어 보상의 기본값(스테이지 1 기준). 0번 = 3분, 1번 = 6분, 2번 = 처음 클리어.
+        // 실제로 받는 양은 스테이지 배율(StageMultipliers)을 곱한 GetCore로 구한다.
         public static readonly int[] Cores = { 100, 150, 300 };
+
+        // 스테이지 1, 2, 3 순서의 보상 배율. 스테이지가 오를수록 더 준다 (1배 / 1.5배 / 2배).
+        // 배열 칸이 모자란 스테이지는 마지막 칸 값을 쓴다.
+        public static readonly float[] StageMultipliers = { 1f, 1.5f, 2f };
+
+        // 스테이지(0부터)의 마일스톤(번호 index) 코어 보상. 예) 스테이지 2의 3분 = 100 × 1.5 = 150.
+        public static int GetCore(int stageIndex, int index)
+        {
+            float multiplier = StageMultipliers[System.Math.Max(0, System.Math.Min(stageIndex, StageMultipliers.Length - 1))];
+            return (int)System.Math.Round(Cores[index] * multiplier);
+        }
 
         // 로비 마일스톤 창에 보여줄 이름과 달성 조건 문구. (Cores와 같은 순서)
         public static readonly string[] Titles = { "3분", "6분", "클리어" };

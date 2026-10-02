@@ -158,7 +158,7 @@ namespace SurvivalDrone.Meta
             if (_data == null || !MatchMilestones.IsDone(_data, stageIndex, index) || MatchMilestones.IsClaimed(_data, stageIndex, index)) return 0;
 
             MatchMilestones.MarkClaimed(_data, stageIndex, index);
-            int core = MatchMilestones.Cores[index];
+            int core = MatchMilestones.GetCore(stageIndex, index);
             Debug.Log($"[Currency] 스테이지 {stageIndex + 1} 마일스톤 {index} 달성: 코어 +{core}");
             AddCore(core);
             return core;

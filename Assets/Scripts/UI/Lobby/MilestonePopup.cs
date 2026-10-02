@@ -220,7 +220,7 @@ namespace SurvivalDrone.UI
             bool selectedDone = MatchMilestones.IsDone(data, _stage, _selected);
             bool selectedClaimed = MatchMilestones.IsClaimed(data, _stage, _selected);
 
-            if (_rewardText != null) _rewardText.text = $"코어 +{MatchMilestones.Cores[_selected]}";
+            if (_rewardText != null) _rewardText.text = $"코어 +{MatchMilestones.GetCore(_stage, _selected)}";
             if (_conditionText != null) _conditionText.text = $"스테이지 {_stage + 1} · {MatchMilestones.Conditions[_selected]}";
 
             bool canClaim = selectedDone && !selectedClaimed;
