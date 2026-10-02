@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 9beac323a4c7c564b8cb84614d939a99
+guid: 5dc16c7ee24d2d54cb697715ebef48fe
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -9,9 +9,8 @@ TrueTypeFontImporter:
   characterPadding: 1
   includeFontData: 1
   fontNames:
-  - Geist
-  fallbackFontReferences:
-  - {fileID: 12800000, guid: 5dc16c7ee24d2d54cb697715ebef48fe, type: 3}
+  - Pretendard Std
+  fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0
   ascentCalculationMode: 1
