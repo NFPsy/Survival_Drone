@@ -38,6 +38,8 @@ namespace SurvivalDrone.UI
         private TestLogPopup _testLogPopup;
         private Button _questButton;
         private DailyQuestPopup _questPopup;
+        private Button _milestoneButton;
+        private MilestonePopup _milestonePopup;
         private StageSelectUI _stageSelect;
 
         // 로비 카드에 지금 보여주는 스테이지 위치. 화살표로 넘겨 보다가 잠긴 스테이지를 볼 수도 있어서
@@ -82,6 +84,15 @@ namespace SurvivalDrone.UI
                 questTransform.gameObject.SetActive(false);
             }
             else Debug.LogWarning("[Quest] 로비에서 'DailyQuestPopup'을 찾지 못했습니다.");
+
+            _milestoneButton = WireButton(transform, "BtnMilestone", () => { PlayClick(); if (_milestonePopup != null) _milestonePopup.Open(); });
+            var milestoneTransform = transform.Find("MilestonePopup");
+            if (milestoneTransform != null)
+            {
+                _milestonePopup = milestoneTransform.GetComponent<MilestonePopup>();
+                milestoneTransform.gameObject.SetActive(false);
+            }
+            else Debug.LogWarning("[Milestone] 로비에서 'MilestonePopup'을 찾지 못했습니다.");
 
             var selectTransform = transform.Find("StageSelectPanel");
             if (selectTransform != null)
@@ -188,6 +199,7 @@ namespace SurvivalDrone.UI
             if (_hangarButton != null) _hangarButton.gameObject.SetActive(!show);
             if (_logButton != null) _logButton.gameObject.SetActive(!show);
             if (_questButton != null) _questButton.gameObject.SetActive(!show);
+            if (_milestoneButton != null) _milestoneButton.gameObject.SetActive(!show);
 
             // 패널을 닫고 돌아왔을 때 카드가 방금 고른 스테이지를 보여주도록 다시 그린다.
             if (!show)

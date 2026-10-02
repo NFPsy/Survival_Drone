@@ -67,6 +67,10 @@ namespace SurvivalDrone.EditorTools
             // 오른쪽 아래 "뽑기" 버튼 바로 위. (같은 줄 가운데로 옮기면 출격 버튼과 겹친다)
             Place(quest.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-50f, 140f), new Vector2(260f, 70f));
 
+            var milestone = NewButton("BtnMilestone", root, "마일스톤", 30, ButtonColor, LightText);
+            // 일일 퀘스트 버튼 바로 위.
+            Place(milestone.rectTransform, BottomRight, BottomRight, BottomRight, new Vector2(-50f, 230f), new Vector2(260f, 70f));
+
             // ---- 스테이지 선택 패널 (평소에는 꺼져 있고, "스테이지 목록"을 누르면 뜬다) ----
             var panel = NewImage("StageSelectPanel", root, PanelColor);
             Place(panel.rectTransform, Center, Center, Center, new Vector2(0f, 20f), new Vector2(1640f, 800f));
@@ -144,12 +148,40 @@ namespace SurvivalDrone.EditorTools
             var questPopup = questRoot.gameObject.AddComponent<DailyQuestPopup>();
             questRoot.gameObject.SetActive(false);
 
+            // ---- 마일스톤 창 (평소엔 꺼져 있고, "마일스톤"을 누르면 뜬다) ----
+            // 3분 / 6분 / 클리어 칸을 고르면 아래에 보상과 조건이 나오고, 달성한 칸에서 "획득"을 눌러 코어를 받는다.
+            var msBox = NewPopup("MilestonePopup", root, new Vector2(1000f, 720f), out var msRoot);
+            var msTitle = NewText("TitleText", msBox, "마일스톤", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
+            Place(msTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(800f, 64f));
+            var msHint = NewText("HintText", msBox, "계정 전체에서 한 번씩만 받을 수 있어요. 판에서 달성하면 여기서 코어를 받아요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
+            Place(msHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(940f, 40f));
+            for (int i = 0; i < MatchMilestones.Count; i++)
+            {
+                var tab = NewButton($"Tab{i}", msBox, MatchMilestones.Titles[i], 52, ButtonColor, LightText);
+                Place(tab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((i - 1) * 300f, -180f), new Vector2(260f, 200f));
+                var tabStatus = NewText("StatusText", tab.transform, "미달성", 28, MutedText, SansFont, TextAnchor.MiddleCenter);
+                Place(tabStatus.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 18f), new Vector2(240f, 40f));
+            }
+            var msRewardLabel = NewText("RewardLabel", msBox, "보상", 28, MutedText, SansFont, TextAnchor.MiddleCenter);
+            Place(msRewardLabel.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -410f), new Vector2(400f, 40f));
+            var msReward = NewText("RewardText", msBox, "코어 +0", 46, Cyan, SansFont, TextAnchor.MiddleCenter);
+            Place(msReward.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -455f), new Vector2(700f, 64f));
+            var msCondition = NewText("ConditionText", msBox, "", 28, LightText, SansFont, TextAnchor.MiddleCenter);
+            Place(msCondition.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -530f), new Vector2(800f, 44f));
+            var msClaim = NewButton("BtnClaim", msBox, "획득", 32, ButtonColor, MutedText);
+            Place(msClaim.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(-170f, 40f), new Vector2(300f, 76f));
+            var msClose = NewButton("BtnClose", msBox, "닫기", 32, ButtonColor, LightText);
+            Place(msClose.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(170f, 40f), new Vector2(300f, 76f));
+            var milestonePopup = msRoot.gameObject.AddComponent<MilestonePopup>();
+            msRoot.gameObject.SetActive(false);
+
             // ---- 로비 컨트롤러 ----
             var lobbyUI = root.gameObject.AddComponent<LobbyUI>();
             SetClickSound(lobbyUI);
             SetClickSound(panel.GetComponent<StageSelectUI>());
             SetClickSound(testLogPopup);
             SetClickSound(questPopup);
+            SetClickSound(milestonePopup);
 
             SaveAndRegister(scene, ScenePath);
             Debug.Log($"[Stage] 로비 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");

@@ -95,7 +95,7 @@ namespace SurvivalDrone.EditorTools
                 bool clear99 = c == 200 && cr == 400;
                 fails += Check(clear1 && clear2 && clear3 && clear99, "클리어 보상: 스테이지 1 = 100/200, 2 = 150/300, 3 = 200/400 (범위 밖 스테이지는 200/400)");
 
-                // 9) 보상 계산: 실패는 60초 미만이면 0, 60초 이후부터 (생존-60) ÷ (판 길이-60) 비율
+                // 9) 보상 계산: 실패는 코어 항상 0, 크레딧은 60초 미만이면 0 · 60초 이후부터 (생존-60) ÷ (판 길이-60) 비율
                 table.CalculateMatchReward(false, 1, 10f, 360f, out c, out cr);
                 bool under1 = c == 0 && cr == 0;
                 table.CalculateMatchReward(false, 1, 59.9f, 360f, out c, out cr);
@@ -105,14 +105,14 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(under1 && under2 && exactly60, "실패: 10초·59.9초·정확히 60초 생존은 보상 0");
 
                 table.CalculateMatchReward(false, 1, 210f, 360f, out c, out cr);
-                bool f210 = c == 50 && cr == 100;   // (210-60)/300 = 50%
+                bool f210 = c == 0 && cr == 100;    // (210-60)/300 = 50% → 크레딧만
                 table.CalculateMatchReward(false, 2, 330f, 360f, out c, out cr);
-                bool f330 = c == 135 && cr == 270;  // (330-60)/300 = 90%
+                bool f330 = c == 0 && cr == 270;    // (330-60)/300 = 90%
                 table.CalculateMatchReward(false, 3, 359.9f, 360f, out c, out cr);
-                bool f359 = c == 200 && cr == 400;  // 99.97% → 반올림하면 전액
+                bool f359 = c == 0 && cr == 400;    // 99.97% → 반올림하면 크레딧 전액
                 table.CalculateMatchReward(false, 1, 500f, 360f, out c, out cr);
-                bool over = c == 100 && cr == 200;  // 남은 적을 잡다가 판 길이를 넘겨 죽어도 전액을 넘지 않음
-                fails += Check(f210 && f330 && f359 && over, "실패 비례: 스테이지1 210초 = 50/100, 스테이지2 330초 = 135/270, 스테이지3 359.9초 = 200/400, 판 길이 초과도 전액까지만");
+                bool over = c == 0 && cr == 200;    // 남은 적을 잡다가 판 길이를 넘겨 죽어도 크레딧 전액을 넘지 않음
+                fails += Check(f210 && f330 && f359 && over, "실패는 코어 0 + 크레딧 비례: 스테이지1 210초 = 0/100, 스테이지2 330초 = 0/270, 스테이지3 359.9초 = 0/400, 판 길이 초과도 크레딧 전액까지만");
 
                 // 10) 실제 지급: 클리어는 잔액이 늘고, 1분 미만 실패는 잔액이 그대로이며 경고도 없다
                 int coreBefore = manager.Core, creditBefore = manager.Credit;
@@ -125,11 +125,28 @@ namespace SurvivalDrone.EditorTools
                     "30초 만에 실패하면 지급 없음 (잔액 그대로)");
                 coreBefore = manager.Core; creditBefore = manager.Credit;
                 manager.GrantMatchReward(false, 1, 210f, 360f, out int failCore, out int failCredit);
-                fails += Check(failCore == 50 && failCredit == 100 && manager.Core == coreBefore + 50 && manager.Credit == creditBefore + 100,
-                    $"210초 실패 지급 코어 +{failCore}, 크레딧 +{failCredit}");
+                fails += Check(failCore == 0 && failCredit == 100 && manager.Core == coreBefore && manager.Credit == creditBefore + 100,
+                    $"210초 실패 지급 코어 +{failCore} (잔액 그대로), 크레딧 +{failCredit}");
 
-                // 11) 마일스톤: 번호마다 계정 전체에서 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
+                // 11) 마일스톤: 달성해야 받을 수 있고(받기를 눌러야 지급), 번호마다 계정 전체에서 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
                 coreBefore = manager.Core;
+                int mEarly = manager.TryClaimMilestone(0) + manager.TryClaimMilestone(1) + manager.TryClaimMilestone(MatchMilestones.ClearIndex);
+                fails += Check(mEarly == 0 && manager.Core == coreBefore && !MatchMilestones.IsDone(data, 0),
+                    $"마일스톤: 달성 전에는 받을 수 없음 (받은 코어 {mEarly}, 잔액 그대로)");
+
+                bool newDone = MatchMilestones.MarkDone(data, 0);
+                bool againDone = MatchMilestones.MarkDone(data, 0);
+                MatchMilestones.MarkDone(data, 1);
+                MatchMilestones.MarkDone(data, MatchMilestones.ClearIndex);
+                bool badDone = MatchMilestones.MarkDone(data, 99);
+                fails += Check(newDone && !againDone && !badDone && manager.Core == coreBefore && MatchMilestones.IsDone(data, 0) && !MatchMilestones.IsClaimed(data, 0),
+                    "마일스톤: 달성 기록은 한 번만 새로 기록되고, 달성만으로는 코어가 들어오지 않음");
+
+                // 옛 저장(달성 기록 없이 받은 기록만 있는 파일)도 달성한 것으로 읽힌다
+                var legacy = new SaveData { milestoneClaimedMask = 1 };
+                fails += Check(MatchMilestones.IsDone(legacy, 0) && MatchMilestones.IsClaimed(legacy, 0) && !MatchMilestones.IsDone(legacy, 1),
+                    "마일스톤: 받은 기록만 있는 옛 저장도 안전하게 읽힘");
+
                 int m0 = manager.TryClaimMilestone(0);
                 int m0Again = manager.TryClaimMilestone(0);
                 int m1 = manager.TryClaimMilestone(1);
@@ -161,7 +178,8 @@ namespace SurvivalDrone.EditorTools
                 string json = JsonUtility.ToJson(data);
                 var loaded = JsonUtility.FromJson<SaveData>(json);
                 fails += Check(loaded.core == data.core && loaded.credit == data.credit && loaded.isCurrencyInitialized == data.isCurrencyInitialized
-                               && loaded.milestoneClaimedMask == data.milestoneClaimedMask && data.milestoneClaimedMask == 7,
+                               && loaded.milestoneClaimedMask == data.milestoneClaimedMask && data.milestoneClaimedMask == 7
+                               && loaded.milestoneDoneMask == data.milestoneDoneMask,
                     $"JSON 저장/불러오기 왕복 일치: {json}");
             }
             finally
