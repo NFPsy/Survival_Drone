@@ -44,8 +44,8 @@ namespace SurvivalDrone.EditorTools
         // 저장하지 않은 변경이 있는 씬이 열려 있으면 저장할지 묻고, 취소하면 null을 돌려준다.
         public static Transform CreateCanvasScene(out Scene scene)
         {
-            SansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Geist-Variable.ttf");
-            MonoFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/GeistMono-Variable.ttf");
+            SansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
+            MonoFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
             var gridSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/UI_GridPattern.png");
 
             scene = default;

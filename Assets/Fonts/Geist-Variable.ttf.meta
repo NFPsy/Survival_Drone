@@ -10,8 +10,7 @@ TrueTypeFontImporter:
   includeFontData: 1
   fontNames:
   - Geist
-  fallbackFontReferences:
-  - {fileID: 12800000, guid: 5dc16c7ee24d2d54cb697715ebef48fe, type: 3}
+  fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0
   ascentCalculationMode: 1
