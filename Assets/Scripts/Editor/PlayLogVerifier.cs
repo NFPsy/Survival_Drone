@@ -115,6 +115,23 @@ namespace SurvivalDrone.EditorTools
                 PlayLog.RecordMatch(noFail, 1, true, 600f, 700f, 10, 5, 100, 40, 200);
                 fails += Check(PlayLog.BuildSummaryText(noFail).Contains("실패한 판 평균 생존: 실패한 판 없음"), "실패한 판이 없으면 '실패한 판 없음'으로 표시");
 
+                // ---- 판 도중에 나간 기록 (일시정지 메뉴의 재시작·메인메뉴) ----
+                var leave = new SaveData();
+                PlayLog.RecordAbandon(leave, 1, 95f, 120.5f, 6, 3, 110, "메인메뉴");
+                PlayLog.RecordAbandon(leave, 2, 35f, 40f, 2, 2, 110, "재시작");
+                fails += Check(leave.playLog[0] == "10-09 13:05:07 | match_abandon | 스테이지=1 나간방법=메인메뉴 생존=95.0초 실제소요=120.5초 도달레벨=6 드론수=3 내전투력=110",
+                    $"이탈 기록 문장 형식: '{leave.playLog[0]}'");
+                fails += Check(leave.logStats.abandons == 2 && Mathf.Approximately(leave.logStats.abandonSurviveSeconds, 130f) && leave.logStats.matches == 0 && leave.logStats.timedMatches == 0,
+                    "이탈 누적: 2번, 나간 시점 합계 130초, 끝난 판 수(matches)에는 안 들어감");
+                string leaveSummary = PlayLog.BuildSummaryText(leave);
+                fails += Check(leaveSummary.Contains("판 도중에 나감 2번 (평균 1:05 시점") && leaveSummary.Contains("판 수 0"),
+                    "요약: 판 도중에 나감 2번, 평균 1:05 시점 (판 수 0은 그대로)");
+                fails += Check(!PlayLog.BuildSummaryText(new SaveData()).Contains("판 도중에 나감"), "이탈이 없으면 요약에 '판 도중에 나감' 줄이 없음");
+                var leaveLoaded = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(leave));
+                fails += Check(leaveLoaded.logStats.abandons == 2 && Mathf.Approximately(leaveLoaded.logStats.abandonSurviveSeconds, 130f),
+                    "JSON 저장/불러오기 왕복 후에도 이탈 누적이 그대로");
+                fails += Check(oldSave.logStats.abandons == 0, "이탈 항목이 없는 옛 저장 파일은 이탈 0번으로 읽힘");
+
                 // ---- 최대 개수 ----
                 var big = new SaveData();
                 for (int i = 0; i < PlayLog.MaxEntries + 50; i++) PlayLog.RecordScreen(big, $"Scene{i}");

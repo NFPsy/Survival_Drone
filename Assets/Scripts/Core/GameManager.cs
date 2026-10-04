@@ -37,6 +37,10 @@ namespace SurvivalDrone.Core
         // 판이 끝나는 순간에 정해지고, 그 전에는 0이다. 테스트(CBT) 기록에 남겨서 "한 판이 실제로 몇 분인지" 판단하는 근거로 쓴다.
         public float RealElapsedSeconds { get; private set; }
 
+        // 지금까지 실제로 흐른 시간(초). RealElapsedSeconds는 판이 끝날 때만 정해지지만, 이 값은 호출한 순간의 값을 바로 계산한다.
+        // 판 도중에 나갈 때(일시정지 메뉴의 재시작·메인메뉴) 테스트 기록에 남기려고 만들었다.
+        public float CurrentRealElapsedSeconds => Time.realtimeSinceStartup - _matchStartRealtime;
+
         // 이번 판이 끝났을 때 받은 보상. 결과 화면이 "획득 보상" 패널에 보여준다. (판이 끝나기 전에는 0)
         public int RewardCore { get; private set; }
         public int RewardCredit { get; private set; }

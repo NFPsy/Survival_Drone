@@ -3,6 +3,9 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using SurvivalDrone.Core;
+using SurvivalDrone.Player;
+using SurvivalDrone.Drones;
+using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
 {
@@ -99,6 +102,7 @@ namespace SurvivalDrone.UI
         private void Restart()
         {
             AudioManager.Instance?.PlaySfx(clickSound);
+            RecordAbandon("재시작");
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
@@ -107,8 +111,31 @@ namespace SurvivalDrone.UI
         private void GoToMainMenu()
         {
             AudioManager.Instance?.PlaySfx(clickSound);
+            RecordAbandon("메인메뉴");
             Time.timeScale = 1f;
             SceneManager.LoadScene(mainMenuSceneName);
+        }
+
+        // 판 도중에 나간다는 사실을 테스트(CBT) 기록에 남긴다.
+        // 사망·클리어로 끝난 판은 결과 화면(ResultPanel)이 기록하지만, 일시정지 메뉴에서 나가면 아무 기록도 안 남아서
+        // "어디서 지루해서/어려워서 나갔는지"를 알 수 없었다. 그래서 나가기 직전에 한 줄을 남긴다.
+        private void RecordAbandon(string exitMethod)
+        {
+            // 판이 이미 끝났거나, 로비를 거치지 않고 InGame 씬만 단독으로 실행한 경우(저장 데이터 없음)에는 남기지 않는다.
+            var game = GameManager.Instance;
+            if (game == null || game.State != MatchState.Playing || CurrencyManager.Instance == null) return;
+
+            int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
+            int combatPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;
+
+            // 누르는 순간 딱 한 번만 찾으면 되므로 씬에서 직접 찾는다. (매 프레임 부르는 곳이 아니라서 부담이 없다)
+            var experience = FindFirstObjectByType<PlayerExperience>();
+            var droneManager = FindFirstObjectByType<DroneManager>();
+            int level = experience != null ? experience.Level : 1;
+            int droneCount = droneManager != null ? droneManager.OwnedCount : 0;
+
+            PlayLog.RecordAbandon(SaveManager.Data, stageNumber, game.ElapsedTime, game.CurrentRealElapsedSeconds, level, droneCount, combatPower, exitMethod);
+            SaveManager.Save();
         }
     }
 }

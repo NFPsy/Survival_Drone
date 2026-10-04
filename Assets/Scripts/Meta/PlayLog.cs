@@ -98,6 +98,19 @@ namespace SurvivalDrone.Meta
                 $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}");
         }
 
+        // 판이 끝나기 전에 일시정지 메뉴에서 나갔을 때. (사망·클리어로 끝난 판은 위의 RecordMatch가 남긴다)
+        //  exitMethod = "재시작" 또는 "메인메뉴". 어느 시점에서 많이 나가는지가 "지루하거나 어려워서 나간 구간"을 알려준다.
+        //  판 수·클리어율 같은 "끝난 판" 통계에는 넣지 않고, 이탈 횟수와 이탈 시점만 따로 쌓는다.
+        public static void RecordAbandon(SaveData data, int stageNumber, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, string exitMethod)
+        {
+            var s = data.logStats;
+            s.abandons++;
+            s.abandonSurviveSeconds += surviveSeconds;
+
+            Add(data, "match_abandon",
+                $"스테이지={stageNumber} 나간방법={exitMethod} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount} 내전투력={combatPower}");
+        }
+
         // 드론 강화에 성공했을 때.
         public static void RecordUpgrade(SaveData data, string droneName, int newLevel, int combatPower)
         {
@@ -166,6 +179,10 @@ namespace SurvivalDrone.Meta
             {
                 builder.AppendLine("- 판 수 0 (아직 플레이한 판이 없음)");
             }
+
+            // 판 도중에 나간 기록. 위의 "판 수"는 사망·클리어로 끝난 판만 센 것이라, 나간 판은 여기에 따로 보여준다.
+            if (s.abandons > 0)
+                builder.AppendLine($"- 판 도중에 나감 {s.abandons}번 (평균 {FormatSeconds(s.abandonSurviveSeconds / s.abandons)} 시점, 위 판 수에는 포함 안 됨)");
 
             builder.AppendLine($"- 뽑기 총 {s.pullsTotal}회 (1회 {s.singlePullActions}번, 10연 {s.tenPullActions}번) · SSR {s.ssrTotal}개 · 뽑기에 쓴 코어 {s.coreSpentOnPulls:N0} · 코어 부족으로 막힘 {s.blockedPulls}번");
             builder.AppendLine(s.matchesBeforeFirstPull >= 0
