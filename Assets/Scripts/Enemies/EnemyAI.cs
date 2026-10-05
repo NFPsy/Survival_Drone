@@ -46,6 +46,10 @@ namespace SurvivalDrone.Enemies
         // Initialize 시점에 한 번만 저장해둔다.
         private float scaledContactDamage;
 
+        // 이 적의 몸 반지름(월드 크기). 건물(EnemyObstacle)에 "몸이 닿는 거리"를 계산할 때 쓴다.
+        // Initialize 시점에 한 번만 계산한다. (엘리트·미니 보스의 크기 변경은 그 전에 끝나 있다)
+        private float bodyRadius;
+
         // ── 엘리트 로봇 관련 ──
         // 엘리트는 가끔 섞여 나오는 "강화판" 적이다. 체력이 훨씬 많고 크고 색이 다르지만,
         // 잡으면 XP를 많이 주고 오버드라이브 게이지를 왕창 채워준다.
@@ -109,6 +113,11 @@ namespace SurvivalDrone.Enemies
 
             // 미니 보스는 스폰 시점별로 정해진 체력 배율을 곱한다 (일반 적은 1배라 그대로).
             scaledMaxHealth *= healthMultiplier;
+
+            // 건물에 닿는 거리 계산용 몸 반지름: 캡슐 충돌체의 반지름에 가로 크기를 곱한다. 충돌체가 없으면 0.5로 가정.
+            var capsule = GetComponent<CapsuleCollider>();
+            Vector3 lossy = transform.lossyScale;
+            bodyRadius = capsule != null ? capsule.radius * Mathf.Max(Mathf.Abs(lossy.x), Mathf.Abs(lossy.z)) : 0.5f;
 
             health = GetComponent<Health>();
             // 엘리트 배율이 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
@@ -188,8 +197,37 @@ namespace SurvivalDrone.Enemies
             // 아주 가깝지 않다면 플레이어 방향으로 이동하고, 그 방향을 바라보도록 회전.
             if (distance > 0.05f)
             {
-                Vector3 dir = toTarget / distance;
-                transform.position += dir * definition.moveSpeed * Time.deltaTime;
+                // 걸어갈 목표 지점. 평소에는 플레이어이고, 건물(EnemyObstacle)이 사이를 가로막고 있으면
+                // 그 건물의 모서리 지점이 된다. (플레이어처럼 적도 건물을 통과하지 못하게 하기 위함)
+                // 건물이 없는 씬이면 목록이 비어 있어서 예전과 똑같이 플레이어를 향해 곧장 걷는다.
+                Vector3 goal = target.position;
+                bool detouring = false;
+                var obstacles = EnemyObstacle.All;
+                for (int i = 0; i < obstacles.Count; i++)
+                {
+                    Vector3 steered = obstacles[i].SteerAround(transform.position, goal, bodyRadius);
+                    if (steered != goal)
+                    {
+                        goal = steered;
+                        detouring = true;
+                    }
+                }
+
+                Vector3 toGoal = goal - transform.position;
+                toGoal.y = 0f;
+                float goalDistance = toGoal.magnitude;
+                Vector3 dir = goalDistance > 0.0001f ? toGoal / goalDistance : toTarget / distance;
+
+                float step = definition.moveSpeed * Time.deltaTime;
+                // 모서리를 향해 갈 때는 모서리를 지나쳐 버리지 않도록 남은 거리까지만 걷는다.
+                if (detouring) step = Mathf.Min(step, goalDistance);
+                Vector3 newPosition = transform.position + dir * step;
+
+                // 안전장치: 그래도 건물 안으로 들어갔다면(예: 건물 안에서 스폰) 가장 가까운 면 바깥으로 밀어낸다.
+                for (int i = 0; i < obstacles.Count; i++)
+                    obstacles[i].PushOut(ref newPosition, bodyRadius);
+
+                transform.position = newPosition;
                 transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
             }
 

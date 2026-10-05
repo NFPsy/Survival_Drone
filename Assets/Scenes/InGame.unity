@@ -414,6 +414,7 @@ GameObject:
   - component: {fileID: 103833272}
   - component: {fileID: 103833271}
   - component: {fileID: 103833270}
+  - component: {fileID: 103833273}
   m_Layer: 0
   m_Name: Building_03
   m_TagString: Untagged
@@ -514,6 +515,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103833268}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &103833273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 103833268}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e35bbb45db0aa4da9c1902d337181e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyObstacle
 --- !u!1 &130840006
 GameObject:
   m_ObjectHideFlags: 0
@@ -872,6 +885,7 @@ GameObject:
   - component: {fileID: 212130953}
   - component: {fileID: 212130952}
   - component: {fileID: 212130951}
+  - component: {fileID: 212130954}
   m_Layer: 0
   m_Name: Building_04
   m_TagString: Untagged
@@ -972,6 +986,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 212130949}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &212130954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212130949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e35bbb45db0aa4da9c1902d337181e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyObstacle
 --- !u!1 &230017198
 GameObject:
   m_ObjectHideFlags: 0
@@ -2533,6 +2559,7 @@ GameObject:
   - component: {fileID: 757519383}
   - component: {fileID: 757519382}
   - component: {fileID: 757519381}
+  - component: {fileID: 757519384}
   m_Layer: 0
   m_Name: Building_01
   m_TagString: Untagged
@@ -2633,6 +2660,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 757519379}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &757519384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 757519379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e35bbb45db0aa4da9c1902d337181e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyObstacle
 --- !u!1 &761384236
 GameObject:
   m_ObjectHideFlags: 0
@@ -4181,6 +4220,7 @@ GameObject:
   - component: {fileID: 1357239736}
   - component: {fileID: 1357239735}
   - component: {fileID: 1357239734}
+  - component: {fileID: 1357239737}
   m_Layer: 0
   m_Name: Building_05
   m_TagString: Untagged
@@ -4281,6 +4321,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1357239732}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1357239737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1357239732}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e35bbb45db0aa4da9c1902d337181e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyObstacle
 --- !u!1 &1379600558
 GameObject:
   m_ObjectHideFlags: 0
@@ -4448,6 +4500,7 @@ GameObject:
   - component: {fileID: 1393619892}
   - component: {fileID: 1393619891}
   - component: {fileID: 1393619890}
+  - component: {fileID: 1393619893}
   m_Layer: 0
   m_Name: Building_02
   m_TagString: Untagged
@@ -4548,6 +4601,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1393619888}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1393619893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1393619888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04e35bbb45db0aa4da9c1902d337181e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyObstacle
 --- !u!1 &1411335270
 GameObject:
   m_ObjectHideFlags: 0
