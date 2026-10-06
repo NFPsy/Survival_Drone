@@ -26,9 +26,11 @@ namespace SurvivalDrone.UI
         {
             float tenPullRatio = table.SingleCost > 0 ? (float)table.TenPullCost / table.SingleCost : 0f;
             // 소천장(SR 이상 보장)은 횟수가 0보다 클 때만 문장을 넣는다. 숫자는 전부 GachaTable에서 읽는다.
+            // 한 줄이 길면 팝업 밖으로 넘치므로, 짧은 문장 세 개로 나눈다.
             string soft = table.SoftPityCount > 0
-                ? $"·  SR 이상이 안 나온 채 {table.SoftPityCount}번째 뽑기가 되면 그 뽑기는 SR 이상이 확정됩니다 " +
-                  $"(이때도 SSR은 기본 확률 {table.GetRate(GachaRarity.SSR):0.#}%, 나머지는 SR. SR 이상이 나오면 다시 처음부터 셉니다)\n"
+                ? $"·  SR 이상이 안 나온 채 {table.SoftPityCount}번째 뽑기가 되면 SR 이상이 확정됩니다\n" +
+                  $"·  이때도 SSR은 기본 확률 {table.GetRate(GachaRarity.SSR):0.#}%로 따로 굴리고, 나머지는 SR입니다\n" +
+                  "·  SR 이상이 나오면 다시 처음부터 셉니다\n"
                 : "";
             return $"·  누적 {table.PityCount}회 뽑으면 SSR이 확정됩니다\n" +
                    "·  SSR을 얻으면 누적 횟수는 0으로 돌아갑니다\n" +

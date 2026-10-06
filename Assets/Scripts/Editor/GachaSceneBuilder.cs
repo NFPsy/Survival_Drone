@@ -99,9 +99,10 @@ namespace SurvivalDrone.EditorTools
             var probRates = NewText("RatesText", probBox, "SSR", 44, LightText, SansFont, TextAnchor.MiddleLeft);
             probRates.supportRichText = true;
             Place(probRates.rectTransform, Center, Center, Center, new Vector2(0f, 140f), new Vector2(360f, 260f));
-            var probRules = NewText("RulesText", probBox, "규칙", 30, MutedText, SansFont, TextAnchor.UpperLeft);
-            probRules.lineSpacing = 1.3f;
-            Place(probRules.rectTransform, Center, Center, Center, new Vector2(0f, -145f), new Vector2(780f, 230f)); // 소천장 문장이 늘어서 칸을 키웠다
+            var probRules = NewText("RulesText", probBox, "규칙", 26, MutedText, SansFont, TextAnchor.UpperLeft);
+            probRules.lineSpacing = 1.2f;
+            probRules.horizontalOverflow = HorizontalWrapMode.Wrap; // 긴 문장이 칸 밖으로 넘치지 않고 줄바꿈되게 한다 (NewText의 기본은 줄바꿈 없음)
+            Place(probRules.rectTransform, Center, Center, Center, new Vector2(0f, -130f), new Vector2(800f, 270f)); // 소천장 문장이 늘어서 칸을 키웠다
             var probClose = NewButton("BtnClose", probBox, "닫기", 32, ButtonColor, LightText);
             Place(probClose.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 40f), new Vector2(280f, 72f));
             var probabilityPopup = probRoot.gameObject.AddComponent<ProbabilityPopup>();
