@@ -126,19 +126,20 @@ namespace SurvivalDrone.EditorTools
             logRoot.gameObject.SetActive(false);
 
             // ---- 일일 퀘스트 창 (평소엔 꺼져 있고, "일일 퀘스트"를 누르면 뜬다) ----
-            var questBox = NewPopup("DailyQuestPopup", root, new Vector2(1000f, 640f), out var questRoot);
+            var questBox = NewPopup("DailyQuestPopup", root, new Vector2(1000f, 750f), out var questRoot);
             var questTitle = NewText("TitleText", questBox, "일일 퀘스트", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
             Place(questTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(800f, 64f));
-            var questHint = NewText("HintText", questBox, "매일 자정에 초기화돼요. 한 판에서 달성하면 여기서 코어를 받을 수 있어요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
+            var questHint = NewText("HintText", questBox, "매일 자정에 초기화돼요. 달성한 퀘스트는 여기서 코어를 받을 수 있어요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
             Place(questHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(940f, 40f));
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < DailyQuests.Count; i++)
             {
                 var row = NewImage($"Row{i}", questBox, ButtonColor);
                 Place(row.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -180f - i * 110f), new Vector2(880f, 90f));
                 AddOutline(row.gameObject, OutlineColor);
-                var rowTitle = NewText("TitleText", row.transform, DailyQuests.Titles[i], 34, LightText, SansFont, TextAnchor.MiddleLeft);
+                int questNo = DailyQuests.DisplayOrder[i]; // 위에서 i번째 줄에 보여줄 퀘스트 번호
+                var rowTitle = NewText("TitleText", row.transform, DailyQuests.Titles[questNo], 34, LightText, SansFont, TextAnchor.MiddleLeft);
                 Place(rowTitle.rectTransform, Center, Center, Center, new Vector2(-190f, 0f), new Vector2(380f, 60f));
-                var rowReward = NewText("RewardText", row.transform, $"코어 +{DailyQuests.Cores[i]}", 30, Cyan, SansFont, TextAnchor.MiddleRight);
+                var rowReward = NewText("RewardText", row.transform, $"코어 +{DailyQuests.Cores[questNo]}", 30, Cyan, SansFont, TextAnchor.MiddleRight);
                 Place(rowReward.rectTransform, Center, Center, Center, new Vector2(110f, 0f), new Vector2(240f, 60f));
                 var claimButton = NewButton("BtnClaim", row.transform, "진행 중", 30, ButtonColor, MutedText);
                 Place(claimButton.rectTransform, Center, Center, Center, new Vector2(340f, 0f), new Vector2(180f, 64f));

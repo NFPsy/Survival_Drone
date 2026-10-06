@@ -123,6 +123,10 @@ namespace SurvivalDrone.UI
             if (DroneInventory.Instance != null) DroneInventory.Instance.OnInventoryChanged += RefreshStageCard;
             else Debug.LogWarning("[Inventory] 로비에서 DroneInventory를 찾지 못했습니다. 내 전투력이 0으로 표시됩니다.");
 
+            // 로비에 들어오면 오늘 출석이 달성된다. 코어는 일일 퀘스트 창에서 "받기"를 눌러 받는다.
+            // 메인 메뉴를 거치지 않고 로비만 실행한 경우(CurrencyManager 없음)에는 저장 파일을 건드리지 않는다.
+            if (CurrencyManager.Instance != null && DailyQuests.MarkAttendance(SaveManager.Data)) SaveManager.Save();
+
             _viewIndex = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex : 0;
             RefreshCurrency();
             RefreshStageCard();

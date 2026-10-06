@@ -3,17 +3,26 @@ using System.Globalization;
 
 namespace SurvivalDrone.Meta
 {
-    // 일일 퀘스트 수치와 "오늘 것인지" 판단하는 규칙 모음. 퀘스트는 3개로 단순하다.
+    // 일일 퀘스트 수치와 "오늘 것인지" 판단하는 규칙 모음. 퀘스트는 4개로 단순하다.
     //  - 0번: 3분 버티기, 1번: 6분 버티기, 2번: 클리어하기 (한 판 안에서 달성)
-    // 달성(Done)은 판에서 자동으로 기록되고, 코어는 로비의 일일 퀘스트 창에서 "받기"를 눌러 받는다(Claimed).
-    // 하루가 바뀌면(기기 날짜 기준) 달성·수령 기록이 모두 초기화된다.
+    //  - 3번: 출석하기 (오늘 로비에 들어오면 자동으로 달성)
+    // 달성(Done)은 자동으로 기록되고, 코어는 로비의 일일 퀘스트 창에서 "받기"를 눌러 받는다(Claimed).
+    // 하루가 바뀌면(기기 날짜 기준) 달성·수령 기록이 모두 초기화된다. 출석도 같은 시각에 초기화된다.
+    // (저장된 기록이 번호별 비트라서, 새 퀘스트는 항상 맨 뒤 번호로 추가한다)
     public static class DailyQuests
     {
         // 퀘스트 이름 (로비 창에 표시).
-        public static readonly string[] Titles = { "3분 버티기", "6분 버티기", "클리어하기" };
+        public static readonly string[] Titles = { "3분 버티기", "6분 버티기", "클리어하기", "출석하기" };
 
         // 퀘스트 보상 코어.
-        public static readonly int[] Cores = { 50, 100, 150 };
+        public static readonly int[] Cores = { 50, 100, 150, 200 };
+
+        // 출석하기 퀘스트의 번호.
+        public const int AttendanceIndex = 3;
+
+        // 로비 창에 위에서부터 보여줄 퀘스트 번호 순서. 출석하기를 맨 위로 올렸다.
+        // (저장 기록은 퀘스트 번호 기준이라, 보이는 순서만 바꿔도 기존 저장에는 영향이 없다)
+        public static readonly int[] DisplayOrder = { AttendanceIndex, 0, 1, 2 };
 
         // 퀘스트 개수.
         public static int Count => Cores.Length;
@@ -38,6 +47,14 @@ namespace SurvivalDrone.Meta
             if (index < 0 || index >= Count) return;
             EnsureToday(data, today);
             data.dailyQuestDoneMask |= 1 << index;
+        }
+
+        // 오늘 출석을 달성 처리한다. 오늘 처음 달성한 것이면 true(저장이 필요하다는 뜻), 이미 했으면 false.
+        public static bool MarkAttendance(SaveData data, string today = null)
+        {
+            if (IsDone(data, AttendanceIndex, today)) return false;
+            MarkDone(data, AttendanceIndex, today);
+            return true;
         }
 
         public static bool IsDone(SaveData data, int index, string today = null)

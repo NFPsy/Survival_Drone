@@ -5,10 +5,11 @@ using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
 {
-    // 로비의 일일 퀘스트 창. 퀘스트 3개(3분 버티기 / 6분 버티기 / 클리어하기)의 진행 상태를 보여주고,
-    // 달성한 퀘스트의 코어를 "받기" 버튼으로 받게 해준다. 달성은 판에서 자동으로 기록된다(GameManager).
+    // 로비의 일일 퀘스트 창. 퀘스트 4개(출석하기 / 3분 버티기 / 6분 버티기 / 클리어하기)의 진행 상태를 보여주고,
+    // 달성한 퀘스트의 코어를 "받기" 버튼으로 받게 해준다. 달성은 판(GameManager)과 로비 입장(LobbyUI)에서 자동으로 기록된다.
     //
-    // 구조: 이 스크립트가 붙은 팝업 뿌리 아래에 Box/Row0~Row2 (각각 TitleText, RewardText, BtnClaim)와 Box/BtnClose 가 있어야 한다.
+    // 구조: 이 스크립트가 붙은 팝업 뿌리 아래에 Box/Row0~Row3 (각각 TitleText, RewardText, BtnClaim)와 Box/BtnClose 가 있어야 한다.
+    // 위에서 i번째 줄(Row i)에는 DailyQuests.DisplayOrder[i]번 퀘스트가 온다.
     // (LobbySceneBuilder가 만든다). 못 찾아도 경고만 남기고 나머지는 계속 동작한다.
     public class DailyQuestPopup : MonoBehaviour
     {
@@ -45,8 +46,11 @@ namespace SurvivalDrone.UI
                 var title = row.Find("TitleText");
                 if (title != null) _titleTexts[i] = title.GetComponent<Text>();
 
+                // 위에서 i번째 줄에는 DisplayOrder[i]번 퀘스트가 온다. 아래 눌림·상태 표시는 모두 이 퀘스트 번호로 처리한다.
+                int quest = DailyQuests.DisplayOrder[i];
+
                 var reward = row.Find("RewardText");
-                if (reward != null) reward.GetComponent<Text>().text = $"코어 +{DailyQuests.Cores[i]}";
+                if (reward != null) reward.GetComponent<Text>().text = $"코어 +{DailyQuests.Cores[quest]}";
 
                 var claim = row.Find("BtnClaim");
                 if (claim == null) continue;
@@ -54,8 +58,7 @@ namespace SurvivalDrone.UI
                 _claimImages[i] = claim.GetComponent<Image>();
                 _claimLabels[i] = claim.Find("Text") != null ? claim.Find("Text").GetComponent<Text>() : null;
 
-                int captured = i;
-                if (_claimButtons[i] != null) _claimButtons[i].onClick.AddListener(() => Claim(captured));
+                if (_claimButtons[i] != null) _claimButtons[i].onClick.AddListener(() => Claim(quest));
             }
 
             var close = transform.Find("Box/BtnClose");
@@ -94,8 +97,9 @@ namespace SurvivalDrone.UI
             var data = SaveManager.Data;
             for (int i = 0; i < DailyQuests.Count; i++)
             {
-                bool done = DailyQuests.IsDone(data, i);
-                bool claimed = DailyQuests.IsClaimed(data, i);
+                int quest = DailyQuests.DisplayOrder[i];
+                bool done = DailyQuests.IsDone(data, quest);
+                bool claimed = DailyQuests.IsClaimed(data, quest);
 
                 if (_titleTexts[i] != null) _titleTexts[i].color = claimed ? MutedTextColor : LightTextColor;
                 if (_claimButtons[i] != null) _claimButtons[i].interactable = done && !claimed;

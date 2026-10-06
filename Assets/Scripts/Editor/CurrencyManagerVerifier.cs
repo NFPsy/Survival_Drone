@@ -170,13 +170,13 @@ namespace SurvivalDrone.EditorTools
                                && manager.Core == coreBefore + MatchMilestones.GetCore(1, 0) && MatchMilestones.IsClaimed(data, 0, 0),
                     $"마일스톤: 스테이지마다 따로 — 스테이지 2는 달성 전 {s2Early} / 달성 후 +{s2First} / 재청구 {s2Again}, 스테이지 3 달성 전 {s3Early}, 스테이지 1 기록은 그대로");
 
-                // 스테이지가 오를수록 보상이 늘어난다: 스테이지 1 = 100/150/300, 스테이지 2 = 200/300/400, 스테이지 3 = 300/450/600 (범위 밖 스테이지는 마지막 값)
-                bool stage1Core = MatchMilestones.GetCore(0, 0) == 100 && MatchMilestones.GetCore(0, 1) == 150 && MatchMilestones.GetCore(0, 2) == 300;
+                // 스테이지가 오를수록 보상이 늘어난다: 스테이지 1 = 100/150/200, 스테이지 2 = 200/300/400, 스테이지 3 = 300/450/600 (범위 밖 스테이지는 마지막 값)
+                bool stage1Core = MatchMilestones.GetCore(0, 0) == 100 && MatchMilestones.GetCore(0, 1) == 150 && MatchMilestones.GetCore(0, 2) == 200;
                 bool stage2Core = MatchMilestones.GetCore(1, 0) == 200 && MatchMilestones.GetCore(1, 1) == 300 && MatchMilestones.GetCore(1, 2) == 400;
                 bool stage3Core = MatchMilestones.GetCore(2, 0) == 300 && MatchMilestones.GetCore(2, 1) == 450 && MatchMilestones.GetCore(2, 2) == 600;
                 bool stage99Core = MatchMilestones.GetCore(99, 0) == 300;
                 fails += Check(stage1Core && stage2Core && stage3Core && stage99Core,
-                    "마일스톤 코어: 스테이지 1 = 100/150/300, 스테이지 2 = 200/300/400, 스테이지 3 = 300/450/600 (범위 밖 스테이지는 스테이지 3 값)");
+                    "마일스톤 코어: 스테이지 1 = 100/150/200, 스테이지 2 = 200/300/400, 스테이지 3 = 300/450/600 (범위 밖 스테이지는 스테이지 3 값)");
 
                 // 12) 일일 퀘스트: 달성 전에는 못 받고, 달성하면 한 번만 받고, 다음 날이 되면 기록이 초기화되어 다시 받을 수 있다
                 const string day1 = "2026-10-01", day2 = "2026-10-02";
@@ -193,6 +193,16 @@ namespace SurvivalDrone.EditorTools
                 DailyQuests.MarkDone(data, 2, day2);
                 int q2NextDay = manager.TryClaimDailyQuest(2, day2);
                 fails += Check(resetOk && q2NextDay == DailyQuests.Cores[2], $"다음 날(날짜 변경) 기록 초기화 후 새 퀘스트 +{q2NextDay}");
+
+                // 12-2) 출석하기(200코어): 오늘 처음 들어오면 달성, 같은 날 다시 들어와도 한 번만, 받은 뒤 재청구 불가, 다음 날 초기화
+                int attendEarly = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
+                bool attendFirst = DailyQuests.MarkAttendance(data, day1);
+                bool attendSecond = DailyQuests.MarkAttendance(data, day1);
+                int attendClaim = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
+                int attendAgain = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
+                bool attendNextDay = DailyQuests.MarkAttendance(data, day2) && !DailyQuests.IsClaimed(data, DailyQuests.AttendanceIndex, day2);
+                fails += Check(attendEarly == 0 && attendFirst && !attendSecond && attendClaim == 200 && attendAgain == 0 && attendNextDay,
+                    $"출석: 달성 전 {attendEarly} / 첫 출석 {attendFirst} / 같은 날 두 번째 {attendSecond} / 받기 +{attendClaim} / 재청구 {attendAgain} / 다음 날 다시 출석 {attendNextDay}");
 
                 // 13) 저장 형식(JSON) 왕복: 글자로 바꿨다가 되돌려도 값이 같다 (받은 마일스톤 기록 포함)
                 string json = JsonUtility.ToJson(data);
