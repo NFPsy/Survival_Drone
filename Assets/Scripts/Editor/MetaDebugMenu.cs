@@ -28,6 +28,24 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Add 1000 Credit (Play mode)", true)]
         private static bool AddCreditValidate() => Application.isPlaying && CurrencyManager.Instance != null;
 
+        // "하루가 지난 상태"를 흉내 내는 메뉴. 일일 퀘스트·출석·조각 교환 횟수는 "저장된 날짜가 오늘과 다르면 새로 시작"하는 규칙이라,
+        // 저장된 날짜 두 개를 어제로 돌려놓으면 다음에 열 때 정말 다음 날처럼 초기화된다. (기기 날짜를 바꾸지 않아도 된다)
+        // 확인 방법: 이 메뉴를 누른 뒤 로비로 다시 들어가(다른 화면에 갔다 오기) "일일 퀘스트"에서 출석하기가 "받기"로 바뀌는지,
+        // 격납고의 조각 교환이 "오늘 0/3"으로 돌아왔는지 본다. 달성·수령 기록은 진짜 다음 날처럼 모두 지워진다(코어·크레딧은 그대로).
+        [MenuItem("SurvivalDrone/Meta/Debug/Simulate Next Day (Play mode)")]
+        private static void SimulateNextDay()
+        {
+            string yesterday = System.DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            var data = SaveManager.Data;
+            data.dailyQuestDate = yesterday;
+            data.shardExchangeDate = yesterday;
+            SaveManager.Save();
+            Debug.Log($"[Debug] 다음 날 시뮬레이션: 일일 퀘스트·조각 교환 날짜를 {yesterday}로 돌렸습니다. 로비로 다시 들어가서 확인하세요.");
+        }
+
+        [MenuItem("SurvivalDrone/Meta/Debug/Simulate Next Day (Play mode)", true)]
+        private static bool SimulateNextDayValidate() => Application.isPlaying && CurrencyManager.Instance != null;
+
         // 뽑기 화면이 생기기 전에 뽑기 흐름을 직접 눌러 볼 수 있는 메뉴. 결과는 콘솔에 [Gacha] 로그로 찍힌다.
         [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x1 (Play mode)")]
         private static void PullSingle()
