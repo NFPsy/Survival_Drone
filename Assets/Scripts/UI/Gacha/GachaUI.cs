@@ -29,6 +29,8 @@ namespace SurvivalDrone.UI
         private Text _ratesText;
         private Text _pityText;
         private RectTransform _pityBarFill;
+        private Text _softPityText;
+        private RectTransform _softPityBarFill;
         private GachaResultUI _resultUI;
 
         private Button _singleButton;
@@ -50,6 +52,12 @@ namespace SurvivalDrone.UI
             var fill = transform.Find("PityBar/Fill");
             _pityBarFill = fill != null ? fill.GetComponent<RectTransform>() : null;
             if (_pityBarFill == null) Debug.LogWarning("[Gacha] 뽑기 화면에서 'PityBar/Fill'을 찾지 못했습니다.");
+
+            // 소천장(SR 이상 보장) 게이지: 큰 천장 게이지 아래에 한 줄 더 있다.
+            _softPityText = FindText("SoftPityText");
+            var softFill = transform.Find("SoftPityBar/Fill");
+            _softPityBarFill = softFill != null ? softFill.GetComponent<RectTransform>() : null;
+            if (_softPityBarFill == null) Debug.LogWarning("[Gacha] 뽑기 화면에서 'SoftPityBar/Fill'을 찾지 못했습니다.");
 
             WireButton("BtnBack", () => { PlayClick(); SceneManager.LoadScene(lobbySceneName); });
             WireButton("RatesPanel/BtnRates", () => { PlayClick(); if (_probabilityPopup != null) _probabilityPopup.Open(); });
@@ -129,6 +137,21 @@ namespace SurvivalDrone.UI
             {
                 float ratio = limit > 0 ? Mathf.Clamp01((float)pity / limit) : 0f;
                 _pityBarFill.anchorMax = new Vector2(ratio, 1f);
+            }
+
+            // 소천장 게이지: "SR 이상 보장까지  누적 7 / 10" (횟수가 0이면 소천장을 쓰지 않으므로 숨긴다)
+            int softLimit = controller.SoftPityLimit;
+            bool softOn = softLimit > 0;
+            if (_softPityText != null)
+            {
+                _softPityText.gameObject.SetActive(softOn);
+                if (softOn) _softPityText.text = $"SR 이상 보장까지    누적 {controller.SoftPityCount} / {softLimit}";
+            }
+            if (_softPityBarFill != null)
+            {
+                _softPityBarFill.transform.parent.gameObject.SetActive(softOn);
+                float softRatio = softOn ? Mathf.Clamp01((float)controller.SoftPityCount / softLimit) : 0f;
+                _softPityBarFill.anchorMax = new Vector2(softRatio, 1f);
             }
 
             // 가격 표시. 코어가 모자라면 가격 글자만 빨갛게 (버튼은 눌러서 "부족" 안내를 볼 수 있게 켜 둔다).

@@ -37,7 +37,10 @@ namespace SurvivalDrone.Meta
         // 저장된 값을 불러올 때 SaveData가 이 값을 넣어준다.
         public int PityCount { get; private set; }
 
-        public GachaSystem(GachaTable table, System.Random random, int startPityCount = 0)
+        // 소천장 카운트(마지막 SR 이상 이후 누적 뽑기 횟수). SR 이상이 나오면 0으로 돌아간다. 큰 천장(PityCount)과 따로 센다.
+        public int SoftPityCount { get; private set; }
+
+        public GachaSystem(GachaTable table, System.Random random, int startPityCount = 0, int startSoftPityCount = 0)
         {
             if (table == null) throw new ArgumentNullException(nameof(table), "[Gacha] GachaTable이 비어 있습니다.");
             if (random == null) throw new ArgumentNullException(nameof(random), "[Gacha] 난수 생성기가 비어 있습니다.");
@@ -45,6 +48,7 @@ namespace SurvivalDrone.Meta
             _table = table;
             _random = random;
             PityCount = Mathf.Max(0, startPityCount);
+            SoftPityCount = Mathf.Max(0, startSoftPityCount);
             _droneTypes = (DroneType[])Enum.GetValues(typeof(DroneType));
 
             // 확률표를 한 번만 계산해둔다 (등급 순서대로 누적).
@@ -58,23 +62,37 @@ namespace SurvivalDrone.Meta
             }
         }
 
-        // 1회 뽑기.
-        //  1) 누적 횟수를 1 올린다.
-        //  2) 누적 횟수가 천장에 도달했으면 SSR 확정, 아니면 확률표로 등급을 굴린다.
-        //  3) SSR이 나오면 누적 횟수를 0으로 되돌린다.
+        // 1회 뽑기. (천장이 2단: 큰 천장 = SSR 확정, 소천장 = SR 이상 확정)
+        //  1) 두 누적 횟수(큰 천장, 소천장)를 1씩 올린다.
+        //  2) 큰 천장에 도달했으면 SSR 확정. 아니고 소천장에 도달했으면 SR 이상 확정(SSR은 기본 확률로 따로 굴려서 맞으면 SSR, 아니면 SR). 둘 다 아니면 확률표로 굴린다.
+        //  3) SSR이 나오면 큰 천장 카운트를, SR 이상이 나오면 소천장 카운트를 0으로 되돌린다.
         //  4) 드론 종류는 5종 중 균등 확률로 고른다. (등급별 드론 확률 차이는 아직 정해진 게 없다)
         public GachaPullResult PullSingle()
         {
             PityCount++;
+            SoftPityCount++;
 
             bool isPityGuaranteed = PityCount >= _table.PityCount;
-            GachaRarity rarity = isPityGuaranteed ? GachaRarity.SSR : RollRarity();
+            bool isSoftPityGuaranteed = !isPityGuaranteed && _table.SoftPityCount > 0 && SoftPityCount >= _table.SoftPityCount;
+
+            GachaRarity rarity;
+            if (isPityGuaranteed) rarity = GachaRarity.SSR;
+            else if (isSoftPityGuaranteed) rarity = RollSoftPityRarity();
+            else rarity = RollRarity();
 
             if (rarity == GachaRarity.SSR) PityCount = 0;
+            if (rarity >= GachaRarity.SR) SoftPityCount = 0;
 
             DroneType drone = _droneTypes[_random.Next(_droneTypes.Length)];
 
-            return new GachaPullResult(rarity, drone, isPityGuaranteed, PityCount);
+            return new GachaPullResult(rarity, drone, isPityGuaranteed, PityCount, isSoftPityGuaranteed, SoftPityCount);
+        }
+
+        // 소천장이 발동한 뽑기의 등급: SSR 기본 확률로 한 번 굴려서 맞으면 SSR, 아니면 SR이다. (난수는 일반 굴리기와 같은 한 번만 쓴다)
+        private GachaRarity RollSoftPityRarity()
+        {
+            float roll = (float)(_random.NextDouble() * 100.0);
+            return roll < _table.GetRate(GachaRarity.SSR) ? GachaRarity.SSR : GachaRarity.SR;
         }
 
         // 10연 뽑기. 1회 뽑기를 순서대로 10번 처리한다 (중간에 SSR이 나오면 천장 카운트도 그 자리에서 0이 된다).

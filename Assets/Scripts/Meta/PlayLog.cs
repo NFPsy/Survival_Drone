@@ -45,7 +45,8 @@ namespace SurvivalDrone.Meta
         }
 
         // 뽑기 1회 또는 10연을 했을 때.
-        public static void RecordPull(SaveData data, bool isTen, int spentCore, int[] rarityCounts, int newCount, int promotedCount, int shardsGained, int coreAfter, int pityAfter, int pityLimit)
+        public static void RecordPull(SaveData data, bool isTen, int spentCore, int[] rarityCounts, int newCount, int promotedCount, int shardsGained, int coreAfter, int pityAfter, int pityLimit,
+                                      int softPityAfter = 0, int softPityLimit = 0, int softPityHits = 0)
         {
             var s = data.logStats;
             int count = 0;
@@ -56,10 +57,13 @@ namespace SurvivalDrone.Meta
             if (isTen) s.tenPullActions++; else s.singlePullActions++;
             s.ssrTotal += rarityCounts[(int)GachaRarity.SSR];
             s.coreSpentOnPulls += spentCore;
+            s.softPityTriggers += softPityHits;
 
+            // 소천장(SR 이상 보장)을 쓰는 설정일 때만 기록 끝에 소천장 정보를 덧붙인다. (쓰지 않으면 옛 기록 모양 그대로)
+            string soft = softPityLimit > 0 ? $" 소천장={softPityAfter}/{softPityLimit} 소천장발동={softPityHits}" : "";
             Add(data, "pull",
                 $"종류={(isTen ? "10연" : "1회")} 사용코어={spentCore} N={rarityCounts[0]} R={rarityCounts[1]} SR={rarityCounts[2]} SSR={rarityCounts[3]}" +
-                $" 신규={newCount} 승급={promotedCount} 조각={shardsGained} 남은코어={coreAfter} 천장={pityAfter}/{pityLimit}");
+                $" 신규={newCount} 승급={promotedCount} 조각={shardsGained} 남은코어={coreAfter} 천장={pityAfter}/{pityLimit}{soft}");
         }
 
         // 코어가 모자라서 뽑기를 못 했을 때.
@@ -195,6 +199,8 @@ namespace SurvivalDrone.Meta
                 builder.AppendLine($"- 판 도중에 나감 {s.abandons}번 (평균 {FormatSeconds(s.abandonSurviveSeconds / s.abandons)} 시점, 위 판 수에는 포함 안 됨)");
 
             builder.AppendLine($"- 뽑기 총 {s.pullsTotal}회 (1회 {s.singlePullActions}번, 10연 {s.tenPullActions}번) · SSR {s.ssrTotal}개 · 뽑기에 쓴 코어 {s.coreSpentOnPulls:N0} · 코어 부족으로 막힘 {s.blockedPulls}번");
+            if (s.softPityTriggers > 0)
+                builder.AppendLine($"- 소천장(SR 이상 보장) 발동 {s.softPityTriggers}번");
             builder.AppendLine(s.matchesBeforeFirstPull >= 0
                 ? $"- 첫 뽑기 전에 플레이한 판 수: {s.matchesBeforeFirstPull}"
                 : "- 아직 뽑기를 한 번도 안 함");

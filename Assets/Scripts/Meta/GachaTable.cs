@@ -52,10 +52,18 @@ namespace SurvivalDrone.Meta
         [Header("천장")]
         [SerializeField] private int _pityCount = 70;
 
+        // ---- 소천장 (2단 천장의 작은 쪽) ----
+        // SR 이상이 한 번도 안 나온 채 이 횟수째 뽑기가 되면, 그 뽑기는 SR 이상이 확정된다. (10이면 "10회 안에 SR 이상 1개 보장")
+        // SR 이상이 나오면 이 누적 횟수는 0으로 돌아간다. 확정으로 나오는 뽑기도 SSR은 기본 확률(_rateSSR)로 따로 굴려서 맞으면 SSR, 아니면 SR이다.
+        // 0이면 소천장을 쓰지 않는다. (큰 천장 _pityCount와 따로 센다)
+        [Header("소천장 (SR 이상 보장)")]
+        [SerializeField] private int _softPityCount = 10;
+
         // 바깥(다른 스크립트, UI)에서는 읽기만 가능하고 바꿀 수는 없게 프로퍼티로 열어둔다.
         public int SingleCost => _singleCost;
         public int TenPullCost => _tenPullCost;
         public int PityCount => _pityCount;
+        public int SoftPityCount => _softPityCount;
 
         // 등급 하나의 확률(%)을 돌려준다. 확률 공개 팝업이 이 함수를 그대로 사용할 예정.
         public float GetRate(GachaRarity rarity)
@@ -109,6 +117,9 @@ namespace SurvivalDrone.Meta
 
             if (_pityCount < 1)
                 Debug.LogWarning($"[Gacha] GachaTable 천장 횟수는 1 이상이어야 합니다: {_pityCount}", this);
+
+            if (_softPityCount < 0 || (_softPityCount > 0 && _softPityCount >= _pityCount))
+                Debug.LogWarning($"[Gacha] GachaTable 소천장 횟수는 0(사용 안 함) 또는 천장({_pityCount})보다 작은 값이어야 합니다: {_softPityCount}", this);
 
             if (_singleCost < 0 || _tenPullCost < 0)
                 Debug.LogWarning($"[Gacha] GachaTable 비용은 0 이상이어야 합니다: 1회 {_singleCost} / 10연 {_tenPullCost}", this);

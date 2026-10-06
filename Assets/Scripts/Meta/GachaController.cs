@@ -33,6 +33,10 @@ namespace SurvivalDrone.Meta
         public int PityCount => _system != null ? _system.PityCount : 0;
         public int PityLimit => _gachaTable != null ? _gachaTable.PityCount : 0;
 
+        // 소천장 카운트(마지막 SR 이상 이후 누적 뽑기 횟수)와 소천장 횟수. 소천장 게이지 "n / 10"에 쓴다. 횟수가 0이면 소천장을 쓰지 않는다.
+        public int SoftPityCount => _system != null ? _system.SoftPityCount : 0;
+        public int SoftPityLimit => _gachaTable != null ? _gachaTable.SoftPityCount : 0;
+
         // 확률 공개 팝업처럼 "규칙 수치를 화면에 보여줘야 하는" 곳이 같은 데이터 파일을 읽을 수 있게 열어둔다.
         public GachaTable Table => _gachaTable;
 
@@ -76,8 +80,8 @@ namespace SurvivalDrone.Meta
             }
 
             // 저장돼 있던 천장 카운트에서 이어서 시작한다.
-            _system = new GachaSystem(_gachaTable, random, _data.gachaPityCount);
-            Debug.Log($"[Gacha] 준비 완료: 천장 {PityCount} / {PityLimit}, 1회 {SingleCost}코어, 10연 {TenPullCost}코어");
+            _system = new GachaSystem(_gachaTable, random, _data.gachaPityCount, _data.gachaSoftPityCount);
+            Debug.Log($"[Gacha] 준비 완료: 천장 {PityCount} / {PityLimit}, 소천장 {SoftPityCount} / {SoftPityLimit}, 1회 {SingleCost}코어, 10연 {TenPullCost}코어");
         }
 
         public bool CanAffordSingle() => _isReady && _currency.CanAffordCore(_gachaTable.SingleCost);
@@ -117,8 +121,9 @@ namespace SurvivalDrone.Meta
                 outcomes[i] = _inventory.Apply(pulls[i]);
             }
 
-            // 4) 천장 카운트 저장
+            // 4) 천장·소천장 카운트 저장
             _data.gachaPityCount = _system.PityCount;
+            _data.gachaSoftPityCount = _system.SoftPityCount;
             if (_saveOnChange) SaveManager.Save();
 
             LogReport(count, cost, pulls, outcomes);
@@ -130,10 +135,11 @@ namespace SurvivalDrone.Meta
         private void LogReport(int count, int cost, GachaPullResult[] pulls, InventoryPullOutcome[] outcomes)
         {
             int[] rarityCounts = new int[Enum.GetValues(typeof(GachaRarity)).Length];
-            int newCount = 0, promotedCount = 0, shards = 0;
+            int newCount = 0, promotedCount = 0, shards = 0, softPityHits = 0;
             for (int i = 0; i < pulls.Length; i++)
             {
                 rarityCounts[(int)pulls[i].rarity]++;
+                if (pulls[i].isSoftPityGuaranteed) softPityHits++;
                 if (outcomes[i].outcome == PullOutcome.New) newCount++;
                 else if (outcomes[i].outcome == PullOutcome.Promoted) promotedCount++;
                 shards += outcomes[i].shardsGained;
@@ -141,11 +147,12 @@ namespace SurvivalDrone.Meta
 
             Debug.Log($"[Gacha] {count}회 뽑기 완료: N {rarityCounts[0]} / R {rarityCounts[1]} / SR {rarityCounts[2]} / SSR {rarityCounts[3]}" +
                       $" · 신규 {newCount} · 승급 {promotedCount} · 조각 +{shards}" +
-                      $" · 코어 -{cost} → 잔액 {_currency.Core} · 천장 {_system.PityCount}/{PityLimit}");
+                      $" · 코어 -{cost} → 잔액 {_currency.Core} · 천장 {_system.PityCount}/{PityLimit} · 소천장 {_system.SoftPityCount}/{SoftPityLimit}" +
+                      (softPityHits > 0 ? $" (이번에 소천장 발동 {softPityHits}번)" : ""));
 
             // 테스트(CBT) 기록에도 남긴다. 이 함수는 저장 데이터를 쓴 뒤에 불리므로, 기록은 아래에서 한 번 더 저장한다.
             PlayLog.RecordPull(_data, count == GachaSystem.TenPullCount, cost, rarityCounts, newCount, promotedCount, shards,
-                               _currency.Core, _system.PityCount, PityLimit);
+                               _currency.Core, _system.PityCount, PityLimit, _system.SoftPityCount, SoftPityLimit, softPityHits);
             if (_saveOnChange) SaveManager.Save();
         }
     }

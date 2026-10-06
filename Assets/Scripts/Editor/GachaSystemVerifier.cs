@@ -12,6 +12,7 @@ namespace SurvivalDrone.EditorTools
     // 검증 항목 (인수인계 문서 / 노션 코딩 규칙 6번의 기준):
     //  1) 100,000번 뽑았을 때 SSR 1개당 평균 뽑기 수가 33.2 근처인가?
     //  2) SSR이 나오는 간격이 절대 70회를 넘지 않는가? (70회 안에 항상 SSR)
+    //     소천장: SR 이상이 연속으로 안 나오는 구간이 9회를 넘지 않는가? (10번째 뽑기는 항상 SR 이상)
     //  3) 등급별 비율이 GachaTable의 확률과 비슷한가?
     //  4) 같은 시드 → 같은 결과인가? (시드 고정이 되는지)
     //  5) 10연 = 1회 뽑기 10번과 결과가 완전히 같은가?
@@ -93,6 +94,22 @@ namespace SurvivalDrone.EditorTools
             bool gapOk = longestGap <= table.PityCount;
             Log(gapOk, $"SSR 사이 가장 긴 간격 = {longestGap}회 (천장 {table.PityCount}회 이내여야 함)");
             if (!gapOk) fails++;
+
+            // 2-2) 소천장: SR 이상 사이에 SR 미만이 연속으로 소천장 횟수-1번을 넘지 않는가 (10번째 뽑기는 항상 SR 이상). 소천장이 꺼져 있으면(0) 건너뛴다.
+            if (table.SoftPityCount > 0)
+            {
+                var softSystem = new GachaSystem(table, new System.Random(Seed + 1));
+                int gap = 0, longestSoftGap = 0, srPlus = 0;
+                for (int i = 0; i < TotalPulls; i++)
+                {
+                    var r = softSystem.PullSingle();
+                    if (r.rarity >= GachaRarity.SR) { srPlus++; gap = 0; }
+                    else { gap++; longestSoftGap = Math.Max(longestSoftGap, gap); }
+                }
+                bool softOk = longestSoftGap <= table.SoftPityCount - 1;
+                Log(softOk, $"SR 미만이 연속으로 나온 가장 긴 횟수 = {longestSoftGap}회 (소천장 {table.SoftPityCount}회 → {table.SoftPityCount - 1}회 이내여야 함), SR 이상 비율 {srPlus * 100.0 / TotalPulls:F1}% (소천장 없으면 약 15%)");
+                if (!softOk) fails++;
+            }
 
             // 3) 등급별 비율. 천장 때문에 SSR은 표기 확률(2.5%)보다 높아지는 게 정상이므로 N/R/SR만 표기 확률과 비교하지 않고 출력만 한다.
             string ratios = "";

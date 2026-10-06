@@ -22,12 +22,21 @@ namespace SurvivalDrone.Meta
         // 이번 뽑기를 처리한 "직후"의 천장 카운트 (SSR이 나왔으면 0). 천장 게이지 UI에 쓴다.
         public readonly int pityAfter;
 
-        public GachaPullResult(GachaRarity rarity, DroneType drone, bool isPityGuaranteed, int pityAfter)
+        // 이번 뽑기가 "소천장(SR 이상 보장)"으로 나온 결과인가? (확률로 SR 이상이 나온 것이면 false)
+        public readonly bool isSoftPityGuaranteed;
+
+        // 이번 뽑기를 처리한 직후의 소천장 카운트 (SR 이상이 나왔으면 0). 소천장 게이지 UI에 쓴다.
+        public readonly int softPityAfter;
+
+        // 소천장 값은 맨 뒤에 기본값을 두어서, 옛 호출(4개 값만 넘기던 곳)이 그대로 동작한다.
+        public GachaPullResult(GachaRarity rarity, DroneType drone, bool isPityGuaranteed, int pityAfter, bool isSoftPityGuaranteed = false, int softPityAfter = 0)
         {
             this.rarity = rarity;
             this.drone = drone;
             this.isPityGuaranteed = isPityGuaranteed;
             this.pityAfter = pityAfter;
+            this.isSoftPityGuaranteed = isSoftPityGuaranteed;
+            this.softPityAfter = softPityAfter;
         }
     }
 }

@@ -55,6 +55,9 @@ namespace SurvivalDrone.Meta
         // 천장 카운트: 마지막 SSR 이후 누적 뽑기 횟수. SSR이 나오면 0으로 돌아가고, 게임을 껐다 켜도 이어진다.
         public int gachaPityCount;
 
+        // 소천장 카운트: 마지막 SR 이상 이후 누적 뽑기 횟수. SR 이상이 나오면 0으로 돌아간다. (옛 저장에는 없지만 0으로 안전하게 읽힌다)
+        public int gachaSoftPityCount;
+
         // 시작 드론을 이미 받았는지. false인 새 데이터일 때만 시작 드론(근접 N + 저격 N)을 지급하고 장착시킨다.
         public bool isInventoryInitialized;
 

@@ -65,6 +65,18 @@ namespace SurvivalDrone.EditorTools
             pityFill.rectTransform.offsetMin = Vector2.zero;
             pityFill.rectTransform.offsetMax = Vector2.zero;
 
+            // ---- 소천장 게이지 (SR 이상 보장, 큰 천장 게이지 바로 아래) ----
+            var softText = NewText("SoftPityText", root, "SR 이상 보장까지    누적 0 / 10", 28, RarityColors.Get(GachaRarity.SR), SansFont, TextAnchor.MiddleCenter);
+            Place(softText.rectTransform, Center, Center, Center, new Vector2(0f, -170f), new Vector2(1000f, 40f));
+            var softBar = NewImage("SoftPityBar", root, ButtonColor);
+            Place(softBar.rectTransform, Center, Center, Center, new Vector2(0f, -208f), new Vector2(1000f, 14f));
+            AddOutline(softBar.gameObject, OutlineColor);
+            var softFill = NewImage("Fill", softBar.transform, RarityColors.Get(GachaRarity.SR));
+            softFill.rectTransform.anchorMin = Vector2.zero;
+            softFill.rectTransform.anchorMax = new Vector2(0f, 1f);
+            softFill.rectTransform.offsetMin = Vector2.zero;
+            softFill.rectTransform.offsetMax = Vector2.zero;
+
             // ---- 뽑기 버튼 ----
             // 1회 뽑기는 보조 버튼(어두운 색), 10연은 할인이 있어 권하는 주요 버튼(시안색)으로 구분한다.
             var single = NewButton("BtnPullSingle", root, "", 40, ButtonColor, LightText);
@@ -89,7 +101,7 @@ namespace SurvivalDrone.EditorTools
             Place(probRates.rectTransform, Center, Center, Center, new Vector2(0f, 140f), new Vector2(360f, 260f));
             var probRules = NewText("RulesText", probBox, "규칙", 30, MutedText, SansFont, TextAnchor.UpperLeft);
             probRules.lineSpacing = 1.3f;
-            Place(probRules.rectTransform, Center, Center, Center, new Vector2(0f, -120f), new Vector2(760f, 160f));
+            Place(probRules.rectTransform, Center, Center, Center, new Vector2(0f, -145f), new Vector2(780f, 230f)); // 소천장 문장이 늘어서 칸을 키웠다
             var probClose = NewButton("BtnClose", probBox, "닫기", 32, ButtonColor, LightText);
             Place(probClose.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 40f), new Vector2(280f, 72f));
             var probabilityPopup = probRoot.gameObject.AddComponent<ProbabilityPopup>();

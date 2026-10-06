@@ -29,6 +29,9 @@ namespace SurvivalDrone.Meta
         // 첫 뽑기를 하기까지 플레이한 판 수. 아직 뽑기를 한 번도 안 했으면 -1. ("첫 뽑기 전 이탈" 지표에 쓴다)
         public int matchesBeforeFirstPull = -1;
 
+        // 소천장(SR 이상 보장)이 발동한 횟수. 옛 저장 파일에는 없지만 0으로 안전하게 읽힌다.
+        public int softPityTriggers;
+
         // 드론 강화 성공 횟수
         public int upgrades;
 

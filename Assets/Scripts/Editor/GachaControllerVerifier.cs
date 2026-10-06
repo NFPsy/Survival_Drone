@@ -50,6 +50,7 @@ namespace SurvivalDrone.EditorTools
             fails += CheckTenPull();
             fails += CheckInsufficientCore();
             fails += CheckPityPersistence();
+            fails += CheckSoftPity();
             fails += CheckLongRun();
             fails += CheckSameSeedSameFlow();
             fails += CheckNotReady();
@@ -177,6 +178,59 @@ namespace SurvivalDrone.EditorTools
                 int saved = rig.data.gachaPityCount;
                 rig.controller.Initialize(rig.data, _gachaTable, rig.currency, rig.inventory, new System.Random(6), false);
                 fails += Check(rig.controller.PityCount == saved, $"저장 데이터로 다시 준비해도 천장 카운트 {saved} 유지");
+            }
+            finally { rig.Destroy(); }
+            return fails;
+        }
+
+        // 소천장(SR 이상 보장): 결정(10/6) = SR 이상이 안 나온 채 10번째 뽑기가 되면 SR 이상 확정, 카운트는 저장되어 이어진다
+        private static int CheckSoftPity()
+        {
+            int fails = 0;
+            fails += Check(_gachaTable.SoftPityCount == 10, $"소천장 횟수 = {_gachaTable.SoftPityCount} (결정: 10)");
+
+            var rig = MakeRig(21, _gachaTable.SingleCost * 210); // 아래에서 1회 뽑기를 201번 하므로 코어를 넉넉히
+            try
+            {
+                // 저장돼 있던 소천장 카운트 9(= 9번 연속 SR 미만)에서 이어서 시작하면, 다음(10번째) 뽑기는 SR 이상 확정
+                rig.data.gachaSoftPityCount = _gachaTable.SoftPityCount - 1;
+                rig.controller.Initialize(rig.data, _gachaTable, rig.currency, rig.inventory, new System.Random(21), false);
+                fails += Check(rig.controller.SoftPityCount == _gachaTable.SoftPityCount - 1 && rig.controller.SoftPityLimit == _gachaTable.SoftPityCount,
+                    $"저장된 소천장 카운트 {rig.data.gachaSoftPityCount}에서 이어서 시작");
+
+                var report = rig.controller.PullSingle();
+                var pull = report.pulls[0];
+                fails += Check(pull.isSoftPityGuaranteed && !pull.isPityGuaranteed && pull.rarity >= GachaRarity.SR,
+                    $"소천장 직전(9)에서 뽑으면 SR 이상 확정 (결과 {pull.rarity}, 소천장 발동)");
+                fails += Check(rig.controller.SoftPityCount == 0 && rig.data.gachaSoftPityCount == 0 && pull.softPityAfter == 0, "SR 이상이 나오면 소천장 카운트가 0으로 저장됨");
+
+                // 확정 뽑기라도 SSR이 아니면 SR이다 (N·R은 나오지 않는다)
+                bool onlySrOrSsr = true;
+                for (int i = 0; i < 200; i++)
+                {
+                    rig.data.gachaSoftPityCount = _gachaTable.SoftPityCount - 1;
+                    rig.controller.Initialize(rig.data, _gachaTable, rig.currency, rig.inventory, new System.Random(1000 + i), false);
+                    var r = rig.controller.PullSingle().pulls[0];
+                    onlySrOrSsr &= r.isSoftPityGuaranteed && (r.rarity == GachaRarity.SR || r.rarity == GachaRarity.SSR);
+                }
+                fails += Check(onlySrOrSsr, "소천장이 발동한 200번 모두 SR 또는 SSR (N·R은 나오지 않음)");
+
+                // 길게 뽑으면 "SR 이상 사이 간격"이 한도 이내인가: 연속으로 SR 미만이 소천장 횟수-1을 넘지 않는다
+                var longRig = MakeRig(22, 2700 * 100);
+                try
+                {
+                    int gap = 0, maxGap = 0, softHits = 0;
+                    for (int i = 0; i < 100; i++)
+                    {
+                        foreach (var p in longRig.controller.PullTen().pulls)
+                        {
+                            if (p.isSoftPityGuaranteed) softHits++;
+                            if (p.rarity >= GachaRarity.SR) gap = 0; else { gap++; maxGap = Math.Max(maxGap, gap); }
+                        }
+                    }
+                    fails += Check(maxGap <= _gachaTable.SoftPityCount - 1, $"10연 100번(1,000회) 동안 SR 미만이 연속으로 나온 최대 횟수 {maxGap} (한도 {_gachaTable.SoftPityCount - 1}), 소천장 발동 {softHits}번");
+                }
+                finally { longRig.Destroy(); }
             }
             finally { rig.Destroy(); }
             return fails;

@@ -27,3 +27,4 @@ MonoBehaviour:
   _revealSecondsSR: 1
   _revealSecondsSSR: 2
   _pityCount: 70
+  _softPityCount: 10
