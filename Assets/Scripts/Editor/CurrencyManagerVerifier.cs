@@ -78,21 +78,21 @@ namespace SurvivalDrone.EditorTools
                 bool negativeSpend = manager.TrySpendCore(-5);
                 fails += Check(manager.Core == before && !negativeSpend, "0 이하 금액은 무시됨 (경고 3개는 정상)");
 
-                // 7) 판 보상 수치가 기획(결정 기록)과 같은지: 클리어 크레딧 200/300/400, 실패는 60초 미만이면 없음 (코어는 판 보상으로 주지 않음)
-                fails += Check(table.GetClearCredit(1) == 200 && table.GetClearCredit(2) == 300 && table.GetClearCredit(3) == 400
+                // 7) 판 보상 수치가 기획(결정 기록)과 같은지: 클리어 크레딧 300/600/900, 실패는 60초 미만이면 없음 (코어는 판 보상으로 주지 않음)
+                fails += Check(table.GetClearCredit(1) == 300 && table.GetClearCredit(2) == 600 && table.GetClearCredit(3) == 900
                                && Mathf.Approximately(table.FailMinSurviveSeconds, 60f),
                     $"판 보상 표 = 클리어 크레딧 {table.GetClearCredit(1)}/{table.GetClearCredit(2)}/{table.GetClearCredit(3)}, 실패 최소 생존 {table.FailMinSurviveSeconds}초");
 
                 // 8) 보상 계산: 클리어는 크레딧 전액 + 코어 0 (범위 밖 스테이지 번호는 마지막 칸 값). 계산 확인용으로 판 길이를 360초로 넘긴다 (실제 게임의 판 길이와는 무관).
                 table.CalculateMatchReward(true, 1, 400f, 360f, out int c, out int cr);
-                bool clear1 = c == 0 && cr == 200;
+                bool clear1 = c == 0 && cr == 300;
                 table.CalculateMatchReward(true, 2, 400f, 360f, out c, out cr);
-                bool clear2 = c == 0 && cr == 300;
+                bool clear2 = c == 0 && cr == 600;
                 table.CalculateMatchReward(true, 3, 400f, 360f, out c, out cr);
-                bool clear3 = c == 0 && cr == 400;
+                bool clear3 = c == 0 && cr == 900;
                 table.CalculateMatchReward(true, 99, 400f, 360f, out c, out cr);
-                bool clear99 = c == 0 && cr == 400;
-                fails += Check(clear1 && clear2 && clear3 && clear99, "클리어 보상: 스테이지 1 = 코어 0 / 크레딧 200, 2 = 0/300, 3 = 0/400 (범위 밖 스테이지는 0/400)");
+                bool clear99 = c == 0 && cr == 900;
+                fails += Check(clear1 && clear2 && clear3 && clear99, "클리어 보상: 스테이지 1 = 코어 0 / 크레딧 300, 2 = 0/600, 3 = 0/900 (범위 밖 스테이지는 0/900)");
 
                 // 9) 보상 계산: 실패는 코어 항상 0, 크레딧은 60초 미만이면 0 · 60초 이후부터 (생존-60) ÷ (판 길이-60) 비율
                 table.CalculateMatchReward(false, 1, 10f, 360f, out c, out cr);
@@ -104,19 +104,19 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(under1 && under2 && exactly60, "실패: 10초·59.9초·정확히 60초 생존은 보상 0");
 
                 table.CalculateMatchReward(false, 1, 210f, 360f, out c, out cr);
-                bool f210 = c == 0 && cr == 100;    // (210-60)/300 = 50% → 크레딧만
+                bool f210 = c == 0 && cr == 150;    // (210-60)/300 = 50% → 크레딧만
                 table.CalculateMatchReward(false, 2, 330f, 360f, out c, out cr);
-                bool f330 = c == 0 && cr == 270;    // (330-60)/300 = 90%
+                bool f330 = c == 0 && cr == 540;    // (330-60)/300 = 90%
                 table.CalculateMatchReward(false, 3, 359.9f, 360f, out c, out cr);
-                bool f359 = c == 0 && cr == 400;    // 99.97% → 반올림하면 크레딧 전액
+                bool f359 = c == 0 && cr == 900;    // 99.97% → 반올림하면 크레딧 전액
                 table.CalculateMatchReward(false, 1, 500f, 360f, out c, out cr);
-                bool over = c == 0 && cr == 200;    // 남은 적을 잡다가 판 길이를 넘겨 죽어도 크레딧 전액을 넘지 않음
-                fails += Check(f210 && f330 && f359 && over, "실패는 코어 0 + 크레딧 비례: 스테이지1 210초 = 0/100, 스테이지2 330초 = 0/270, 스테이지3 359.9초 = 0/400, 판 길이 초과도 크레딧 전액까지만");
+                bool over = c == 0 && cr == 300;    // 남은 적을 잡다가 판 길이를 넘겨 죽어도 크레딧 전액을 넘지 않음
+                fails += Check(f210 && f330 && f359 && over, "실패는 코어 0 + 크레딧 비례: 스테이지1 210초 = 0/150, 스테이지2 330초 = 0/540, 스테이지3 359.9초 = 0/900, 판 길이 초과도 크레딧 전액까지만");
 
                 // 10) 실제 지급: 클리어는 잔액이 늘고, 1분 미만 실패는 잔액이 그대로이며 경고도 없다
                 int coreBefore = manager.Core, creditBefore = manager.Credit;
                 manager.GrantMatchReward(true, 2, 400f, 360f, out int clearCore, out int clearCredit);
-                fails += Check(clearCore == 0 && clearCredit == 300 && manager.Core == coreBefore && manager.Credit == creditBefore + 300,
+                fails += Check(clearCore == 0 && clearCredit == 600 && manager.Core == coreBefore && manager.Credit == creditBefore + 600,
                     $"스테이지 2 클리어 지급 코어 +{clearCore} (잔액 그대로), 크레딧 +{clearCredit}");
                 coreBefore = manager.Core; creditBefore = manager.Credit;
                 manager.GrantMatchReward(false, 1, 30f, 360f, out int shortCore, out int shortCredit);
@@ -124,7 +124,7 @@ namespace SurvivalDrone.EditorTools
                     "30초 만에 실패하면 지급 없음 (잔액 그대로)");
                 coreBefore = manager.Core; creditBefore = manager.Credit;
                 manager.GrantMatchReward(false, 1, 210f, 360f, out int failCore, out int failCredit);
-                fails += Check(failCore == 0 && failCredit == 100 && manager.Core == coreBefore && manager.Credit == creditBefore + 100,
+                fails += Check(failCore == 0 && failCredit == 150 && manager.Core == coreBefore && manager.Credit == creditBefore + 150,
                     $"210초 실패 지급 코어 +{failCore} (잔액 그대로), 크레딧 +{failCredit}");
 
                 // 11) 마일스톤: 스테이지마다 따로. 달성해야 받을 수 있고(받기를 눌러야 지급), 번호마다 한 번만 지급 (3분 → 6분 → 처음 클리어), 두 번째부터는 0, 잘못된 번호도 0
