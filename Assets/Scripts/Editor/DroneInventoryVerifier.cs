@@ -185,6 +185,70 @@ namespace SurvivalDrone.EditorTools
                 oldInventory.Initialize(oldSave, growth, gacha, false);
                 fails += Check(oldInventory.OwnedCount == 2 && oldInventory.TotalCombatPower == 100, "드론 항목이 없는 옛 저장 파일도 시작 드론을 받고 정상 시작");
                 UnityEngine.Object.DestroyImmediate(oldObject);
+
+                // ---- 조각 교환 (크레딧 → 조각) ----
+                // 결정(10/6): 조각 10개 = 크레딧 500, 하루 3번. 하루 한도는 날짜가 바뀌면(기기 날짜 기준) 새로 시작한다.
+                fails += Check(growth.ShardExchangeShards == 10 && growth.ShardExchangeCredit == 500 && growth.ShardExchangeDailyLimit == 3,
+                    $"조각 교환 수치표 = 조각 {growth.ShardExchangeShards} / 크레딧 {growth.ShardExchangeCredit} / 하루 {growth.ShardExchangeDailyLimit}번 (결정: 10 / 500 / 3)");
+
+                var exData = new SaveData();
+                var exCurrencyObject = new GameObject("DroneInventoryVerifier_ExCurrency") { hideFlags = HideFlags.HideAndDontSave };
+                var exInventoryObject = new GameObject("DroneInventoryVerifier_ExInventory") { hideFlags = HideFlags.HideAndDontSave };
+                try
+                {
+                    var exCurrency = exCurrencyObject.AddComponent<CurrencyManager>();
+                    exCurrency.Initialize(exData, currencyTable, false);
+                    var exInventory = exInventoryObject.AddComponent<DroneInventory>();
+                    exInventory.Initialize(exData, growth, gacha, false);
+                    const string day1 = "2026-10-01", day2 = "2026-10-02";
+
+                    int creditBeforeEx = exCurrency.Credit;
+                    var notOwned = exInventory.TryExchangeShards(DroneType.Collector, exCurrency, day1);
+                    var noCredit = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day1);
+                    exInventory.TryGetInfo(DroneType.Melee, out info);
+                    fails += Check(notOwned == ExchangeResult.NotOwned && noCredit == ExchangeResult.NotEnoughCredit && info.shards == 0
+                                   && exCurrency.Credit == creditBeforeEx && exInventory.GetExchangeCountToday(day1) == 0,
+                        "미보유 드론은 교환 불가, 크레딧이 모자라면 실패하고 조각·크레딧·오늘 횟수가 그대로");
+
+                    exCurrency.AddCredit(2000);
+                    var r1 = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day1);
+                    var r2 = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day1);
+                    var r3 = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day1);
+                    exInventory.TryGetInfo(DroneType.Melee, out info);
+                    fails += Check(r1 == ExchangeResult.Success && r2 == ExchangeResult.Success && r3 == ExchangeResult.Success
+                                   && info.shards == 30 && exCurrency.Credit == 500 && exInventory.GetExchangeCountToday(day1) == 3,
+                        $"하루 3번 교환 성공: 조각 {info.shards}, 크레딧 {exCurrency.Credit}, 오늘 {exInventory.GetExchangeCountToday(day1)}/3");
+
+                    var r4 = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day1);
+                    exInventory.TryGetInfo(DroneType.Melee, out info);
+                    fails += Check(r4 == ExchangeResult.DailyLimit && info.shards == 30 && exCurrency.Credit == 500,
+                        "크레딧이 충분해도 4번째는 하루 한도(DailyLimit)로 막히고 조각·크레딧이 그대로");
+
+                    var next = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day2);
+                    exInventory.TryGetInfo(DroneType.Melee, out info);
+                    fails += Check(next == ExchangeResult.Success && info.shards == 40 && exCurrency.Credit == 0 && exInventory.GetExchangeCountToday(day2) == 1,
+                        $"다음 날(날짜 변경)이면 횟수가 새로 시작해서 다시 교환 가능 (조각 {info.shards}, 오늘 {exInventory.GetExchangeCountToday(day2)}/3)");
+
+                    exData.ownedDrones.Find(o => o.droneType == DroneType.Melee).level = growth.MaxLevel;
+                    exCurrency.AddCredit(500);
+                    var maxed = exInventory.TryExchangeShards(DroneType.Melee, exCurrency, day2);
+                    fails += Check(maxed == ExchangeResult.MaxLevel && exCurrency.Credit == 500 && exInventory.GetExchangeCountToday(day2) == 1,
+                        "최대 레벨 드론은 교환 불가(MaxLevel), 크레딧·횟수가 그대로");
+
+                    var s = exData.logStats;
+                    fails += Check(s.shardExchanges == 4 && s.shardsBought == 40 && s.creditSpentOnShards == 2000
+                                   && exData.playLog.Exists(l => l.Contains("| shard_exchange |") && l.Contains("드론=Melee 조각=+10 사용크레딧=500 오늘=1/3")),
+                        $"테스트 로그에 교환 기록: {s.shardExchanges}번, 조각 {s.shardsBought}, 크레딧 {s.creditSpentOnShards}");
+                    fails += Check(PlayLog.BuildSummaryText(exData).Contains("조각 교환 4번 (조각 40개, 크레딧 2,000 사용)"), "요약에 조각 교환 줄이 나온다");
+
+                    var exLoaded = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(exData));
+                    fails += Check(exLoaded.shardExchangeDate == day2 && exLoaded.shardExchangeCount == 1, "교환 횟수·날짜가 JSON 저장/불러오기 후에도 유지");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(exCurrencyObject);
+                    UnityEngine.Object.DestroyImmediate(exInventoryObject);
+                }
             }
             finally
             {

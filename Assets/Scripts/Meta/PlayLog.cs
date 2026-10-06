@@ -118,6 +118,16 @@ namespace SurvivalDrone.Meta
             Add(data, "upgrade", $"드론={droneName} 레벨={newLevel} 내전투력={combatPower}");
         }
 
+        // 크레딧으로 조각을 샀을 때. countToday = 오늘 몇 번째 교환인지, limit = 하루 한도.
+        public static void RecordShardExchange(SaveData data, string droneName, int shards, int credit, int countToday, int limit)
+        {
+            var s = data.logStats;
+            s.shardExchanges++;
+            s.shardsBought += shards;
+            s.creditSpentOnShards += credit;
+            Add(data, "shard_exchange", $"드론={droneName} 조각=+{shards} 사용크레딧={credit} 오늘={countToday}/{limit}");
+        }
+
         // 드론을 장착하거나 해제했을 때. droneName이 null이면 해제.
         public static void RecordEquip(SaveData data, int slotNumber, string droneName, int combatPower)
         {
@@ -189,6 +199,8 @@ namespace SurvivalDrone.Meta
                 ? $"- 첫 뽑기 전에 플레이한 판 수: {s.matchesBeforeFirstPull}"
                 : "- 아직 뽑기를 한 번도 안 함");
             builder.AppendLine($"- 드론 강화 {s.upgrades}번 · 접속 {s.sessions}번");
+            if (s.shardExchanges > 0)
+                builder.AppendLine($"- 조각 교환 {s.shardExchanges}번 (조각 {s.shardsBought:N0}개, 크레딧 {s.creditSpentOnShards:N0} 사용)");
             return builder.ToString();
         }
 

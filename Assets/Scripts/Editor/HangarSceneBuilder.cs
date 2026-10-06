@@ -13,7 +13,7 @@ namespace SurvivalDrone.EditorTools
     // 화면 배치 (1920x1080 기준, 가운데가 기준점):
     //   위: 뒤로 버튼 / 제목 / 재화
     //   왼쪽 패널: 드론 목록 (런타임에 견본 줄을 복제해서 5줄을 만든다)
-    //   오른쪽 패널: 고른 드론의 상세 (이름, 등급·레벨, 전투력, 성능 배율, 조각 진행바, 강화 버튼)
+    //   오른쪽 패널: 고른 드론의 상세 (이름, 등급·레벨, 전투력, 성능 배율, 조각 진행바, 강화 버튼, 조각 교환 버튼)
     //   아래: 내 전투력 + 출격 장착 슬롯 2개
     public static class HangarSceneBuilder
     {
@@ -94,7 +94,10 @@ namespace SurvivalDrone.EditorTools
             var cost = NewText("CostText", detail.transform, "크레딧", 32, LightText, SansFont, TextAnchor.MiddleCenter);
             Place(cost.rectTransform, Center, Center, Center, new Vector2(0f, -95f), new Vector2(900f, 44f));
             var upgrade = NewButton("BtnUpgrade", detail.transform, "강화", 42, Cyan, DarkText);
-            Place(upgrade.rectTransform, Center, Center, Center, new Vector2(0f, -170f), new Vector2(420f, 88f));
+            Place(upgrade.rectTransform, Center, Center, Center, new Vector2(-250f, -170f), new Vector2(420f, 88f));
+            // 강화 버튼 오른쪽: 크레딧으로 조각을 사는 버튼 (글자는 HangarUI가 받는 조각·크레딧·오늘 횟수로 채운다)
+            var exchange = NewButton("BtnExchange", detail.transform, "조각 +10 교환\n크레딧 500  (오늘 0/3)", 28, ButtonColor, LightText);
+            Place(exchange.rectTransform, Center, Center, Center, new Vector2(250f, -170f), new Vector2(460f, 88f));
             var status = NewText("StatusText", detail.transform, "", 28, Cyan, SansFont, TextAnchor.MiddleCenter);
             Place(status.rectTransform, Center, Center, Center, new Vector2(0f, -240f), new Vector2(1080f, 40f));
 

@@ -11,7 +11,7 @@ namespace SurvivalDrone.UI
 {
     // 격납고 화면. 가진 드론을 보고, 강화하고, 출격할 드론을 장착하는 화면이다.
     //   왼쪽: 드론 5종 목록 (등급·레벨, 장착 중 표시, 미획득은 흐리게)
-    //   오른쪽: 고른 드론의 상세 (전투력, 성능 배율, 조각 진행바, 강화 버튼)
+    //   오른쪽: 고른 드론의 상세 (전투력, 성능 배율, 조각 진행바, 강화 버튼, 크레딧으로 조각을 사는 교환 버튼)
     //   아래: 출격 장착 슬롯 2개와 내 전투력
     //
     // 실제 규칙(보유·강화·장착·전투력 계산)은 DroneInventory가 처리하고, 이 스크립트는 버튼 입력을 넘기고 결과를 화면에 그리기만 한다.
@@ -55,6 +55,8 @@ namespace SurvivalDrone.UI
         private Text _costText;
         private Button _upgradeButton;
         private Text _upgradeLabel;
+        private Button _exchangeButton;
+        private Text _exchangeLabel;
         private Text _statusText;
         private Text _totalPowerText;
 
@@ -81,6 +83,8 @@ namespace SurvivalDrone.UI
 
             WireButton("BtnBack", () => { PlayClick(); SceneManager.LoadScene(lobbySceneName); });
             _upgradeButton = WireButton("DetailPanel/BtnUpgrade", Upgrade);
+            _exchangeButton = WireButton("DetailPanel/BtnExchange", Exchange);
+            _exchangeLabel = FindText("DetailPanel/BtnExchange/Text");
 
             // 장착 슬롯 버튼: 슬롯 번호는 0부터 (BtnSlot1 = 0번)
             int slotCount = DroneInventory.Instance != null ? DroneInventory.Instance.EquipSlotCount : 2;
@@ -226,6 +230,7 @@ namespace SurvivalDrone.UI
                 SetShardBar(0f);
                 if (_upgradeButton != null) _upgradeButton.interactable = false;
                 if (_upgradeLabel != null) _upgradeLabel.text = "강화";
+                RefreshExchange(inventory, false, false);
                 return;
             }
 
@@ -246,6 +251,7 @@ namespace SurvivalDrone.UI
                 SetShardBar(1f);
                 if (_upgradeButton != null) _upgradeButton.interactable = false;
                 if (_upgradeLabel != null) _upgradeLabel.text = "최대 레벨";
+                RefreshExchange(inventory, true, true);
                 return;
             }
 
@@ -256,6 +262,21 @@ namespace SurvivalDrone.UI
             SetText(_costText, $"크레딧  {creditCost:N0}", credit >= creditCost ? LightColor : ShortColor);
             if (_upgradeButton != null) _upgradeButton.interactable = true; // 모자라도 눌러서 이유를 안내받을 수 있게 켜 둔다
             if (_upgradeLabel != null) _upgradeLabel.text = "강화";
+            RefreshExchange(inventory, true, false);
+        }
+
+        // 조각 교환 버튼의 글자와 켜짐 상태. 보유한 드론이고 최대 레벨이 아니면 켜 두고(모자라도 눌러서 이유를 안내받게),
+        // 미보유·최대 레벨이면 끈다. 글자에는 받는 조각·내는 크레딧·오늘 남은 횟수를 보여준다.
+        private void RefreshExchange(DroneInventory inventory, bool owned, bool maxLevel)
+        {
+            if (_exchangeButton == null || _exchangeLabel == null) return;
+
+            int used = inventory.GetExchangeCountToday();
+            int limit = inventory.ExchangeDailyLimit;
+            _exchangeLabel.text = maxLevel
+                ? "조각 교환\n최대 레벨은 불가"
+                : $"조각 +{inventory.ExchangeShards} 교환\n크레딧 {inventory.ExchangeCredit:N0}  (오늘 {used}/{limit})";
+            _exchangeButton.interactable = owned && !maxLevel;
         }
 
         private void RefreshSlots(DroneInventory inventory)
@@ -313,6 +334,33 @@ namespace SurvivalDrone.UI
                     break;
                 case UpgradeResult.MaxLevel:
                     SetStatus("이미 최대 레벨입니다", MutedColor);
+                    break;
+                default:
+                    SetStatus("보유하지 않은 드론입니다", ShortColor);
+                    break;
+            }
+        }
+
+        // 조각 교환 버튼: 크레딧을 내고 고른 드론의 조각을 산다. 결과에 따라 이유를 안내한다.
+        private void Exchange()
+        {
+            var inventory = DroneInventory.Instance;
+            if (inventory == null) return;
+
+            PlayClick();
+            switch (inventory.TryExchangeShards(_selected, CurrencyManager.Instance))
+            {
+                case ExchangeResult.Success:
+                    SetStatus($"조각 +{inventory.ExchangeShards}을 샀습니다  (오늘 {inventory.GetExchangeCountToday()}/{inventory.ExchangeDailyLimit})", CyanColor);
+                    break;
+                case ExchangeResult.DailyLimit:
+                    SetStatus($"오늘은 더 교환할 수 없습니다  (하루 {inventory.ExchangeDailyLimit}번, 내일 다시 가능)", ShortColor);
+                    break;
+                case ExchangeResult.NotEnoughCredit:
+                    SetStatus("크레딧이 부족합니다  (판을 플레이하면 크레딧을 얻습니다)", ShortColor);
+                    break;
+                case ExchangeResult.MaxLevel:
+                    SetStatus("최대 레벨 드론은 조각이 필요 없습니다", MutedColor);
                     break;
                 default:
                     SetStatus("보유하지 않은 드론입니다", ShortColor);

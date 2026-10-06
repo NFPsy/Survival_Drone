@@ -65,6 +65,11 @@ namespace SurvivalDrone.Meta
         // 비어 있는 슬롯은 -1로 저장한다.
         public List<int> equippedDrones = new List<int>();
 
+        // ---- 조각 교환 ----
+        // 오늘 몇 번 교환했는지. shardExchangeDate가 오늘과 다르면 횟수를 0으로 새로 시작한다. (일일 퀘스트와 같은 날짜 형식·기준)
+        public string shardExchangeDate = "";
+        public int shardExchangeCount;
+
         // 해금된 스테이지 개수. 1이면 스테이지 1만 열려 있다. (이전 스테이지를 클리어하면 하나씩 늘어난다)
         public int unlockedStageCount = 1;
 

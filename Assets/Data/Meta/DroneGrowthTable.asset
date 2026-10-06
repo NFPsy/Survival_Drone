@@ -21,3 +21,6 @@ MonoBehaviour:
   _upgradeShardCosts: 1e000000320000005000000078000000
   _upgradeCreditCosts: 2c010000f401000020030000b0040000
   _equipSlotCount: 2
+  _shardExchangeShards: 10
+  _shardExchangeCredit: 500
+  _shardExchangeDailyLimit: 3

@@ -36,6 +36,16 @@ namespace SurvivalDrone.Meta
         [SerializeField] private int[] _upgradeShardCosts = { 30, 50, 80, 120 };
         [SerializeField] private int[] _upgradeCreditCosts = { 300, 500, 800, 1200 };
 
+        // ---- 조각 교환 (크레딧 → 조각) ----
+        // 격납고에서 크레딧을 내고 고른 드론의 조각을 살 수 있다. 조각은 원래 뽑기에서 같은 드론이 또 나올 때만 생겨서
+        // 강화의 진짜 병목이었고, 크레딧은 쓸 곳이 강화 비용뿐이라 남아돌았다. 그래서 남는 크레딧을 조각으로 바꿔 준다.
+        // 한 번 교환할 때마다 _shardExchangeShards개의 조각을 _shardExchangeCredit 크레딧에 판다.
+        // 뽑기(코어)를 대신하지 않도록 하루에 _shardExchangeDailyLimit번까지만 가능하고, 일일 퀘스트와 같은 시각(기기 날짜 기준)에 초기화된다.
+        [Header("조각 교환 (크레딧 → 조각)")]
+        [SerializeField] private int _shardExchangeShards = 10;
+        [SerializeField] private int _shardExchangeCredit = 500;
+        [SerializeField] private int _shardExchangeDailyLimit = 3;
+
         // ---- 출격 ----
         // 한 번에 장착해서 출격할 수 있는 드론 개수.
         [Header("출격")]
@@ -44,6 +54,9 @@ namespace SurvivalDrone.Meta
         public float BasePower => _basePower;
         public float LevelBonusPerLevel => _levelBonusPerLevel;
         public int EquipSlotCount => _equipSlotCount;
+        public int ShardExchangeShards => _shardExchangeShards;
+        public int ShardExchangeCredit => _shardExchangeCredit;
+        public int ShardExchangeDailyLimit => _shardExchangeDailyLimit;
 
         // 최대 강화 레벨 (강화 비용 칸 수 + 1).
         public int MaxLevel => _upgradeShardCosts.Length + 1;
@@ -82,6 +95,9 @@ namespace SurvivalDrone.Meta
 
             if (_equipSlotCount < 1)
                 Debug.LogWarning($"[Inventory] DroneGrowthTable 장착 슬롯은 1개 이상이어야 합니다: {_equipSlotCount}", this);
+
+            if (_shardExchangeShards < 1 || _shardExchangeCredit < 1 || _shardExchangeDailyLimit < 0)
+                Debug.LogWarning($"[Inventory] DroneGrowthTable 조각 교환 값이 잘못됐습니다: 조각 {_shardExchangeShards} / 크레딧 {_shardExchangeCredit} / 하루 {_shardExchangeDailyLimit}번", this);
         }
     }
 }

@@ -7,6 +7,9 @@ namespace SurvivalDrone.Meta
     // 드론을 강화하려고 했을 때의 결과. 격납고 화면이 "왜 안 되는지"를 안내할 때 쓴다.
     public enum UpgradeResult { Success, NotOwned, MaxLevel, NotEnoughShards, NotEnoughCredit }
 
+    // 조각 교환(크레딧 → 조각) 결과.
+    public enum ExchangeResult { Success, NotOwned, MaxLevel, DailyLimit, NotEnoughCredit }
+
     // 내가 가진 드론(설계도)을 관리하는 매니저.
     //  - 보유: 드론 종류당 1개만 가진다. 뽑기 결과를 받아서 신규 / 승급 / 중복(조각)으로 처리한다.
     //  - 강화: 조각 + 크레딧을 내고 레벨을 올린다 (최대 5).
@@ -184,6 +187,45 @@ namespace SurvivalDrone.Meta
             PlayLog.RecordUpgrade(_data, type.ToString(), owned.level, TotalCombatPower);
             Changed();
             return UpgradeResult.Success;
+        }
+
+        // ---------------- 조각 교환 ----------------
+
+        // 한 번 교환할 때 받는 조각 수 / 내는 크레딧 / 하루 한도. (수치는 DroneGrowthTable)
+        public int ExchangeShards => _isReady ? _growthTable.ShardExchangeShards : 0;
+        public int ExchangeCredit => _isReady ? _growthTable.ShardExchangeCredit : 0;
+        public int ExchangeDailyLimit => _isReady ? _growthTable.ShardExchangeDailyLimit : 0;
+
+        // 오늘 이미 교환한 횟수. 저장된 날짜가 오늘이 아니면 0으로 새로 시작한다. today는 검증용(비우면 기기의 오늘 날짜).
+        public int GetExchangeCountToday(string today = null)
+        {
+            if (_data == null) return 0;
+            today ??= DailyQuests.Today();
+            if (_data.shardExchangeDate != today)
+            {
+                _data.shardExchangeDate = today;
+                _data.shardExchangeCount = 0;
+            }
+            return _data.shardExchangeCount;
+        }
+
+        // 크레딧을 내고 고른 드론의 조각을 산다. 크레딧이 모자라거나 하루 한도를 넘었거나 이미 최대 레벨(조각이 더 필요 없음)이면 아무것도 바뀌지 않는다.
+        public ExchangeResult TryExchangeShards(DroneType type, CurrencyManager currency, string today = null)
+        {
+            var owned = FindOwned(type);
+            if (!_isReady || owned == null) return ExchangeResult.NotOwned;
+            if (owned.level >= _growthTable.MaxLevel) return ExchangeResult.MaxLevel;
+            if (GetExchangeCountToday(today) >= ExchangeDailyLimit) return ExchangeResult.DailyLimit;
+
+            // 크레딧 차감이 성공해야 조각을 준다 (모자라면 CurrencyManager가 "부족" 이벤트를 알려준다).
+            if (currency == null || !currency.TrySpendCredit(ExchangeCredit)) return ExchangeResult.NotEnoughCredit;
+
+            owned.shards += ExchangeShards;
+            _data.shardExchangeCount++;
+            Debug.Log($"[Inventory] 조각 교환: {type} 조각 +{ExchangeShards} (크레딧 -{ExchangeCredit}, 오늘 {_data.shardExchangeCount}/{ExchangeDailyLimit}, 누적 {owned.shards})");
+            PlayLog.RecordShardExchange(_data, type.ToString(), ExchangeShards, ExchangeCredit, _data.shardExchangeCount, ExchangeDailyLimit);
+            Changed();
+            return ExchangeResult.Success;
         }
 
         // ---------------- 장착 ----------------

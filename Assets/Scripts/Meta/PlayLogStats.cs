@@ -32,6 +32,11 @@ namespace SurvivalDrone.Meta
         // 드론 강화 성공 횟수
         public int upgrades;
 
+        // 조각 교환(크레딧 → 조각) 횟수와, 그때 산 조각 합계·쓴 크레딧 합계. 옛 저장 파일에는 없지만 0으로 안전하게 읽힌다.
+        public int shardExchanges;
+        public int shardsBought;
+        public int creditSpentOnShards;
+
         // 판 도중에 일시정지 메뉴에서 "재시작"/"메인메뉴"로 나간 횟수와, 나간 시점(게임 시간)의 합계(초).
         // 사망·클리어로 끝난 판(matches)과는 따로 센다. 그래야 클리어율·평균 생존 같은 "끝난 판" 통계가 섞이지 않는다.
         // 옛 저장 파일에는 이 값이 없지만, 숫자 기본값이 0이라 그대로 안전하게 읽힌다.
