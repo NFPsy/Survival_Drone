@@ -194,14 +194,19 @@ namespace SurvivalDrone.EditorTools
                 int q2NextDay = manager.TryClaimDailyQuest(2, day2);
                 fails += Check(resetOk && q2NextDay == DailyQuests.Cores[2], $"다음 날(날짜 변경) 기록 초기화 후 새 퀘스트 +{q2NextDay}");
 
-                // 12-2) 출석하기(200코어): 오늘 처음 들어오면 달성, 같은 날 다시 들어와도 한 번만, 받은 뒤 재청구 불가, 다음 날 초기화
+                // 12-1) 일일 퀘스트 수치가 결정과 같은지: 3분 50 / 6분 75 / 클리어 125 / 출석 150 = 하루 400
+                fails += Check(DailyQuests.Cores[0] == 50 && DailyQuests.Cores[1] == 75 && DailyQuests.Cores[2] == 125 && DailyQuests.Cores[DailyQuests.AttendanceIndex] == 150
+                               && DailyQuests.Cores[0] + DailyQuests.Cores[1] + DailyQuests.Cores[2] + DailyQuests.Cores[3] == 400,
+                    $"일일 퀘스트 코어 = 3분 {DailyQuests.Cores[0]} / 6분 {DailyQuests.Cores[1]} / 클리어 {DailyQuests.Cores[2]} / 출석 {DailyQuests.Cores[3]} (하루 400)");
+
+                // 12-2) 출석하기(150코어): 오늘 처음 들어오면 달성, 같은 날 다시 들어와도 한 번만, 받은 뒤 재청구 불가, 다음 날 초기화
                 int attendEarly = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
                 bool attendFirst = DailyQuests.MarkAttendance(data, day1);
                 bool attendSecond = DailyQuests.MarkAttendance(data, day1);
                 int attendClaim = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
                 int attendAgain = manager.TryClaimDailyQuest(DailyQuests.AttendanceIndex, day1);
                 bool attendNextDay = DailyQuests.MarkAttendance(data, day2) && !DailyQuests.IsClaimed(data, DailyQuests.AttendanceIndex, day2);
-                fails += Check(attendEarly == 0 && attendFirst && !attendSecond && attendClaim == 200 && attendAgain == 0 && attendNextDay,
+                fails += Check(attendEarly == 0 && attendFirst && !attendSecond && attendClaim == 150 && attendAgain == 0 && attendNextDay,
                     $"출석: 달성 전 {attendEarly} / 첫 출석 {attendFirst} / 같은 날 두 번째 {attendSecond} / 받기 +{attendClaim} / 재청구 {attendAgain} / 다음 날 다시 출석 {attendNextDay}");
 
                 // 13) 저장 형식(JSON) 왕복: 글자로 바꿨다가 되돌려도 값이 같다 (받은 마일스톤 기록 포함)

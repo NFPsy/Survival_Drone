@@ -15,7 +15,8 @@ namespace SurvivalDrone.Meta
         public static readonly string[] Titles = { "3분 버티기", "6분 버티기", "클리어하기", "출석하기" };
 
         // 퀘스트 보상 코어.
-        public static readonly int[] Cores = { 50, 100, 150, 200 };
+        // 3분 50 / 6분 75 / 클리어 125 / 출석 150 = 하루 400. (10/6: 무과금 30일 기대 SSR을 BM 목표 범위 0.5~1.5에 맞추려고 500 → 400으로 낮춤)
+        public static readonly int[] Cores = { 50, 75, 125, 150 };
 
         // 출석하기 퀘스트의 번호.
         public const int AttendanceIndex = 3;
