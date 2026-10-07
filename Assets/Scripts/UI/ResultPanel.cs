@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using SurvivalDrone.Core;
 using SurvivalDrone.Player;
 using SurvivalDrone.Drones;
+using SurvivalDrone.LevelUp;
 using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
@@ -123,7 +124,7 @@ namespace SurvivalDrone.UI
 
             float realSeconds = gameManager != null ? gameManager.RealElapsedSeconds : 0f;
 
-            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit);
+            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit, LevelUpPickLog.BuildSummary());
             SaveManager.Save();
         }
 

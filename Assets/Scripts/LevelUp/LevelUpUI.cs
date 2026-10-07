@@ -63,6 +63,9 @@ namespace SurvivalDrone.LevelUp
         {
             // 게임 시작 시에는 레벨업 화면을 꺼둔다.
             if (panel != null) panel.SetActive(false);
+
+            // 새 판이 시작됐으니 지난 판의 선택 기록(테스트 기록용)을 비운다.
+            LevelUpPickLog.Reset();
         }
 
         // 레벨업이 일어났을 때 호출되는 함수. 새 레벨 번호는 지금 로직에서는 사용하지 않는다.
@@ -219,6 +222,9 @@ namespace SurvivalDrone.LevelUp
             // 나중에 콘솔에서 "몇 초에 어떤 선택을 골랐는지" 순서대로 복기할 수 있도록 기록해둔다.
             float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
             Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{option.Title}\" 선택");
+
+            // 웹 빌드의 테스트 기록에도 남도록, 어떤 종류를 골랐는지 센다. (판 결과 기록 끝에 요약이 붙는다)
+            LevelUpPickLog.Record(option, elapsed);
 
             AudioManager.Instance?.PlaySfx(chooseSound);
 

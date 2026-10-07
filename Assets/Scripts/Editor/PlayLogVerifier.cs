@@ -1,5 +1,6 @@
 using System;
 using SurvivalDrone.Drones;
+using SurvivalDrone.LevelUp;
 using SurvivalDrone.Meta;
 using UnityEditor;
 using UnityEngine;
@@ -131,6 +132,27 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(leaveLoaded.logStats.abandons == 2 && Mathf.Approximately(leaveLoaded.logStats.abandonSurviveSeconds, 130f),
                     "JSON 저장/불러오기 왕복 후에도 이탈 누적이 그대로");
                 fails += Check(oldSave.logStats.abandons == 0, "이탈 항목이 없는 옛 저장 파일은 이탈 0번으로 읽힘");
+
+                // ---- 레벨업 선택 요약 (판 기록 끝에 덧붙는 문장) ----
+                LevelUpPickLog.Reset();
+                fails += Check(LevelUpPickLog.BuildSummary() == "", "레벨업 선택이 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.StatBoost, StatBoost = StatBoostKind.MoveSpeed }, 45.4f);
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.StatBoost, StatBoost = StatBoostKind.MoveSpeed }, 80f);
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.StatBoost, StatBoost = StatBoostKind.MaxHealth }, 100f);
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.NewDrone }, 120f);
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 150f);
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 160f);
+                string picks = LevelUpPickLog.BuildSummary();
+                fails += Check(picks == "레벨업선택=이동속도2/체력1/신규드론1/드론강화2 이동속도첫선택=45초", $"레벨업 선택 요약 문장: '{picks}'");
+                var withPicks = new SaveData();
+                PlayLog.RecordMatch(withPicks, 1, true, 600f, 689f, 14, 5, 100, 0, 300, picks);
+                PlayLog.RecordAbandon(withPicks, 1, 50f, 60f, 3, 2, 100, "재시작", picks);
+                fails += Check(withPicks.playLog[0].EndsWith("보상크레딧=300 " + picks) && withPicks.playLog[1].EndsWith("내전투력=100 " + picks),
+                    "판 결과·이탈 기록 끝에 레벨업 선택 요약이 덧붙음");
+                LevelUpPickLog.Reset();
+                LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 30f);
+                fails += Check(LevelUpPickLog.BuildSummary().EndsWith("이동속도첫선택=없음"), "이동속도를 한 번도 안 골랐으면 '이동속도첫선택=없음'");
+                LevelUpPickLog.Reset();
 
                 // ---- 최대 개수 ----
                 var big = new SaveData();

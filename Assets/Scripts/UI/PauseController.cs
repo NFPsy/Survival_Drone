@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using SurvivalDrone.Core;
 using SurvivalDrone.Player;
 using SurvivalDrone.Drones;
+using SurvivalDrone.LevelUp;
 using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
@@ -134,7 +135,7 @@ namespace SurvivalDrone.UI
             int level = experience != null ? experience.Level : 1;
             int droneCount = droneManager != null ? droneManager.OwnedCount : 0;
 
-            PlayLog.RecordAbandon(SaveManager.Data, stageNumber, game.ElapsedTime, game.CurrentRealElapsedSeconds, level, droneCount, combatPower, exitMethod);
+            PlayLog.RecordAbandon(SaveManager.Data, stageNumber, game.ElapsedTime, game.CurrentRealElapsedSeconds, level, droneCount, combatPower, exitMethod, LevelUpPickLog.BuildSummary());
             SaveManager.Save();
         }
     }
