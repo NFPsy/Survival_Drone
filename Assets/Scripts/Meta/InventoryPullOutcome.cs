@@ -4,7 +4,8 @@ namespace SurvivalDrone.Meta
     //  New       = 처음 얻는 드론 (결과 화면에 NEW 표시)
     //  Promoted  = 이미 가진 드론인데 더 높은 등급이 나와서 등급이 올라감 (승급)
     //  Duplicate = 이미 가진 드론과 같거나 낮은 등급이라 조각으로 환산됨
-    public enum PullOutcome { New, Promoted, Duplicate }
+    //  Simulated = 뽑기 시뮬레이터의 결과. 보유 목록에 반영되지 않아서 신규/중복 구분이 없다.
+    public enum PullOutcome { New, Promoted, Duplicate, Simulated }
 
     // 뽑기 결과가 보유 목록에 반영된 뒤의 결과. 뽑기 결과 화면(UI)이 카드에 NEW / 승급 / +조각 을 표시할 때 쓴다.
     public readonly struct InventoryPullOutcome

@@ -57,6 +57,10 @@ namespace SurvivalDrone.UI
 
         private GachaPullReport _report;
         private bool _isTen;
+
+        // 시뮬레이터 결과를 보여주는 중이면 그 시뮬레이터 객체, 실제 뽑기 결과면 null.
+        // "다시 뽑기"가 실제 뽑기가 아니라 시뮬레이터로 이어지도록 구분하는 데 쓴다.
+        private SimGachaSession _sim;
         private Coroutine _routine;
         private Coroutine _flashRoutine;
         private bool _finished;
@@ -95,12 +99,14 @@ namespace SurvivalDrone.UI
         private void HandleCoreChanged(int value) => RefreshAgainButton();
 
         // 결과 화면을 열고 공개 연출을 시작한다.
-        public void Show(GachaPullReport report, bool isTen)
+        // sim: 시뮬레이터 결과일 때만 넘긴다. (실제 뽑기는 비워 둔다)
+        public void Show(GachaPullReport report, bool isTen, SimGachaSession sim = null)
         {
             if (!report.success || report.pulls.Length == 0) return;
 
             _report = report;
             _isTen = isTen;
+            _sim = sim;
             _finished = false;
             gameObject.SetActive(true);
 
@@ -234,6 +240,13 @@ namespace SurvivalDrone.UI
                     card.tagText.text = $"승급  {outcome.previousRarity} → {pull.rarity}";
                     card.tagText.color = CyanColor;
                     break;
+                case PullOutcome.Simulated:
+                    // 시뮬레이터: 보유 목록과 무관하므로 NEW/중복 대신, 천장이 발동한 결과인지만 알려준다.
+                    card.tagText.text = pull.isPityGuaranteed ? "SSR 천장 확정"
+                                      : pull.isSoftPityGuaranteed ? "소천장 발동"
+                                      : "시뮬레이션";
+                    card.tagText.color = pull.isPityGuaranteed || pull.isSoftPityGuaranteed ? CyanColor : MutedColor;
+                    break;
                 default:
                     card.tagText.text = $"중복  조각 +{outcome.shardsGained}";
                     card.tagText.color = MutedColor;
@@ -298,8 +311,18 @@ namespace SurvivalDrone.UI
         // 같은 종류(1회 / 10연)로 한 번 더 뽑는다. 코어가 모자라면 이 버튼은 비활성이다.
         private void Again()
         {
+            if (!_finished) return;
+
+            // 시뮬레이터 결과였다면 시뮬레이터로 한 번 더 (코어를 쓰지 않는다).
+            if (_sim != null)
+            {
+                PlayClick();
+                Show(_isTen ? _sim.PullTen() : _sim.PullSingle(), _isTen, _sim);
+                return;
+            }
+
             var controller = GachaController.Instance;
-            if (controller == null || !_finished) return;
+            if (controller == null) return;
 
             PlayClick();
             GachaPullReport report = _isTen ? controller.PullTen() : controller.PullSingle();
@@ -329,6 +352,19 @@ namespace SurvivalDrone.UI
 
         private void RefreshAgainButton()
         {
+            // 시뮬레이터: 코어를 쓰지 않으므로 항상 누를 수 있다.
+            if (_sim != null && _againButton != null)
+            {
+                if (_againLabel != null) _againLabel.text = _isTen ? "10연 다시 뽑기" : "1회 다시 뽑기";
+                if (_againPrice != null)
+                {
+                    _againPrice.text = "무료 (시뮬레이션)";
+                    _againPrice.color = _againPriceNormalColor;
+                }
+                _againButton.interactable = true;
+                return;
+            }
+
             var controller = GachaController.Instance;
             var currency = CurrencyManager.Instance;
             if (controller == null || currency == null || _againButton == null) return;

@@ -43,6 +43,15 @@ namespace SurvivalDrone.UI
         private GameObject _insufficientPopup;
         private Text _insufficientMessage;
 
+        // ---- 뽑기 시뮬레이터 ----
+        // 켜면 코어·보유 드론·실제 천장과 무관하게 무한으로 뽑아볼 수 있다. (SimGachaSession 참고)
+        // 화면에 들어올 때마다 꺼진 상태로 시작하고, 처음 켤 때 새로 만들어서 천장도 0에서 시작한다.
+        private SimGachaSession _sim;
+        private bool _simMode;
+        private Text _simToggleLabel;
+        private Text _simInfoText;
+        private Button _simResetButton;
+
         private void Awake()
         {
             _coreText = FindText("TopBar/CoreText");
@@ -68,6 +77,12 @@ namespace SurvivalDrone.UI
             _discountText = FindText("BtnPullTen/BadgeBack/DiscountBadge");
             if (_singlePriceText != null) _singlePriceNormalColor = _singlePriceText.color;
             if (_tenPriceText != null) _tenPriceNormalColor = _tenPriceText.color;
+
+            // 시뮬레이터 전환 버튼 / 안내 글자 / 초기화 버튼. (시뮬레이터 UI가 없는 옛 씬이면 경고만 남기고 일반 뽑기는 그대로 동작한다)
+            WireButton("BtnSim", ToggleSim);
+            _simToggleLabel = FindText("BtnSim/Text");
+            _simInfoText = FindText("SimInfoText");
+            _simResetButton = WireButton("BtnSimReset", ResetSim);
 
             var popupTransform = transform.Find("ProbabilityPopup");
             if (popupTransform != null)
@@ -129,9 +144,12 @@ namespace SurvivalDrone.UI
 
             if (_ratesText != null) _ratesText.text = GachaRateFormatter.BuildRatesRichText(table);
 
+            // 시뮬레이터 모드면 게이지·가격을 시뮬레이터 기준으로 보여준다.
+            bool sim = _simMode && _sim != null;
+
             // 천장 게이지: "SSR 확정까지  누적 42 / 70"과 채워지는 막대
-            int pity = controller.PityCount;
-            int limit = controller.PityLimit;
+            int pity = sim ? _sim.PityCount : controller.PityCount;
+            int limit = sim ? _sim.PityLimit : controller.PityLimit;
             if (_pityText != null) _pityText.text = $"SSR 확정까지    누적 {pity} / {limit}";
             if (_pityBarFill != null)
             {
@@ -140,24 +158,43 @@ namespace SurvivalDrone.UI
             }
 
             // 소천장 게이지: "SR 이상 보장까지  누적 7 / 10" (횟수가 0이면 소천장을 쓰지 않으므로 숨긴다)
-            int softLimit = controller.SoftPityLimit;
+            int softLimit = sim ? _sim.SoftPityLimit : controller.SoftPityLimit;
+            int softCount = sim ? _sim.SoftPityCount : controller.SoftPityCount;
             bool softOn = softLimit > 0;
             if (_softPityText != null)
             {
                 _softPityText.gameObject.SetActive(softOn);
-                if (softOn) _softPityText.text = $"SR 이상 보장까지    누적 {controller.SoftPityCount} / {softLimit}";
+                if (softOn) _softPityText.text = $"SR 이상 보장까지    누적 {softCount} / {softLimit}";
             }
             if (_softPityBarFill != null)
             {
                 _softPityBarFill.transform.parent.gameObject.SetActive(softOn);
-                float softRatio = softOn ? Mathf.Clamp01((float)controller.SoftPityCount / softLimit) : 0f;
+                float softRatio = softOn ? Mathf.Clamp01((float)softCount / softLimit) : 0f;
                 _softPityBarFill.anchorMax = new Vector2(softRatio, 1f);
             }
 
             // 가격 표시. 코어가 모자라면 가격 글자만 빨갛게 (버튼은 눌러서 "부족" 안내를 볼 수 있게 켜 둔다).
-            SetPrice(_singlePriceText, _singlePriceNormalColor, table.SingleCost, core);
-            SetPrice(_tenPriceText, _tenPriceNormalColor, table.TenPullCost, core);
+            // 시뮬레이터에서는 코어를 쓰지 않으므로 "무료"로 보여준다.
+            if (sim)
+            {
+                if (_singlePriceText != null) { _singlePriceText.text = "무료 (시뮬레이션)"; _singlePriceText.color = _singlePriceNormalColor; }
+                if (_tenPriceText != null) { _tenPriceText.text = "무료 (시뮬레이션)"; _tenPriceText.color = _tenPriceNormalColor; }
+            }
+            else
+            {
+                SetPrice(_singlePriceText, _singlePriceNormalColor, table.SingleCost, core);
+                SetPrice(_tenPriceText, _tenPriceNormalColor, table.TenPullCost, core);
+            }
             if (_discountText != null) _discountText.text = $"{GachaRateFormatter.GetTenPullDiscountPercent(table)}% 할인";
+
+            // 시뮬레이터 전환 버튼 글자 / 안내 글자 / 초기화 버튼은 모드에 맞게 보이고 숨긴다.
+            if (_simToggleLabel != null) _simToggleLabel.text = sim ? "시뮬레이터: 켜짐" : "시뮬레이터: 꺼짐";
+            if (_simInfoText != null)
+            {
+                _simInfoText.gameObject.SetActive(sim);
+                if (sim) _simInfoText.text = $"SIMULATION   누적 {_sim.TotalPulls}회  ·  SSR {_sim.SsrCount}개   (코어·보유 드론·실제 천장에 영향 없음)";
+            }
+            if (_simResetButton != null) _simResetButton.gameObject.SetActive(sim);
         }
 
         private static void SetPrice(Text priceText, Color normalColor, int cost, int core)
@@ -174,6 +211,15 @@ namespace SurvivalDrone.UI
             if (controller == null) return;
 
             PlayClick();
+
+            // 시뮬레이터 모드: 코어 차감·보유 목록·저장 없이 시뮬레이터에서만 뽑는다.
+            // (게이지는 시뮬레이터의 Changed 이벤트로 이미 갱신된다)
+            if (_simMode && _sim != null)
+            {
+                if (_resultUI != null) _resultUI.Show(isTen ? _sim.PullTen() : _sim.PullSingle(), isTen, _sim);
+                return;
+            }
+
             GachaPullReport report = isTen ? controller.PullTen() : controller.PullSingle();
 
             if (!report.success)
@@ -184,6 +230,31 @@ namespace SurvivalDrone.UI
 
             Refresh();
             if (_resultUI != null) _resultUI.Show(report, isTen);
+        }
+
+        // ---- 시뮬레이터 ----
+        // 시뮬레이터 모드를 켜고 끈다. 처음 켤 때 새 시뮬레이터(천장 0)를 만들고, 껐다 켜도 같은 시뮬레이터를 이어서 쓴다.
+        private void ToggleSim()
+        {
+            var controller = GachaController.Instance;
+            if (controller == null || controller.Table == null) return;
+
+            PlayClick();
+            _simMode = !_simMode;
+            if (_simMode && _sim == null)
+            {
+                _sim = new SimGachaSession(controller.Table);
+                _sim.Changed += Refresh;
+            }
+            Refresh();
+        }
+
+        // 시뮬레이터의 천장과 누적 숫자를 0으로 되돌린다.
+        private void ResetSim()
+        {
+            if (_sim == null) return;
+            PlayClick();
+            _sim.Reset(); // Changed 이벤트로 화면이 다시 그려진다
         }
 
         private void ShowInsufficient()

@@ -92,6 +92,9 @@ namespace SurvivalDrone.EditorTools
             var badgeText = NewText("DiscountBadge", badge.transform, "10% 할인", 24, DarkText, SansFont, TextAnchor.MiddleCenter);
             Stretch(badgeText.rectTransform);
 
+            // ---- 뽑기 시뮬레이터 (전환 버튼 / 안내 글자 / 초기화 버튼) ----
+            BuildSimulatorUI(root);
+
             // ---- 팝업 (평소엔 꺼져 있음) ----
             var probBox = NewPopup("ProbabilityPopup", root, new Vector2(900f, 760f), out var probRoot);
             var probTitle = NewText("TitleText", probBox, "뽑기 확률 정보", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
@@ -176,6 +179,68 @@ namespace SurvivalDrone.EditorTools
 
             SaveAndRegister(scene, ScenePath);
             Debug.Log($"[Gacha] 뽑기 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");
+        }
+
+        // 시뮬레이터 안내 글자 색 (SR 보라색·금색·시안과 겹치지 않는 분홍색).
+        private static readonly Color SimColor = new Color(1f, 0.45f, 0.75f, 1f);
+
+        // 뽑기 시뮬레이터 UI 3개를 만든다:
+        //   BtnSim(상단 가운데 전환 버튼), SimInfoText(켜졌을 때만 보이는 안내·누적 글자), BtnSimReset(켜졌을 때만 보이는 초기화 버튼).
+        // 코드(GachaUI)가 이 이름으로 찾아서 연결하므로 이름을 바꾸면 안 된다.
+        // 팝업·결과 화면이 이미 있으면 그 "뒤"가 아니라 "앞"에 끼워 넣어서, 팝업이 이 버튼들을 덮도록 한다.
+        private static void BuildSimulatorUI(Transform root)
+        {
+            var toggle = NewButton("BtnSim", root, "시뮬레이터: 꺼짐", 28, ButtonColor, LightText);
+            Place(toggle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -30f), new Vector2(420f, 64f));
+
+            var info = NewText("SimInfoText", root, "SIMULATION", 26, SimColor, SansFont, TextAnchor.MiddleCenter);
+            Place(info.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -104f), new Vector2(1500f, 40f));
+            info.gameObject.SetActive(false);
+
+            var reset = NewButton("BtnSimReset", root, "시뮬레이터 초기화", 28, ButtonColor, LightText);
+            Place(reset.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 205f), new Vector2(340f, 60f));
+            reset.gameObject.SetActive(false);
+
+            var popup = root.Find("ProbabilityPopup");
+            if (popup != null)
+            {
+                toggle.transform.SetSiblingIndex(popup.GetSiblingIndex());
+                info.transform.SetSiblingIndex(popup.GetSiblingIndex());
+                reset.transform.SetSiblingIndex(popup.GetSiblingIndex());
+            }
+        }
+
+        // 이미 만들어져 저장된 뽑기 씬에 시뮬레이터 UI만 덧붙인다. (씬을 처음부터 다시 만들지 않으므로 손으로 고친 부분이 보존된다)
+        // 메뉴 SurvivalDrone → Build → Add Simulator UI To Gacha Scene
+        [MenuItem("SurvivalDrone/Build/Add Simulator UI To Gacha Scene")]
+        public static void AddSimulatorToExistingScene()
+        {
+            if (!EditorSafety.CanRunEditModeTool("Add Simulator UI To Gacha Scene")) return;
+
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath)
+            {
+                if (!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+                active = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(ScenePath);
+            }
+
+            var gachaUI = Object.FindFirstObjectByType<GachaUI>();
+            if (gachaUI == null)
+            {
+                Debug.LogWarning("[Gacha] 뽑기 씬에서 GachaUI를 찾지 못해 시뮬레이터 UI를 추가하지 못했습니다.");
+                return;
+            }
+            if (gachaUI.transform.Find("BtnSim") != null)
+            {
+                Debug.Log("[Gacha] 시뮬레이터 UI가 이미 있어서 아무것도 하지 않았습니다.");
+                return;
+            }
+
+            LoadFonts();
+            BuildSimulatorUI(gachaUI.transform);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(active);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(active);
+            Debug.Log("[Gacha] 뽑기 씬에 시뮬레이터 UI를 추가하고 저장했습니다.");
         }
 
         // 뽑기 버튼 안에 "이름"과 "가격" 두 줄을 넣는다. 가격 글자 색은 코어가 모자랄 때 실행 중에 빨갛게 바뀐다.

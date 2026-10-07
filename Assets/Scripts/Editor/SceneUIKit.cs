@@ -39,13 +39,20 @@ namespace SurvivalDrone.EditorTools
         public static Font SansFont { get; private set; }
         public static Font MonoFont { get; private set; }
 
+        // 폰트를 불러온다. 씬을 새로 만들 때는 CreateCanvasScene이 부르고,
+        // 이미 만들어진 씬에 요소만 덧붙일 때는 직접 불러야 한다. (안 부르면 글자 폰트가 비어 있게 된다)
+        public static void LoadFonts()
+        {
+            SansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
+            MonoFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
+        }
+
         // 새 UI 씬을 만든다: 카메라, 이벤트 시스템, 캔버스(1920x1080 기준), 배경, 격자무늬까지.
         // 만든 캔버스의 Transform을 돌려주고, 화면 요소는 그 아래에 이어서 만들면 된다.
         // 저장하지 않은 변경이 있는 씬이 열려 있으면 저장할지 묻고, 취소하면 null을 돌려준다.
         public static Transform CreateCanvasScene(out Scene scene)
         {
-            SansFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
-            MonoFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
+            LoadFonts();
             var gridSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UI/UI_GridPattern.png");
 
             scene = default;
