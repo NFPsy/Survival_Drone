@@ -33,6 +33,10 @@ namespace SurvivalDrone.Enemies
         // 플레이어를 중심으로 이 거리(반지름)에 있는 원 위에서 적을 스폰한다 (화면 밖에서 나타나도록).
         [SerializeField] private float spawnRadius = 16f;
 
+        // 맵(바닥 100x100)의 절반 크기보다 살짝 안쪽 값. 이보다 바깥에서는 적을 스폰하지 않는다.
+        // (플레이어가 맵 가장자리에 있을 때 적이 허공에서 나타나는 것을 막기 위함)
+        [SerializeField] private float arenaHalfSize = 48f;
+
         // 보스가 등장할 때 재생할 경고음.
         [SerializeField] private AudioClip bossWarningSound;
 
@@ -218,6 +222,11 @@ namespace SurvivalDrone.Enemies
             // 이렇게 하면 적이 항상 플레이어 주변 "화면 밖"에서 나타나는 것처럼 보인다.
             Vector2 dir2 = Random.insideUnitCircle.normalized;
             Vector3 spawnPos = player.position + new Vector3(dir2.x, 0f, dir2.y) * spawnRadius;
+
+            // 계산한 위치가 맵 밖이면, 밖으로 벗어난 축만 반대쪽(플레이어 기준 맵 안쪽)으로 뒤집는다.
+            // 예: 플레이어가 오른쪽 끝에 있어서 오른쪽 16m가 맵 밖이면 왼쪽 16m에서 스폰.
+            if (Mathf.Abs(spawnPos.x) > arenaHalfSize) spawnPos.x = player.position.x - dir2.x * spawnRadius;
+            if (Mathf.Abs(spawnPos.z) > arenaHalfSize) spawnPos.z = player.position.z - dir2.y * spawnRadius;
 
             // 프리팹으로 실제 게임오브젝트를 생성.
             var obj = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
