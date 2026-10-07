@@ -81,6 +81,9 @@ namespace SurvivalDrone.Drones
             {
                 if (enemy == null) continue;
 
+                // 맵 밖의 적은 피해를 받지 않으므로 겨냥하지 않는다. (헛발 방지)
+                if (!enemy.IsInsideArena) continue;
+
                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
 
                 // 사거리 밖이면 후보에서 제외.

@@ -251,9 +251,21 @@ namespace SurvivalDrone.Enemies
             }
         }
 
+        // 맵(바닥 100x100)의 절반 크기. 이 값보다 바깥은 "맵 밖"이다.
+        private const float ArenaHalfSize = 50f;
+
+        // 이 적이 지금 맵 안에 있는지. 맵 밖에서 죽으면 XP 오브가 허공에 떨어져서
+        // 플레이어(투명벽에 막혀 못 나감)가 주울 수 없으므로, 맵 밖의 적은 공격하지 않는다.
+        public bool IsInsideArena =>
+            Mathf.Abs(transform.position.x) <= ArenaHalfSize &&
+            Mathf.Abs(transform.position.z) <= ArenaHalfSize;
+
         // 드론에게 공격받았을 때 호출되는 함수. 드론들이 이 함수를 통해서만 피해를 줄 수 있다.
         public void ApplyDamage(float amount)
         {
+            // 맵 밖에 있는 적은 피해를 받지 않는다. (맵 안으로 들어오면 다시 맞는다)
+            if (!IsInsideArena) return;
+
             health.TakeDamage(amount);
         }
 
