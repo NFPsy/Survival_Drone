@@ -1,5 +1,6 @@
 using System;
 using SurvivalDrone.Drones;
+using SurvivalDrone.Enemies;
 using SurvivalDrone.LevelUp;
 using SurvivalDrone.Meta;
 using UnityEditor;
@@ -153,6 +154,33 @@ namespace SurvivalDrone.EditorTools
                 LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 30f);
                 fails += Check(LevelUpPickLog.BuildSummary().EndsWith("이동속도첫선택=없음"), "이동속도를 한 번도 안 골랐으면 '이동속도첫선택=없음'");
                 LevelUpPickLog.Reset();
+
+                // ---- 사망 원인·받은 피해 요약 (판 기록 끝에 덧붙는 문장) ----
+                DamageSourceLog.Reset();
+                fails += Check(DamageSourceLog.BuildSummary(true) == "" && DamageSourceLog.BuildSummary(false) == "",
+                    "한 번도 안 맞았으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
+                DamageSourceLog.Record("약한", 6f);
+                DamageSourceLog.Record("빠른", 6f);
+                DamageSourceLog.Record("튼튼한", 10f);
+                DamageSourceLog.Record("빠른", 12f);   // 오버드라이브 중이라 2배로 맞은 경우. 가장 마지막에 맞은 종류 = 빠른
+                DamageSourceLog.Record("", 5f);        // 이름이 없거나
+                DamageSourceLog.Record("강한", 0f);    // 피해가 0이면 무시
+                string lostDamage = DamageSourceLog.BuildSummary(true);
+                string wonDamage = DamageSourceLog.BuildSummary(false);
+                fails += Check(lostDamage == "사망원인=빠른 받은피해=빠른18/튼튼한10/약한6", $"패배 요약: 사망원인(마지막으로 맞은 종류) + 종류별 피해 합계(큰 순서): '{lostDamage}'");
+                fails += Check(wonDamage == "받은피해=빠른18/튼튼한10/약한6", $"승리 요약: 사망원인 없이 받은 피해만: '{wonDamage}'");
+                fails += Check(DamageSourceLog.LabelOf(EnemyKind.Fast, false) == "빠른" && DamageSourceLog.LabelOf(EnemyKind.Boss, false) == "보스"
+                               && DamageSourceLog.LabelOf(EnemyKind.Boss, true) == "미니보스",
+                    "적 종류 이름 (보스 데이터를 쓰는 미니 보스는 '미니보스'로 따로 구분)");
+                var withDamage = new SaveData();
+                PlayLog.RecordMatch(withDamage, 3, false, 165.6f, 178.7f, 8, 4, 129, 0, 176, null, lostDamage);
+                PlayLog.RecordMatch(withDamage, 3, false, 70f, 80f, 5, 3, 129, 0, 10, "레벨업선택=이동속도1/체력0/신규드론1/드론강화0 이동속도첫선택=30초", lostDamage);
+                PlayLog.RecordMatch(withDamage, 1, true, 600f, 689f, 14, 5, 100, 0, 300);
+                fails += Check(withDamage.playLog[0].EndsWith("보상크레딧=176 " + lostDamage), "판 기록 끝에 사망원인·받은 피해가 덧붙음 (레벨업 선택 요약이 없을 때)");
+                fails += Check(withDamage.playLog[1].EndsWith("이동속도첫선택=30초 " + lostDamage), "레벨업 선택 요약이 있으면 그 뒤에 이어서 덧붙음");
+                fails += Check(withDamage.playLog[2].EndsWith("보상크레딧=300"), "요약을 안 넘기는 옛 방식 호출은 기록 모양이 그대로");
+                DamageSourceLog.Reset();
+                fails += Check(DamageSourceLog.BuildSummary(true) == "", "Reset 하면 지난 판의 맞은 기록이 지워짐");
 
                 // ---- 최대 개수 ----
                 var big = new SaveData();

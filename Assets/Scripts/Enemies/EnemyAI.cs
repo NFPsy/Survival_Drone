@@ -238,7 +238,15 @@ namespace SurvivalDrone.Enemies
             if (distance <= contactRange && contactTimer <= 0f)
             {
                 var playerHealth = target.GetComponent<Health>();
-                playerHealth?.TakeDamage(scaledContactDamage);
+                if (playerHealth != null && !playerHealth.IsDead)
+                {
+                    // 테스트(CBT) 기록용: 어떤 종류의 적에게 얼마나 맞았는지 남긴다.
+                    // 반드시 TakeDamage "앞"에서 불러야 한다. 이 한 방으로 죽으면 TakeDamage 안에서 곧바로
+                    // 결과 화면이 판 기록을 남기기 때문에, 뒤에 부르면 마지막 일격(사망 원인)이 기록에서 빠진다.
+                    // 오버드라이브 중에는 받는 피해가 배로 늘어나므로, 실제로 들어가는 양(배율 포함)을 적는다.
+                    DamageSourceLog.Record(DamageSourceLog.LabelOf(definition.kind, isMiniBoss), scaledContactDamage * playerHealth.DamageTakenMultiplier);
+                    playerHealth.TakeDamage(scaledContactDamage);
+                }
                 contactTimer = contactDamageInterval;
             }
         }

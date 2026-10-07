@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using SurvivalDrone.Core;
 using SurvivalDrone.Player;
 using SurvivalDrone.Drones;
+using SurvivalDrone.Enemies;
 using SurvivalDrone.LevelUp;
 using SurvivalDrone.Meta;
 
@@ -124,7 +125,8 @@ namespace SurvivalDrone.UI
 
             float realSeconds = gameManager != null ? gameManager.RealElapsedSeconds : 0f;
 
-            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit, LevelUpPickLog.BuildSummary());
+            // 끝에 덧붙는 요약 두 개: 레벨업 선택, 그리고 맞은 적 종류(패배하면 사망원인 포함).
+            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit, LevelUpPickLog.BuildSummary(), DamageSourceLog.BuildSummary(!won));
             SaveManager.Save();
         }
 

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using SurvivalDrone.Enemies;
 using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.Core
@@ -79,6 +80,10 @@ namespace SurvivalDrone.Core
             // 씬에서 가장 먼저 생성될 때 자기 자신을 Instance에 등록.
             Instance = this;
             _matchStartRealtime = Time.realtimeSinceStartup;
+
+            // 새 판이 시작됐으니 지난 판의 "맞은 적 종류" 기록(테스트 기록용)을 비운다.
+            // (static이라 씬을 다시 불러도 값이 남아 있어서, 판이 시작될 때마다 직접 비워줘야 한다)
+            DamageSourceLog.Reset();
         }
 
         private void Start()
