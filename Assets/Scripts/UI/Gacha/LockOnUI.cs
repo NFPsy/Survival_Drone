@@ -33,6 +33,7 @@ namespace SurvivalDrone.UI
         private static readonly Color BackOutlineColor = new Color(0.300f, 0.360f, 0.460f, 0.9f);
         private static readonly Color ShortColor = new Color(1f, 0.35f, 0.35f);
         private static readonly Color LockColor = new Color(1f, 0.62f, 0.2f); // 주황 = 잠금 (공통 UI 색 규칙)
+        private static readonly Color SimColor = new Color(1f, 0.45f, 0.75f); // 시뮬레이터 안내 글자 (일반 뽑기 시뮬레이터와 같은 분홍색)
 
         private class SlotView
         {
@@ -49,7 +50,15 @@ namespace SurvivalDrone.UI
 
         private readonly List<SlotView> _slots = new List<SlotView>();
 
+        // 지금 화면이 보여주고 있는 판. 실제 판(_realSession)이거나 시뮬레이터 판(_simSession) 중 하나다.
         private LockOnSession _session;
+        private LockOnSession _realSession;   // 실제 코어를 쓰고 보유 드론에 반영되는 판
+        private LockOnSession _simSession;    // 시뮬레이터 판: 코어·보유 드론·저장 데이터·테스트 로그와 무관 (처음 켤 때 만든다)
+        private bool _simMode;
+
+        // 시뮬레이터 전환 버튼 / 안내 글자 / 누적 초기화 버튼. (시뮬레이터 UI가 없는 옛 씬이면 조용히 건너뛴다)
+        private Button _simButton, _simResetButton;
+        private Text _simLabel, _simInfoText;
 
         private Text _coreText;
         private Text _infoText;
@@ -122,6 +131,12 @@ namespace SurvivalDrone.UI
             if (_rerollLabel != null) _rerollNormalColor = _rerollLabel.color;
             if (_againLabel != null) _againNormalColor = _againLabel.color;
 
+            _simButton = WireButton("BtnSim", ToggleSim, false);
+            _simLabel = ButtonLabel(_simButton);
+            _simResetButton = WireButton("BtnSimReset", ResetSimStats, false);
+            var simInfo = transform.Find("SimInfoText");
+            _simInfoText = simInfo != null ? simInfo.GetComponent<Text>() : null;
+
             // 팝업 두 개: 확률·규칙 공개, 확인창.
             var rates = transform.Find("RatesPopup");
             if (rates != null)
@@ -164,8 +179,16 @@ namespace SurvivalDrone.UI
             if (CurrencyManager.Instance != null) CurrencyManager.Instance.OnCoreChanged += HandleCoreChanged;
 
             EnsureSession();
+            // 화면을 열 때마다 시뮬레이터는 꺼진 상태로 시작한다. (일반 뽑기 시뮬레이터와 같은 방식)
+            _simMode = false;
+            _session = _realSession;
             // 지난번에 끝낸 판이 남아 있으면 치우고 처음 상태로 연다.
-            if (_session != null && _session.Phase == LockOnPhase.Done) _session.Reset();
+            if (_realSession != null && _realSession.Phase == LockOnPhase.Done) _realSession.Reset();
+            if (_simSession != null)
+            {
+                if (_simSession.Phase == LockOnPhase.Done) _simSession.Reset();
+                else _simSession.AbandonSimulation();
+            }
             _messageText?.gameObject.SetActive(false);
             Refresh();
         }
@@ -180,7 +203,7 @@ namespace SurvivalDrone.UI
         // 화면이 열릴 때 한 번 판 관리자를 만든다. 재화·보유 드론 매니저가 없으면(메인 메뉴를 거치지 않고 시작) 경고만 남긴다.
         private void EnsureSession()
         {
-            if (_session != null) return;
+            if (_realSession != null) return;
             var currency = CurrencyManager.Instance;
             var inventory = DroneInventory.Instance;
             var data = SaveManager.Data;
@@ -189,8 +212,60 @@ namespace SurvivalDrone.UI
                 Debug.LogWarning("[LockOn] LockOnTable, CurrencyManager, DroneInventory 중 준비되지 않은 것이 있어 락온 뽑기를 사용할 수 없습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");
                 return;
             }
-            _session = new LockOnSession(_table, currency, inventory, data, new System.Random(), true);
-            _session.Changed += Refresh;
+            _realSession = new LockOnSession(_table, currency, inventory, data, new System.Random(), true);
+            _realSession.Changed += Refresh;
+        }
+
+        // ---------------- 시뮬레이터 ----------------
+        // 시뮬레이터를 켜고 끈다. 켜면 코어를 쓰지 않고 보유 드론·저장 데이터·테스트 로그에 아무것도 남기지 않는 가상의 판으로 연습할 수 있다.
+        // 진행 중인 판이 있을 때는 바꿀 수 없다(버튼이 비활성). 처음 켤 때 시뮬레이터 판을 만들고, 껐다 켜도 같은 판(누적 숫자)을 이어서 쓴다.
+        private void ToggleSim()
+        {
+            if (_session != null && _session.Phase == LockOnPhase.Active) return;
+            PlayClick();
+            ClearMessage();
+            if (_session != null && _session.Phase == LockOnPhase.Done) _session.Reset();
+
+            _simMode = !_simMode;
+            if (_simMode)
+            {
+                if (_simSession == null && _table != null)
+                {
+                    _simSession = new LockOnSession(_table, new System.Random());
+                    _simSession.Changed += Refresh;
+                }
+                _session = _simSession;
+            }
+            else _session = _realSession;
+            Refresh();
+        }
+
+        // 시뮬레이터의 누적 숫자를 0으로 되돌린다.
+        private void ResetSimStats()
+        {
+            if (_simSession == null) return;
+            PlayClick();
+            _simSession.ResetStats(); // Changed 이벤트로 화면이 다시 그려진다
+        }
+
+        // 시뮬레이터 전환 버튼·안내 글자·초기화 버튼을 지금 상태에 맞게 보이고 숨긴다.
+        private void RefreshSimUI()
+        {
+            bool sim = _simMode && _session != null && _session.IsSimulation;
+            bool busy = _session != null && _session.Phase == LockOnPhase.Active;
+
+            if (_simButton != null) _simButton.interactable = !busy; // 진행 중인 판이 있으면 바꿀 수 없다
+            if (_simLabel != null) _simLabel.text = sim ? "시뮬레이터: 켜짐" : "시뮬레이터: 꺼짐";
+            if (_simInfoText != null)
+            {
+                _simInfoText.gameObject.SetActive(sim);
+                if (sim)
+                {
+                    string average = _session.ConfirmedCount > 0 ? $"{(float)_session.TotalSpentCore / _session.ConfirmedCount:N0}" : "-";
+                    _simInfoText.text = $"SIMULATION   누적 {_session.ConfirmedCount}판  ·  판당 평균 사용 코어 {average}  ·  받은 칸 {_session.TotalReceivedCount}개   (코어·보유 드론·로그에 영향 없음)";
+                }
+            }
+            if (_simResetButton != null) _simResetButton.gameObject.SetActive(sim && !busy);
         }
 
         // ---------------- 그리기 ----------------
@@ -208,6 +283,7 @@ namespace SurvivalDrone.UI
                 SetActive(_againButton, false);
                 SetActive(_closeButton, false);
                 RefreshSlots();
+                RefreshSimUI(); // 실제 락온은 못 쓰는 상태여도 시뮬레이터는 켤 수 있다
                 return;
             }
 
@@ -220,13 +296,15 @@ namespace SurvivalDrone.UI
                 switch (phase)
                 {
                     case LockOnPhase.Idle:
-                        _infoText.text = $"처음 공개 {_session.FirstCost:N0}코어  ·  공개된 칸 중 {_table.LockMinRarity} 이상을 잠그고 나머지만 다시 뽑을 수 있어요";
+                        _infoText.text = _session.IsSimulation
+                            ? $"시뮬레이터: 코어를 쓰지 않아요  ·  확률과 가격 규칙은 실제와 같아요 (처음 공개 {_session.FirstCost:N0}코어로 계산)"
+                            : $"처음 공개 {_session.FirstCost:N0}코어  ·  공개된 칸 중 {_table.LockMinRarity} 이상을 잠그고 나머지만 다시 뽑을 수 있어요";
                         break;
                     case LockOnPhase.Active:
-                        _infoText.text = $"이번 판에서 쓴 코어 {_session.SpentCore:N0}  ·  재뽑기 {_session.RerollCount}번  ·  잠근 칸 {_session.LockedCount} / {_session.SlotCount}";
+                        _infoText.text = $"{(_session.IsSimulation ? "이번 판에서 가상으로 쓴 코어" : "이번 판에서 쓴 코어")} {_session.SpentCore:N0}  ·  재뽑기 {_session.RerollCount}번  ·  잠근 칸 {_session.LockedCount} / {_session.SlotCount}";
                         break;
                     default:
-                        _infoText.text = $"이번 판에서 쓴 코어 {_session.SpentCore:N0}  (재뽑기 {_session.RerollCount}번)";
+                        _infoText.text = $"{(_session.IsSimulation ? "이번 판에서 가상으로 쓴 코어" : "이번 판에서 쓴 코어")} {_session.SpentCore:N0}  (재뽑기 {_session.RerollCount}번)";
                         break;
                 }
             }
@@ -238,18 +316,23 @@ namespace SurvivalDrone.UI
             SetActive(_againButton, phase == LockOnPhase.Done);
             SetActive(_closeButton, phase == LockOnPhase.Done);
 
-            SetLabel(_startLabel, $"락온 시작\n{_session.FirstCost:N0} 코어", _session.CanAffordStart ? _startNormalColor : ShortColor);
-            SetLabel(_againLabel, $"한 번 더\n{_session.FirstCost:N0} 코어", _session.CanAffordStart ? _againNormalColor : ShortColor);
+            // 시뮬레이터에서는 코어를 쓰지 않으므로 "무료 (시뮬레이션)"으로 보여준다. (재뽑기는 가상 비용을 알려준다)
+            bool sim = _session.IsSimulation;
+            SetLabel(_startLabel, sim ? "락온 시작\n무료 (시뮬레이션)" : $"락온 시작\n{_session.FirstCost:N0} 코어", _session.CanAffordStart ? _startNormalColor : ShortColor);
+            SetLabel(_againLabel, sim ? "한 번 더\n무료 (시뮬레이션)" : $"한 번 더\n{_session.FirstCost:N0} 코어", _session.CanAffordStart ? _againNormalColor : ShortColor);
 
             if (phase == LockOnPhase.Active)
             {
                 bool canReroll = _session.UnlockedCount > 0;
+                string rerollPrice = sim ? $"{_session.NextRerollCost:N0} 코어 (가상)" : $"{_session.NextRerollCost:N0} 코어";
                 SetLabel(_rerollLabel,
-                         canReroll ? $"재뽑기  ({_session.UnlockedCount}칸)\n{_session.NextRerollCost:N0} 코어" : "모두 잠금\n다시 뽑을 칸 없음",
+                         canReroll ? $"재뽑기  ({_session.UnlockedCount}칸)\n{rerollPrice}" : "모두 잠금\n다시 뽑을 칸 없음",
                          canReroll && !_session.CanAffordReroll ? ShortColor : _rerollNormalColor);
                 if (_rerollButton != null) _rerollButton.interactable = canReroll;
                 SetLabel(_confirmLabel, $"확정\n잠근 {_session.LockedCount}칸 받기", DarkColor);
             }
+
+            RefreshSimUI();
         }
 
         private static readonly Color DarkColor = new Color(0.043f, 0.055f, 0.078f); // 시안 버튼 위의 어두운 글자
@@ -337,6 +420,11 @@ namespace SurvivalDrone.UI
                         view.tagText.text = $"승급  {result.outcome.previousRarity} → {result.rarity}";
                         view.tagText.color = CyanColor;
                         break;
+                    case PullOutcome.Simulated:
+                        // 시뮬레이터: 보유 목록과 무관하므로 NEW/중복 대신 "시뮬레이션"만 보여준다.
+                        view.tagText.text = "받음 (시뮬레이션)";
+                        view.tagText.color = SimColor;
+                        break;
                     default:
                         view.tagText.text = $"중복  조각 +{result.outcome.shardsGained}";
                         view.tagText.color = MutedColor;
@@ -389,8 +477,10 @@ namespace SurvivalDrone.UI
             ClearMessage();
             if (_session.LockedCount == 0)
             {
-                ShowConfirm($"잠근 칸이 없습니다.\n이대로 확정하면 드론을 하나도 받지 못하고\n쓴 코어 {_session.SpentCore:N0}는 돌려받지 못합니다.\n(모든 칸이 조각으로 바뀝니다)\n\n확정할까요?",
-                            () => DoConfirm("확정"));
+                string message = _session.IsSimulation
+                    ? "잠근 칸이 없습니다.\n이대로 확정하면 아무것도 받지 못합니다.\n(시뮬레이션이라 코어는 쓰지 않아요)\n\n확정할까요?"
+                    : $"잠근 칸이 없습니다.\n이대로 확정하면 드론을 하나도 받지 못하고\n쓴 코어 {_session.SpentCore:N0}는 돌려받지 못합니다.\n(모든 칸이 조각으로 바뀝니다)\n\n확정할까요?";
+                ShowConfirm(message, () => DoConfirm("확정"));
             }
             else DoConfirm("확정");
         }
@@ -414,6 +504,8 @@ namespace SurvivalDrone.UI
         private void RequestClose()
         {
             PlayClick();
+            // 시뮬레이터 판은 코어를 쓰지 않았으니 묻지 않고 그냥 버리고 나간다.
+            if (_session != null && _session.IsSimulation && _session.Phase == LockOnPhase.Active) _session.AbandonSimulation();
             if (_session != null && _session.Phase == LockOnPhase.Active)
             {
                 ShowConfirm($"진행 중인 락온 뽑기가 있습니다.\n지금 확정하고 나갈까요?\n(잠근 {_session.LockedCount}칸만 받고, 쓴 코어는 돌려받지 못합니다)",
@@ -493,13 +585,14 @@ namespace SurvivalDrone.UI
             return text;
         }
 
-        private Button WireButton(string path, UnityEngine.Events.UnityAction action)
+        // warnIfMissing을 false로 주면 버튼이 없어도 경고하지 않는다 (시뮬레이터 UI가 없는 옛 씬용).
+        private Button WireButton(string path, UnityEngine.Events.UnityAction action, bool warnIfMissing = true)
         {
             var child = transform.Find(path);
             var button = child != null ? child.GetComponent<Button>() : null;
             if (button == null)
             {
-                Debug.LogWarning($"[LockOn] 락온 화면에서 '{path}' 버튼을 찾지 못했습니다.");
+                if (warnIfMissing) Debug.LogWarning($"[LockOn] 락온 화면에서 '{path}' 버튼을 찾지 못했습니다.");
                 return null;
             }
             button.onClick.AddListener(action);

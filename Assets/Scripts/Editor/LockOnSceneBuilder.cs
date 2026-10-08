@@ -104,6 +104,9 @@ namespace SurvivalDrone.EditorTools
             Place(close.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(300f, 40f), new Vector2(520f, 110f));
             foreach (var b in new[] { start, reroll, confirm, again, close }) b.gameObject.SetActive(false);
 
+            // ---- 시뮬레이터 (전환 버튼 / 안내 글자 / 누적 초기화 버튼) ----
+            BuildSimulatorUI(panel.transform);
+
             // ---- 팝업 두 개 (평소엔 꺼져 있음): 확률·규칙 공개 / 확인창 ----
             var ratesBox = NewPopup("RatesPopup", panel.transform, new Vector2(1000f, 800f), out var ratesRoot);
             var ratesTitle = NewText("TitleText", ratesBox, "락온 뽑기 확률·규칙", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
@@ -143,6 +146,68 @@ namespace SurvivalDrone.EditorTools
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(active);
             UnityEditor.SceneManagement.EditorSceneManager.SaveScene(active);
             Debug.Log($"[LockOn] 뽑기 씬에 락온 뽑기 UI를 추가하고 저장했습니다. (사용 여부: {(table.Enabled ? "켜짐" : "꺼짐 — LockOnTable.asset의 Enabled를 체크하면 버튼이 보입니다")})");
+        }
+
+        // 시뮬레이터 안내 글자 색 (일반 뽑기 시뮬레이터와 같은 분홍색).
+        private static readonly Color SimColor = new Color(1f, 0.45f, 0.75f, 1f);
+
+        // 락온 시뮬레이터 UI 3개를 만든다:
+        //   BtnSim(왼쪽 위 전환 버튼), SimInfoText(켜졌을 때만 보이는 안내·누적 글자), BtnSimReset(켜졌을 때만 보이는 누적 초기화 버튼).
+        // LockOnUI가 이 이름으로 찾아서 연결하므로 이름을 바꾸면 안 된다.
+        // 팝업이 이미 있으면 그 "앞"에 끼워 넣어서, 팝업이 이 버튼들을 덮도록 한다.
+        private static void BuildSimulatorUI(Transform panel)
+        {
+            var toggle = NewButton("BtnSim", panel, "시뮬레이터: 꺼짐", 28, ButtonColor, LightText);
+            Place(toggle.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(40f, -110f), new Vector2(340f, 60f));
+
+            var info = NewText("SimInfoText", panel, "SIMULATION", 26, SimColor, SansFont, TextAnchor.MiddleCenter);
+            Place(info.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -150f), new Vector2(1750f, 40f));
+            info.gameObject.SetActive(false);
+
+            var reset = NewButton("BtnSimReset", panel, "누적 초기화", 28, ButtonColor, LightText);
+            Place(reset.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 175f), new Vector2(340f, 56f));
+            reset.gameObject.SetActive(false);
+
+            var popup = panel.Find("RatesPopup");
+            if (popup != null)
+            {
+                toggle.transform.SetSiblingIndex(popup.GetSiblingIndex());
+                info.transform.SetSiblingIndex(popup.GetSiblingIndex());
+                reset.transform.SetSiblingIndex(popup.GetSiblingIndex());
+            }
+        }
+
+        // 이미 만들어져 저장된 락온 화면에 시뮬레이터 UI만 덧붙인다. (화면을 처음부터 다시 만들지 않으므로 손으로 고친 부분이 보존된다)
+        // 메뉴 SurvivalDrone → Build → Add Lock-On Simulator UI To Gacha Scene
+        [MenuItem("SurvivalDrone/Build/Add Lock-On Simulator UI To Gacha Scene")]
+        public static void AddSimulatorToExistingScene()
+        {
+            if (!EditorSafety.CanRunEditModeTool("Add Lock-On Simulator UI To Gacha Scene")) return;
+
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath)
+            {
+                if (!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+                active = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(ScenePath);
+            }
+
+            var lockOnUI = Object.FindFirstObjectByType<LockOnUI>(FindObjectsInactive.Include);
+            if (lockOnUI == null)
+            {
+                Debug.LogWarning("[LockOn] 뽑기 씬에서 LockOnUI를 찾지 못해 시뮬레이터 UI를 추가하지 못했습니다. 먼저 'Add Lock-On UI To Gacha Scene'을 실행해주세요.");
+                return;
+            }
+            if (lockOnUI.transform.Find("BtnSim") != null)
+            {
+                Debug.Log("[LockOn] 시뮬레이터 UI가 이미 있어서 아무것도 하지 않았습니다.");
+                return;
+            }
+
+            LoadFonts();
+            BuildSimulatorUI(lockOnUI.transform);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(active);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(active);
+            Debug.Log("[LockOn] 락온 화면에 시뮬레이터 UI를 추가하고 저장했습니다.");
         }
 
         // 칸 카드 하나: 뒷면("?") / 앞면(등급·드론 이름·태그) / 잠금 버튼.

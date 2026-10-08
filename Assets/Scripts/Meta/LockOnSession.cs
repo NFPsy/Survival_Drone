@@ -100,11 +100,22 @@ namespace SurvivalDrone.Meta
         private readonly Random _random;
         private readonly bool _saveOnChange;
         private readonly bool _isReady;
+        private readonly bool _isSimulation;
         private readonly DroneType[] _droneTypes;
 
         private LockOnSlot[] _slots;
 
         public LockOnPhase Phase { get; private set; } = LockOnPhase.Idle;
+
+        // 시뮬레이터 판이면 true. 시뮬레이터는 코어를 쓰지 않고, 보유 드론·저장 데이터·테스트 로그에 아무것도 남기지 않는다.
+        public bool IsSimulation => _isSimulation;
+
+        // 확정한 판들의 누적 숫자. 시뮬레이터 화면의 "누적 N판 · 평균 사용 코어"에 쓴다.
+        // 시뮬레이터에서는 "가상으로 쓴 코어"(실제로는 차감하지 않음)가 더해진다. ResetStats로 0으로 되돌린다.
+        public int ConfirmedCount { get; private set; }
+        public int TotalSpentCore { get; private set; }
+        public int TotalRerollCount { get; private set; }
+        public int TotalReceivedCount { get; private set; }
 
         // 이번 판에서 지금까지 쓴 코어(첫 공개 + 재뽑기들)와 재뽑기 횟수. 판이 끝나고 Reset하면 0으로 돌아간다.
         public int SpentCore { get; private set; }
@@ -126,6 +137,18 @@ namespace SurvivalDrone.Meta
             _saveOnChange = saveOnChange;
             _droneTypes = (DroneType[])Enum.GetValues(typeof(DroneType));
             _isReady = table != null && currency != null && inventory != null && data != null;
+            _slots = new LockOnSlot[_isReady ? Math.Max(1, table.SlotCount) : 0];
+        }
+
+        // 시뮬레이터 판. 재화·보유 드론·저장 데이터가 필요 없고, 확률·가격 규칙은 실제 판과 같은 LockOnTable을 쓴다. ("표기 = 실제" 원칙)
+        // random을 비워 두면 매번 다른 결과가 나온다. 검증 도구는 시드를 고정한 것을 넣는다.
+        public LockOnSession(LockOnTable table, Random random = null)
+        {
+            _table = table;
+            _random = random ?? new Random();
+            _isSimulation = true;
+            _droneTypes = (DroneType[])Enum.GetValues(typeof(DroneType));
+            _isReady = table != null;
             _slots = new LockOnSlot[_isReady ? Math.Max(1, table.SlotCount) : 0];
         }
 
@@ -153,8 +176,9 @@ namespace SurvivalDrone.Meta
         // 지금 재뽑기하면 드는 코어. 다시 뽑을 칸이 없거나 Active가 아니면 0.
         public int NextRerollCost => Phase == LockOnPhase.Active && UnlockedCount > 0 ? _table.GetRerollCost(UnlockedCount, LockedCount) : 0;
 
-        public bool CanAffordStart => _isReady && _currency.CanAffordCore(_table.FirstCost);
-        public bool CanAffordReroll => NextRerollCost > 0 && _currency.CanAffordCore(NextRerollCost);
+        // 시뮬레이터는 코어를 쓰지 않으므로 항상 할 수 있다.
+        public bool CanAffordStart => _isReady && (_isSimulation || _currency.CanAffordCore(_table.FirstCost));
+        public bool CanAffordReroll => NextRerollCost > 0 && (_isSimulation || _currency.CanAffordCore(NextRerollCost));
 
         // 이 칸을 잠글 수 있는가? (공개 중이고, 잠글 수 있는 등급(기본 SR 이상)일 때)
         public bool CanLock(int index)
@@ -183,7 +207,8 @@ namespace SurvivalDrone.Meta
             if (Phase != LockOnPhase.Idle) return LockOnFailure.WrongPhase;
 
             int cost = _table.FirstCost;
-            if (!_currency.TrySpendCore(cost))
+            // 시뮬레이터는 코어를 차감하지 않는다. (비용은 "가상으로 쓴 코어"로만 센다)
+            if (!_isSimulation && !_currency.TrySpendCore(cost))
             {
                 PlayLog.RecordLockOnBlocked(_data, "시작", cost, _currency.Core);
                 SaveIfNeeded();
@@ -195,8 +220,11 @@ namespace SurvivalDrone.Meta
             for (int i = 0; i < _slots.Length; i++) _slots[i] = RollSlot();
             Phase = LockOnPhase.Active;
 
-            PlayLog.RecordLockOnStart(_data, cost, _currency.Core, SlotsSummary());
-            SaveIfNeeded();
+            if (!_isSimulation)
+            {
+                PlayLog.RecordLockOnStart(_data, cost, _currency.Core, SlotsSummary());
+                SaveIfNeeded();
+            }
             Changed?.Invoke();
             return LockOnFailure.None;
         }
@@ -209,7 +237,7 @@ namespace SurvivalDrone.Meta
             if (UnlockedCount == 0) return LockOnFailure.NothingToReroll;
 
             int cost = NextRerollCost;
-            if (!_currency.TrySpendCore(cost))
+            if (!_isSimulation && !_currency.TrySpendCore(cost))
             {
                 PlayLog.RecordLockOnBlocked(_data, "재뽑기", cost, _currency.Core);
                 SaveIfNeeded();
@@ -222,8 +250,11 @@ namespace SurvivalDrone.Meta
             for (int i = 0; i < _slots.Length; i++)
                 if (!_slots[i].locked) _slots[i] = RollSlot();
 
-            PlayLog.RecordLockOnReroll(_data, RerollCount, cost, lockedNow, SlotsSummary(), _currency.Core);
-            SaveIfNeeded();
+            if (!_isSimulation)
+            {
+                PlayLog.RecordLockOnReroll(_data, RerollCount, cost, lockedNow, SlotsSummary(), _currency.Core);
+                SaveIfNeeded();
+            }
             Changed?.Invoke();
             return LockOnFailure.None;
         }
@@ -235,6 +266,7 @@ namespace SurvivalDrone.Meta
         {
             if (!_isReady) return LockOnConfirmReport.Failed(LockOnFailure.NotReady);
             if (Phase != LockOnPhase.Active) return LockOnConfirmReport.Failed(LockOnFailure.WrongPhase);
+            if (_isSimulation) return ConfirmSimulation();
 
             var results = new LockOnSlotResult[_slots.Length];
             int lockedCount = 0, newCount = 0, promotedCount = 0, dupShards = 0, convShards = 0;
@@ -260,11 +292,68 @@ namespace SurvivalDrone.Meta
 
             LastReport = new LockOnConfirmReport(results, SpentCore, RerollCount);
             Phase = LockOnPhase.Done;
+            AddToTotals(lockedCount);
 
             PlayLog.RecordLockOnConfirm(_data, reason, lockedCount, SpentCore, RerollCount, newCount, promotedCount, dupShards, convShards, _currency.Core, ResultSummary(results));
             SaveIfNeeded();
             Changed?.Invoke();
             return LastReport;
+        }
+
+        // 시뮬레이터 확정: 잠근 칸은 "시뮬레이션" 결과로만 돌려주고, 보유 드론·조각·저장 데이터·테스트 로그에는 아무것도 하지 않는다.
+        private LockOnConfirmReport ConfirmSimulation()
+        {
+            var results = new LockOnSlotResult[_slots.Length];
+            int lockedCount = 0;
+            for (int i = 0; i < _slots.Length; i++)
+            {
+                var slot = _slots[i];
+                if (slot.locked)
+                {
+                    lockedCount++;
+                    results[i] = new LockOnSlotResult(slot.rarity, slot.drone, true, new InventoryPullOutcome(PullOutcome.Simulated, slot.rarity, 0), 0, slot.drone);
+                }
+                else
+                {
+                    results[i] = new LockOnSlotResult(slot.rarity, slot.drone, false, default, 0, slot.drone);
+                }
+            }
+
+            LastReport = new LockOnConfirmReport(results, SpentCore, RerollCount);
+            Phase = LockOnPhase.Done;
+            AddToTotals(lockedCount);
+            Changed?.Invoke();
+            return LastReport;
+        }
+
+        private void AddToTotals(int lockedCount)
+        {
+            ConfirmedCount++;
+            TotalSpentCore += SpentCore;
+            TotalRerollCount += RerollCount;
+            TotalReceivedCount += lockedCount;
+        }
+
+        // 누적 숫자를 0으로 되돌린다. 끝난 판(Done)이 있으면 함께 치운다. (시뮬레이터의 "누적 초기화" 버튼용)
+        public void ResetStats()
+        {
+            ConfirmedCount = 0;
+            TotalSpentCore = 0;
+            TotalRerollCount = 0;
+            TotalReceivedCount = 0;
+            if (Phase == LockOnPhase.Done) Reset();
+            else Changed?.Invoke();
+        }
+
+        // 시뮬레이터에서 진행 중인 판을 그냥 버린다. (코어를 쓰지 않았으니 아무것도 잃지 않는다. 화면을 나갈 때 쓴다)
+        public void AbandonSimulation()
+        {
+            if (!_isSimulation || Phase != LockOnPhase.Active) return;
+            Phase = LockOnPhase.Idle;
+            SpentCore = 0;
+            RerollCount = 0;
+            for (int i = 0; i < _slots.Length; i++) _slots[i] = default;
+            Changed?.Invoke();
         }
 
         // 끝난 판(Done)을 치우고 처음 상태(Idle)로 돌아간다. 다시 하려면 Start를 부른다.

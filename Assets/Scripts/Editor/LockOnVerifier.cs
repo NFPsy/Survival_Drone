@@ -58,6 +58,7 @@ namespace SurvivalDrone.EditorTools
                 fails += CheckConfirmWithoutLock(tables);
                 fails += CheckLogsAndIsolation(tables);
                 fails += CheckAverageCost(tables);
+                fails += CheckSimulation(tables);
 
                 if (fails == 0) Debug.Log($"[LockOn] 락온 뽑기 검증 완료: 모든 항목 통과 ({DateTime.Now:HH:mm:ss})");
                 else Debug.LogError($"[LockOn] 락온 뽑기 검증 완료: {fails}개 항목 실패 ({DateTime.Now:HH:mm:ss})");
@@ -459,6 +460,124 @@ namespace SurvivalDrone.EditorTools
                     fails += Check(ssrSeen == 0, "봇 4,000판(12,000칸)에서 SSR이 한 번도 안 나옴");
             }
             return fails;
+        }
+
+        // ---------------- 9) 시뮬레이터 ----------------
+        // 시뮬레이터가 실제와 같은 규칙으로 돌면서도 코어·보유 드론·저장 데이터·테스트 로그를 전혀 바꾸지 않는지 확인한다.
+        private static int CheckSimulation(Tables t)
+        {
+            int fails = 0;
+
+            // (1) 같은 시드면 시뮬레이터 결과가 실제 판과 한 칸도 다르지 않고, 비용도 같다. ("표기 = 실제" 확인)
+            using (var env = new Env(t, 1000000))
+            {
+                var real = env.NewSession(77);
+                var sim = new LockOnSession(t.lockOn, new System.Random(77));
+                real.Start();
+                sim.Start();
+                bool same = SlotsEqual(real, sim);
+                for (int round = 0; round < 6 && same; round++)
+                {
+                    for (int i = 0; i < real.SlotCount; i++)
+                        if (real.CanLock(i)) { real.SetLocked(i, true); sim.SetLocked(i, true); }
+                    if (real.UnlockedCount == 0) break;
+                    real.Reroll();
+                    sim.Reroll();
+                    same = SlotsEqual(real, sim);
+                }
+                fails += Check(same, "같은 시드면 시뮬레이터의 칸이 시작·재뽑기마다 실제 판과 모두 동일");
+                fails += Check(real.SpentCore == sim.SpentCore && real.RerollCount == sim.RerollCount && real.NextRerollCost == sim.NextRerollCost,
+                               $"시뮬레이터의 (가상) 사용 코어 {sim.SpentCore}가 실제 판 {real.SpentCore}와 같음");
+                var realReport = real.Confirm();
+                var simReport = sim.Confirm();
+                bool resultsSame = realReport.slots.Length == simReport.slots.Length;
+                for (int i = 0; i < realReport.slots.Length && resultsSame; i++)
+                {
+                    var a = realReport.slots[i];
+                    var b = simReport.slots[i];
+                    resultsSame = a.rarity == b.rarity && a.drone == b.drone && a.received == b.received;
+                }
+                fails += Check(resultsSame, "확정 결과(등급·드론·받은 칸)도 실제 판과 동일");
+                fails += Check(simReport.slots.Length == 0 || AllSimulatedOutcome(simReport), "시뮬레이터 결과는 받은 칸이 Simulated 표시이고 환산 조각이 0");
+            }
+
+            // (2) 격리: 코어가 0이어도 돌아가고, 시뮬레이터를 많이 돌려도 실제 코어·보유 드론·조각·저장 데이터가 그대로다.
+            using (var env = new Env(t, 0))
+            {
+                string dataBefore = JsonUtility.ToJson(env.data);
+                int coreBefore = env.currency.Core;
+                int ownedBefore = env.inventory.OwnedCount;
+                int shardsBefore = TotalShards(env.inventory);
+
+                var sim = new LockOnSession(t.lockOn, new System.Random(5));
+                fails += Check(sim.CanAffordStart && sim.Start() == LockOnFailure.None, "시뮬레이터는 실제 코어가 0이어도 시작할 수 있음");
+                sim.AbandonSimulation();
+                fails += Check(sim.Phase == LockOnPhase.Idle && sim.SpentCore == 0, "시뮬레이터에서 진행 중인 판을 버리면 처음 상태로 돌아감 (잃는 것 없음)");
+
+                for (int s = 0; s < 300; s++)
+                {
+                    sim.Start();
+                    int guard = 0;
+                    while (guard++ < 1000)
+                    {
+                        for (int i = 0; i < sim.SlotCount; i++) if (sim.CanLock(i)) sim.SetLocked(i, true);
+                        if (sim.UnlockedCount == 0) break;
+                        sim.Reroll();
+                    }
+                    sim.Confirm();
+                    sim.Reset();
+                }
+                fails += Check(JsonUtility.ToJson(env.data) == dataBefore, "시뮬레이터를 300판 돌려도 저장 데이터(SaveData)가 그대로 (테스트 로그 포함)");
+                fails += Check(env.currency.Core == coreBefore && env.inventory.OwnedCount == ownedBefore && TotalShards(env.inventory) == shardsBefore,
+                               "코어·보유 드론 수·조각 총량이 그대로");
+                fails += Check(sim.ConfirmedCount == 300 && sim.TotalSpentCore > 0 && sim.TotalReceivedCount >= 300, $"누적 숫자가 쌓임 (300판, 가상 사용 코어 {sim.TotalSpentCore:N0}, 받은 칸 {sim.TotalReceivedCount})");
+                sim.ResetStats();
+                fails += Check(sim.ConfirmedCount == 0 && sim.TotalSpentCore == 0 && sim.TotalRerollCount == 0 && sim.TotalReceivedCount == 0, "누적 초기화하면 모두 0");
+            }
+
+            // (3) 시뮬레이터 봇의 평균 사용 코어도 수학적 기대값과 같다 (실제 판과 같은 규칙).
+            {
+                var sim = new LockOnSession(t.lockOn, new System.Random(2024));
+                const int sessions = 4000;
+                for (int s = 0; s < sessions; s++)
+                {
+                    sim.Start();
+                    int guard = 0;
+                    while (guard++ < 1000)
+                    {
+                        for (int i = 0; i < sim.SlotCount; i++) if (sim.CanLock(i)) sim.SetLocked(i, true);
+                        if (sim.UnlockedCount == 0) break;
+                        sim.Reroll();
+                    }
+                    sim.Confirm();
+                    sim.Reset();
+                }
+                double average = (double)sim.TotalSpentCore / sessions;
+                double expected = ExpectedFullSessionCost(t.lockOn);
+                double error = Math.Abs(average - expected) / expected;
+                fails += Check(error < 0.04, $"시뮬레이터 봇 {sessions}판 평균 가상 사용 코어 {average:N1} ≈ 기대값 {expected:N1} (오차 {error * 100:0.0}%, 허용 4%)");
+            }
+            return fails;
+        }
+
+        private static bool SlotsEqual(LockOnSession a, LockOnSession b)
+        {
+            if (a.SlotCount != b.SlotCount) return false;
+            for (int i = 0; i < a.SlotCount; i++)
+            {
+                if (a.Slots[i].rarity != b.Slots[i].rarity || a.Slots[i].drone != b.Slots[i].drone || a.Slots[i].locked != b.Slots[i].locked) return false;
+            }
+            return true;
+        }
+
+        private static bool AllSimulatedOutcome(LockOnConfirmReport report)
+        {
+            foreach (var slot in report.slots)
+            {
+                if (slot.received && slot.outcome.outcome != PullOutcome.Simulated) return false;
+                if (slot.convertedShards != 0) return false;
+            }
+            return true;
         }
 
         // 모든 칸을 잠글 때까지 재뽑기하는 한 판의 기대 비용. 상태 = 지금 잠근 칸 수 L.
