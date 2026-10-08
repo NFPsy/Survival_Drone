@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bada81f111149c47a3e676f16402cf0, type: 3}
   m_Name: LockOnTable
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.LockOnTable
-  _enabled: 0
+  _enabled: 1
   _rateN: 55
   _rateR: 30
   _rateSR: 15
