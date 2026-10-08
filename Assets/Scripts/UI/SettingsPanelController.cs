@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using SurvivalDrone.Core;
 
 namespace SurvivalDrone.UI
 {
@@ -8,7 +9,8 @@ namespace SurvivalDrone.UI
     public class SettingsPanelController : MonoBehaviour
     {
         // PlayerPrefs에 값을 저장/불러올 때 사용하는 키 이름.
-        private const string VolumeKey = "MasterVolume";
+        // (게임이 켜질 때 이 값을 적용하는 일은 AudioManager가 맡는다. 같은 키를 쓰도록 거기서 가져온다.)
+        private const string VolumeKey = AudioManager.MasterVolumeKey;
 
         // 마스터 볼륨을 조절하는 슬라이더. 최대값을 1보다 크게(예: 2) 설정해두면
         // 원본 음원이 작게 녹음됐을 때도 더 크게 증폭해서 들을 수 있다.
@@ -33,7 +35,7 @@ namespace SurvivalDrone.UI
             // 이전에 저장해둔 값이 있으면 그 값을, 없으면 기본값(1=슬라이더 원래 최대 음량)을 가져온다.
             float savedVolume = PlayerPrefs.GetFloat(VolumeKey, 1f);
 
-            // 설정 패널을 열어보지 않아도, 게임이 시작되는 시점에 바로 적용되게 한다.
+            // 게임 시작 때의 적용은 AudioManager가 하지만, 패널이 처음 켜질 때도 같은 값으로 맞춰 둔다.
             AudioListener.volume = savedVolume;
 
             // UI에도 현재 값을 반영해서, 패널을 열었을 때 실제 상태와 다르게 보이지 않도록 한다.

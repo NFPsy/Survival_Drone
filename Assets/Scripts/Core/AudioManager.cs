@@ -14,6 +14,19 @@ namespace SurvivalDrone.Core
         // 어디서든 AudioManager.Instance로 이 매니저에 접근할 수 있게 해주는 정적 변수.
         public static AudioManager Instance { get; private set; }
 
+        // 설정에서 저장한 마스터 볼륨을 PlayerPrefs에서 찾을 때 쓰는 키 이름. (저장은 SettingsPanelController가 한다)
+        public const string MasterVolumeKey = "MasterVolume";
+
+        // 게임이 켜지자마자(첫 씬이 로드되기 전에) 저장된 마스터 볼륨을 적용한다.
+        // 예전에는 이 일을 SettingsPanelController의 Awake가 했는데, 설정 패널은 씬에서 꺼진 채로 시작해서
+        // 패널을 처음 열 때까지 Awake가 실행되지 않았다. 그래서 다시 시작하면 소리가 100%로 크게 들리다가
+        // 설정 창을 열어야 저장한 값으로 돌아왔다. 씬 안의 오브젝트에 기대지 않는 이 방식은 어느 씬에서 시작해도 적용된다.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ApplySavedMasterVolume()
+        {
+            AudioListener.volume = PlayerPrefs.GetFloat(MasterVolumeKey, 1f);
+        }
+
         // 짧은 효과음(피격, 레벨업, 승리/패배 등)을 재생할 오디오 소스.
         // PlayOneShot을 쓰면 여러 소리가 겹쳐서 재생돼도 서로 끊기지 않는다.
         [SerializeField] private AudioSource sfxSource;
