@@ -58,6 +58,16 @@ class Rules:
     ex_shards: int = EX_SHARDS      # 1회 교환으로 받는 조각
     clear_credit_mult: float = 1.0  # 클리어 크레딧 배율 (0.5면 절반)
 
+    # ---- 잠금 리롤(조립 뽑기) — 아직 게임에 없는 "설계 단계" 규칙. 기본값은 꺼짐(0)이라 기존 결과는 그대로 ----
+    lock_share: float = 0.0         # 들어오는 코어 중 조립 뽑기에 쓰는 비율 (0 = 안 씀, 1 = 전부 조립 뽑기, 0.5 = 반반)
+    lock_start_core: int = 2700     # 조립 뽑기 지갑에 이만큼 모이면 한 번 시작한다 (기대 비용이 약 2,900이라 10연과 같은 2,700으로 둠)
+    lock_slots: int = 3             # 한 번에 공개되는 슬롯 수
+    lock_first_cost: int = 300      # 처음 공개 비용 (기본 뽑기 1회와 같음)
+    lock_base: int = 100            # 재뽑기 슬롯당 기본 단가
+    lock_premium: float = 0.5       # 잠근 슬롯이 많을수록 재뽑기가 비싸지는 정도
+    lock_success: int = SR_         # 이 등급 이상이 나온 슬롯을 "성공"으로 보고 잠근다 (SR_ = SR 이상)
+    lock_rates: tuple = None        # 조립 뽑기 슬롯의 등급 확률(N,R,SR,SSR %). None이면 기본 뽑기와 같은 RATES
+
 
 @dataclass
 class Profile:
@@ -80,11 +90,12 @@ PROFILES = {
 }
 
 
-def roll_rarity(rng):
-    """확률표(RATES)로 등급 하나를 굴린다. GachaSystem.RollRarity와 같은 방식(누적 확률)."""
+def roll_rarity(rng, rates=None):
+    """확률표(기본 RATES)로 등급 하나를 굴린다. GachaSystem.RollRarity와 같은 방식(누적 확률).
+    rates를 주면 그 확률표를 쓴다(조립 뽑기 슬롯처럼 다른 확률로 굴릴 때)."""
     x = rng.random() * 100.0
     c = 0.0
-    for i, r in enumerate(RATES):
+    for i, r in enumerate(rates if rates is not None else RATES):
         c += r
         if x < c:
             return i
@@ -97,7 +108,10 @@ def roll_rarity(rng):
 class Player:
     def __init__(self, rules: Rules, rng):
         self.rules, self.rng = rules, rng
-        self.core, self.credit = START_CORE, START_CREDIT
+        self.credit = START_CREDIT
+        # 코어 지갑이 둘: 기본 뽑기용(core)과 조립 뽑기용(core_lock). lock_share가 0이면 전부 기본 뽑기용이라 예전과 똑같다.
+        self.core_lock = int(START_CORE * rules.lock_share)
+        self.core = START_CORE - self.core_lock
         self.pity = 0           # 대천장 카운트 (SSR이 나오면 0으로)
         self.soft = 0           # 소천장 카운트 (SR 이상이 나오면 0으로)
         # 보유 드론: 종류 번호 -> [등급, 레벨, 조각]. 처음에는 근접(0)·저격(1) N등급을 가지고 시작한다.
@@ -112,6 +126,54 @@ class Player:
         self.first_ssr_day = None
         self.shards_dup = 0     # 중복 뽑기로 얻은 조각 합계
         self.shards_ex = 0      # 조각 교환으로 얻은 조각 합계
+        self.lock_sessions = 0  # 조립 뽑기를 시작한 횟수
+        self.lock_ssr = 0       # 조립 뽑기에서 얻은 SSR 개수
+        self.lock_spent = 0     # 조립 뽑기에 쓴 코어 합계
+
+    # ---- 들어오는 코어를 두 지갑에 나눠 담는다 (lock_share = 조립 뽑기 지갑 몫) ----
+    def gain_core(self, amount):
+        to_lock = int(round(amount * self.rules.lock_share))
+        self.core_lock += to_lock
+        self.core += amount - to_lock
+
+    # ---- 조립 뽑기(잠금 리롤) 한 번: 공개 → 성공 슬롯 잠금 → 나머지만 재뽑기를 반복 → 확정 ----
+    def lock_session(self, day):
+        r = self.rules
+        rates = r.lock_rates
+        slots = []
+        for _ in range(r.lock_slots):
+            slots.append((roll_rarity(self.rng, rates), self.rng.randrange(NUM_DRONES)))
+        self.core_lock -= r.lock_first_cost
+        self.lock_spent += r.lock_first_cost
+        locked = [rar >= r.lock_success for rar, _ in slots]
+        while not all(locked):
+            n_locked = sum(locked)
+            cost = int((r.lock_slots - n_locked) * r.lock_base * (1 + r.lock_premium * n_locked))
+            if self.core_lock < cost:
+                break                          # 코어가 모자라면 지금 상태로 확정한다
+            self.core_lock -= cost
+            self.lock_spent += cost
+            for i in range(r.lock_slots):
+                if not locked[i]:
+                    rar = roll_rarity(self.rng, rates)
+                    slots[i] = (rar, self.rng.randrange(NUM_DRONES))
+                    locked[i] = rar >= r.lock_success
+        # 확정: 슬롯 결과를 기본 뽑기와 같은 규칙(신규/승급/중복 조각)으로 보유 목록에 반영
+        for rar, drone in slots:
+            self._apply(drone, rar)
+            if rar == SSR_:
+                self.ssr += 1
+                self.lock_ssr += 1
+                if self.first_ssr_day is None:
+                    self.first_ssr_day = day
+        self.lock_sessions += 1
+
+    def spend_lock(self, day):
+        """조립 뽑기 지갑에 시작 기준만큼 모였으면 계속 시작한다."""
+        if self.rules.lock_share <= 0:
+            return
+        while self.core_lock >= self.rules.lock_start_core:
+            self.lock_session(day)
 
     # ---- 뽑기 1회: GachaSystem.PullSingle과 같은 순서로 처리 ----
     def pull_single(self):
@@ -244,22 +306,23 @@ def simulate(profile: Profile, rules: Rules, days=30, seed=None):
             for i, d in enumerate(done_days):
                 if not stage_done[i] and day >= d:
                     stage_done[i] = True
-                    p.core += MILESTONE_CORES[i]
+                    p.gain_core(MILESTONE_CORES[i])
             # 일일 퀘스트 코어
-            p.core += rules.daily_attend
-            p.core += rules.daily_3
+            p.gain_core(rules.daily_attend)
+            p.gain_core(rules.daily_3)
             if rng.random() < profile.p_6min:
-                p.core += rules.daily_6
+                p.gain_core(rules.daily_6)
             if rng.random() < 1 - (1 - profile.clear_rate) ** profile.matches:   # 하루 중 한 번이라도 클리어
-                p.core += rules.daily_clear
+                p.gain_core(rules.daily_clear)
             # 판 크레딧 (클리어는 전액, 실패는 fail_credit_frac만큼)
             for _ in range(profile.matches):
                 if rng.random() < profile.clear_rate:
                     p.credit += int(CLEAR_CREDIT[stage_idx] * rules.clear_credit_mult)
                 else:
                     p.credit += int(CLEAR_CREDIT[stage_idx] * rules.clear_credit_mult * profile.fail_credit_frac)
-            # 쓰는 순서: 뽑기 → 강화 → 조각 교환 → 다시 강화
+            # 쓰는 순서: 뽑기 → (조립 뽑기) → 강화 → 조각 교환 → 다시 강화
             p.spend_cores(day)
+            p.spend_lock(day)
             p.try_upgrades()
             p.try_exchanges()
             p.try_upgrades()
@@ -270,7 +333,8 @@ def simulate(profile: Profile, rules: Rules, days=30, seed=None):
         if day == 30:
             snap = dict(ssr=p.ssr, ups=p.upgrades, ex=p.exchanges, soft=p.soft_triggers, pity=p.pity_hits,
                         power=p.combat_power(), shards_dup=p.shards_dup, shards_ex=p.shards_ex,
-                        owned=len(p.owned), credit=p.credit, core=p.core, first=p.first_ssr_day)
+                        owned=len(p.owned), credit=p.credit, core=p.core, first=p.first_ssr_day,
+                        lock_sessions=p.lock_sessions, lock_ssr=p.lock_ssr, lock_spent=p.lock_spent)
     return p, power130_day, all5_day, snap
 
 
@@ -296,6 +360,9 @@ def run(profile, rules, n=5000, days=60, seed0=1):
         "소천장30": m(r[0]["soft"] for r in rows),
         "조각(중복)30": m(r[0]["shards_dup"] for r in rows),
         "조각(교환)30": m(r[0]["shards_ex"] for r in rows),
+        "조립횟수30": m(r[0]["lock_sessions"] for r in rows),                 # 30일 동안 조립 뽑기를 시작한 횟수
+        "조립SSR30": m(r[0]["lock_ssr"] for r in rows),                       # 그중 조립 뽑기에서 나온 SSR
+        "조립코어30": m(r[0]["lock_spent"] for r in rows),                    # 조립 뽑기에 쓴 코어
     }
 
 
