@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: StageData_03
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.StageData
   _stageNumber: 3
-  _displayName: "\uC911\uC559 \uAD00\uC81C\uD0D1"
-  _recommendedPower: 170
-  _enemyMultiplier: 2.2
+  _displayName: "\uD3D0\uACF5\uC7A5 \uC9C0\uB300"
+  _recommendedPower: 130
+  _enemyMultiplier: 1.5

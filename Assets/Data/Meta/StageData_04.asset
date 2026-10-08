@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 84e21dd7c40491a4488765d665161eb2, type: 3}
-  m_Name: StageData_02
+  m_Name: StageData_04
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.StageData
-  _stageNumber: 2
-  _displayName: "\uBC84\uB824\uC9C4 \uBCF4\uAE09\uB85C"
-  _recommendedPower: 115
-  _enemyMultiplier: 1.25
+  _stageNumber: 4
+  _displayName: "\uD1B5\uC2E0 \uC911\uACC4 \uAE30\uC9C0"
+  _recommendedPower: 150
+  _enemyMultiplier: 1.85

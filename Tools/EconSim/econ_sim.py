@@ -37,9 +37,11 @@ UP_CREDITS = [300, 500, 800, 1200]         # 강화에 드는 크레딧 (같은 
 MAX_LEVEL = 5
 EX_SHARDS, EX_CREDIT, EX_LIMIT = 10, 500, 3   # 조각 교환: 크레딧 500 → 조각 10개, 하루 3번까지
 START_CORE, START_CREDIT = 2700, 0         # 처음 시작할 때 받는 코어 / 크레딧
-CLEAR_CREDIT = [300, 600, 900]             # 판 클리어 크레딧 (스테이지 1 / 2 / 3, CurrencyTable)
-# 스테이지마다 한 번씩 받는 마일스톤 코어의 합계 (3분 + 6분 + 처음 클리어)
-MILESTONE_CORES = [100 + 150 + 200, 200 + 300 + 400, 300 + 450 + 600]   # = 450 / 900 / 1350
+NUM_STAGES = 5                             # 스테이지 수 (10/8에 3개 → 5개로 늘림. 기존 1·2·3번이 새 1·3·5번이 되고 2·4번이 새로 생김)
+CLEAR_CREDIT = [300, 450, 600, 750, 900]   # 판 클리어 크레딧 (스테이지 1 ~ 5, CurrencyTable)
+# 스테이지마다 한 번씩 받는 마일스톤 코어 (3분 / 6분 / 처음 클리어). 스테이지 n: 50×(n+1) / ×1.5 / ×2 (MatchMilestones)
+MILESTONE_BY_STAGE = [(100, 150, 200), (150, 225, 300), (200, 300, 400), (250, 375, 500), (300, 450, 600)]
+MILESTONE_CORES = [sum(m) for m in MILESTONE_BY_STAGE]   # = 450 / 675 / 900 / 1125 / 1350 (합계 4,500. 3스테이지 때는 2,700)
 NUM_DRONES = 5                             # 드론 종류 수 (근접·저격·수집·폭발·회복)
 
 
@@ -83,16 +85,15 @@ class Profile:
     matches: int          # 접속한 날 하는 판 수
     clear_rate: float     # 한 판을 클리어할 확률
     p_6min: float         # "6분 버티기" 퀘스트를 달성하는 날의 비율
-    s1_day: int           # 스테이지 1 / 2 / 3을 끝내고 마일스톤 코어를 다 받는 날 (99 = 한 달 안에 못 함)
-    s2_day: int
-    s3_day: int
+    stage_days: tuple     # 스테이지 1 ~ 5를 끝내고 마일스톤 코어를 다 받는 날 (99 = 한 달 안에 못 함)
     fail_credit_frac: float = 0.5   # 실패한 판은 클리어 보상의 이 비율만 받는다고 가정
 
 
 PROFILES = {
-    "max(퀘스트 매일 전부)": Profile("max", 1.0, 4, 0.8, 1.0, 1, 3, 7),
-    "mid": Profile("mid", 0.8, 3, 0.7, 0.6, 2, 6, 14),
-    "casual": Profile("casual", 0.5, 2, 0.5, 0.3, 4, 15, 99),
+    # 기존 3스테이지 때의 날짜(1·3·7 / 2·6·14 / 4·15·99)가 새 1·3·5번 스테이지의 날짜이고, 새 2·4번은 그 사이로 잡았다.
+    "max(퀘스트 매일 전부)": Profile("max", 1.0, 4, 0.8, 1.0, (1, 2, 3, 5, 7)),
+    "mid": Profile("mid", 0.8, 3, 0.7, 0.6, (2, 4, 6, 10, 14)),
+    "casual": Profile("casual", 0.5, 2, 0.5, 0.3, (4, 9, 15, 40, 99)),
 }
 
 
@@ -330,17 +331,17 @@ def simulate(profile: Profile, rules: Rules, days=30, seed=None):
     반환: (최종 플레이어, 전투력 130 도달일, 전 드론 Lv5 도달일, 30일째 스냅샷)"""
     rng = random.Random(seed)
     p = Player(rules, rng)
-    power130_day = None     # 스테이지 2 권장 전투력(130)에 처음 닿은 날
+    power130_day = None     # 스테이지 3(3스테이지 때는 2) 권장 전투력(130)에 처음 닿은 날
     all5_day = None         # 5종 모두 보유 + 전부 Lv5가 된 날
     snap = None
-    stage_done = [False, False, False]
-    done_days = [profile.s1_day, profile.s2_day, profile.s3_day]
+    stage_done = [False] * NUM_STAGES
+    done_days = list(profile.stage_days)
     for day in range(1, days + 1):
         login = day == 1 or rng.random() < profile.p_login   # 첫날은 반드시 접속
         if login:
             # 지금 몇 번 스테이지에서 크레딧을 버는지 (끝낸 스테이지 수로 결정)
             stage = sum(1 for d in done_days if d < day)
-            stage_idx = min(stage, 2)
+            stage_idx = min(stage, NUM_STAGES - 1)
             # 마일스톤 코어: 정해진 날이 되면 그 스테이지의 합계를 한 번에 받는다
             for i, d in enumerate(done_days):
                 if not stage_done[i] and day >= d:

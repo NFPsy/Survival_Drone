@@ -83,7 +83,7 @@ namespace SurvivalDrone.EditorTools
             var container = NewRect("CardContainer", panel.transform);
             Place(container, Center, Center, Center, new Vector2(0f, 10f), new Vector2(1560f, 480f));
             var layout = container.gameObject.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 40f;
+            layout.spacing = 24f; // 카드 5장(292폭)이 컨테이너(1560폭)에 들어가도록 좁게 둔다
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
@@ -92,10 +92,10 @@ namespace SurvivalDrone.EditorTools
 
             // 카드 견본: 꺼 둔 채로 두고, 런타임에 스테이지 개수만큼 복제한다.
             var template = NewImage("CardTemplate", panel.transform, ButtonColor);
-            Place(template.rectTransform, Center, Center, Center, Vector2.zero, new Vector2(480f, 460f));
+            Place(template.rectTransform, Center, Center, Center, Vector2.zero, new Vector2(292f, 460f));
             AddOutline(template.gameObject, OutlineColor);
             template.gameObject.AddComponent<Button>().targetGraphic = template;
-            FillCardTexts(template.transform, 0.63f);
+            FillCardTexts(template.transform, 0.6f, 282f);
             template.gameObject.SetActive(false);
 
             var close = NewButton("BtnClose", panel.transform, "뒤로", 32, ButtonColor, LightText);
@@ -151,17 +151,17 @@ namespace SurvivalDrone.EditorTools
 
             // ---- 마일스톤 창 (평소엔 꺼져 있고, "마일스톤"을 누르면 뜬다) ----
             // 3분 / 6분 / 클리어 칸을 고르면 아래에 보상과 조건이 나오고, 달성한 칸에서 "획득"을 눌러 코어를 받는다.
-            // 마일스톤은 스테이지마다 따로 받으므로, 위쪽에서 스테이지(1~3)를 먼저 고른다.
-            var msBox = NewPopup("MilestonePopup", root, new Vector2(1000f, 820f), out var msRoot);
+            // 마일스톤은 스테이지마다 따로 받으므로, 위쪽에서 스테이지(1~5)를 먼저 고른다.
+            var msBox = NewPopup("MilestonePopup", root, new Vector2(1120f, 820f), out var msRoot);
             var msTitle = NewText("TitleText", msBox, "마일스톤", 44, LightText, MonoFont, TextAnchor.MiddleCenter);
             Place(msTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -36f), new Vector2(800f, 64f));
             var msHint = NewText("HintText", msBox, "스테이지마다 한 번씩 받을 수 있어요. 판에서 달성하면 여기서 코어를 받아요.", 26, MutedText, SansFont, TextAnchor.MiddleCenter);
             Place(msHint.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -110f), new Vector2(940f, 40f));
-            const int milestoneStageCount = 3;
+            const int milestoneStageCount = 5;
             for (int s = 0; s < milestoneStageCount; s++)
             {
                 var stageTab = NewButton($"StageTab{s}", msBox, $"스테이지 {s + 1}", 28, ButtonColor, LightText);
-                Place(stageTab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((s - 1) * 290f, -165f), new Vector2(270f, 64f));
+                Place(stageTab.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2((s - (milestoneStageCount - 1) * 0.5f) * 210f, -165f), new Vector2(200f, 64f));
             }
             for (int i = 0; i < MatchMilestones.Count; i++)
             {
@@ -195,22 +195,23 @@ namespace SurvivalDrone.EditorTools
             Debug.Log($"[Stage] 로비 씬을 만들어 저장했습니다: {ScenePath} ({System.DateTime.Now:HH:mm:ss})");
         }
 
-        // 카드 안에 들어가는 글자 칸 7개를 만든다. scale은 카드 크기에 맞춘 글자 크기 배율(로비 큰 카드 1.0, 작은 카드 0.63).
-        private static void FillCardTexts(Transform card, float scale)
+        // 카드 안에 들어가는 글자 칸 7개를 만든다. scale은 카드 크기에 맞춘 글자 크기 배율(로비 큰 카드 1.0, 스테이지 선택의 작은 카드 0.6).
+        // textWidth는 글자 칸의 가로 폭. 작은 카드(5장이 나란히)는 이웃 카드의 클릭을 가리지 않게 카드 폭 안으로 맞춘다. 0이면 720×scale.
+        private static void FillCardTexts(Transform card, float scale, float textWidth = 0f)
         {
-            AddCardText(card, "StageNumberText", "STAGE 1", 36, MonoFont, 170f, scale);
-            AddCardText(card, "StageNameText", "스테이지 이름", 64, SansFont, 100f, scale);
-            AddCardText(card, "PowerText", "권장 전투력", 34, SansFont, 30f, scale);
-            AddCardText(card, "MyPowerText", "내 전투력", 34, SansFont, -20f, scale);
-            AddCardText(card, "MultiplierText", "적 체력·피해", 30, SansFont, -75f, scale);
-            AddCardText(card, "BestTimeText", "최고 생존", 30, SansFont, -125f, scale);
-            AddCardText(card, "LockText", "잠금", 32, SansFont, -190f, scale);
+            AddCardText(card, "StageNumberText", "STAGE 1", 36, MonoFont, 170f, scale, textWidth);
+            AddCardText(card, "StageNameText", "스테이지 이름", 64, SansFont, 100f, scale, textWidth);
+            AddCardText(card, "PowerText", "권장 전투력", 34, SansFont, 30f, scale, textWidth);
+            AddCardText(card, "MyPowerText", "내 전투력", 34, SansFont, -20f, scale, textWidth);
+            AddCardText(card, "MultiplierText", "적 체력·피해", 30, SansFont, -75f, scale, textWidth);
+            AddCardText(card, "BestTimeText", "최고 생존", 30, SansFont, -125f, scale, textWidth);
+            AddCardText(card, "LockText", "잠금", 32, SansFont, -190f, scale, textWidth);
         }
 
-        private static void AddCardText(Transform card, string name, string content, int fontSize, Font font, float y, float scale)
+        private static void AddCardText(Transform card, string name, string content, int fontSize, Font font, float y, float scale, float textWidth)
         {
             var text = NewText(name, card, content, Mathf.RoundToInt(fontSize * scale), LightText, font, TextAnchor.MiddleCenter);
-            Place(text.rectTransform, Center, Center, Center, new Vector2(0f, y * scale), new Vector2(720f * scale, 70f * scale));
+            Place(text.rectTransform, Center, Center, Center, new Vector2(0f, y * scale), new Vector2(textWidth > 0f ? textWidth : 720f * scale, 70f * scale));
         }
     }
 }

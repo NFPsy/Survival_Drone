@@ -46,6 +46,19 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Simulate Next Day (Play mode)", true)]
         private static bool SimulateNextDayValidate() => Application.isPlaying && CurrencyManager.Instance != null;
 
+        // 스테이지 2~5를 직접 해 보려고 앞 스테이지를 매번 깨지 않도록, 모든 스테이지를 열어 주는 메뉴.
+        // 확인 방법: 이 메뉴를 누른 뒤 로비의 "스테이지 목록"을 다시 열면(다른 화면에 갔다 와도 됨) 5장이 모두 열려 있다.
+        [MenuItem("SurvivalDrone/Meta/Debug/Unlock All Stages (Play mode)")]
+        private static void UnlockAllStages()
+        {
+            SaveManager.Data.unlockedStageCount = StageProgress.Instance.StageCount;
+            SaveManager.Save();
+            Debug.Log($"[Debug] 모든 스테이지({SaveManager.Data.unlockedStageCount}개)를 열었습니다. 스테이지 목록을 다시 열어서 확인하세요.");
+        }
+
+        [MenuItem("SurvivalDrone/Meta/Debug/Unlock All Stages (Play mode)", true)]
+        private static bool UnlockAllStagesValidate() => Application.isPlaying && StageProgress.Instance != null;
+
         // 뽑기 화면이 생기기 전에 뽑기 흐름을 직접 눌러 볼 수 있는 메뉴. 결과는 콘솔에 [Gacha] 로그로 찍힌다.
         [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x1 (Play mode)")]
         private static void PullSingle()

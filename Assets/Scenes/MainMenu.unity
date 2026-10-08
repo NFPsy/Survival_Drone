@@ -398,7 +398,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 52
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -3059,7 +3059,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 56
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -5301,7 +5301,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.StageProgress
   _stages:
   - {fileID: 11400000, guid: bf117a4bb3694224c9854ecf057c0f71, type: 2}
+  - {fileID: 11400000, guid: 0ea6118f4e45dfc4b8a2027148cf1a76, type: 2}
   - {fileID: 11400000, guid: 305530ba0d68ee14abfb4f2bce45890b, type: 2}
+  - {fileID: 11400000, guid: 6469f221c5043c8499a5666134dd9ef8, type: 2}
   - {fileID: 11400000, guid: 354bc809629d1cd4aa40ea59a581649a, type: 2}
 --- !u!4 &1652082054
 Transform:
@@ -5472,7 +5474,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 56
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -7234,7 +7236,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 56
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
