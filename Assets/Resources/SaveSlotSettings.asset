@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1844aa46ccc65bd4fbca8aabb12bc9c8, type: 3}
   m_Name: SaveSlotSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.SaveSlotSettings
-  _enabled: 0
+  _enabled: 1
   _slotCount: 3
