@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -202,6 +203,30 @@ namespace SurvivalDrone.Meta
             builder.AppendLine();
             builder.AppendLine($"[기록] (최근 {data.playLog.Count}개, 오래된 것부터)");
             foreach (var line in data.playLog) builder.AppendLine(line);
+            return builder.ToString();
+        }
+
+        // 저장 슬롯이 여럿일 때의 내보낼 글: 머리말 하나 + 슬롯마다 "=== 슬롯 N ===" 구역(요약 + 기록).
+        // 슬롯마다 기록이 따로 들어 있어서, 개발자가 슬롯별로 나눠서 분석할 수 있다.
+        public static string BuildMultiSlotExportText(IList<KeyValuePair<int, SaveData>> slots, string version, string platform)
+        {
+            var builder = new StringBuilder();
+            string testerId = "";
+            foreach (var slot in slots)
+                if (!string.IsNullOrEmpty(slot.Value.testerId)) { testerId = slot.Value.testerId; break; }
+
+            builder.AppendLine("=== 드론 지휘관 테스트 기록 ===");
+            builder.AppendLine($"테스터: {testerId}   빌드: {version}   플랫폼: {platform}   내보낸 시각: {Clock():yyyy-MM-dd HH:mm:ss}   슬롯 {slots.Count}개");
+            foreach (var slot in slots)
+            {
+                builder.AppendLine();
+                builder.AppendLine($"=== 슬롯 {slot.Key} ===  (마지막 저장 {(string.IsNullOrEmpty(slot.Value.lastSavedAt) ? "-" : slot.Value.lastSavedAt)})");
+                builder.AppendLine("[요약]");
+                builder.Append(BuildSummaryText(slot.Value));
+                builder.AppendLine();
+                builder.AppendLine($"[기록] (최근 {slot.Value.playLog.Count}개, 오래된 것부터)");
+                foreach (var line in slot.Value.playLog) builder.AppendLine(line);
+            }
             return builder.ToString();
         }
 

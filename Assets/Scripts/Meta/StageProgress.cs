@@ -48,7 +48,18 @@ namespace SurvivalDrone.Meta
             DontDestroyOnLoad(gameObject);
 
             Initialize(SaveManager.Data, _stages, true);
+            SaveManager.DataReplaced += HandleDataReplaced; // 저장 슬롯을 새로 고르면 새 데이터로 다시 연결한다
         }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) SaveManager.DataReplaced -= HandleDataReplaced;
+        }
+
+        private void HandleDataReplaced() => Rebind(SaveManager.Data);
+
+        // 저장 슬롯을 바꿨을 때 새 저장 데이터로 다시 연결한다. (고른 스테이지는 새 데이터의 해금 상태에 맞게 다시 정해진다)
+        public void Rebind(SaveData data) => Initialize(data, _stages, _saveOnChange);
 
         // 저장 데이터와 스테이지 목록을 받아서 준비한다. (CurrencyManager.Initialize와 같은 목적: 검증 도구에서 씬 없이 쓰기 위함)
         public void Initialize(SaveData data, StageData[] stages, bool saveOnChange)

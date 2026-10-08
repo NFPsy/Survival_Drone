@@ -53,7 +53,19 @@ namespace SurvivalDrone.Meta
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            SaveManager.DataReplaced += HandleDataReplaced; // 저장 슬롯을 새로 고르면 새 데이터(천장 카운트 포함)로 다시 연결한다
         }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) SaveManager.DataReplaced -= HandleDataReplaced;
+        }
+
+        private void HandleDataReplaced() => Rebind(SaveManager.Data);
+
+        // 저장 슬롯을 바꿨을 때 새 저장 데이터로 다시 연결한다. 재화·보유 드론 매니저는 같은 객체를 계속 쓰므로 그대로 두고,
+        // 저장된 천장·소천장 카운트에서 이어서 시작하도록 뽑기 두뇌(GachaSystem)를 새로 만든다.
+        public void Rebind(SaveData data) => Initialize(data, _gachaTable, _currency, _inventory, new System.Random(), _saveOnChange);
 
         // 다른 매니저(CurrencyManager, DroneInventory)는 각자 Awake에서 Instance를 등록한다.
         // 씬의 Awake 실행 순서는 보장되지 않으므로, 모든 Awake가 끝난 뒤인 Start에서 연결해야 확실히 준비되어 있다.

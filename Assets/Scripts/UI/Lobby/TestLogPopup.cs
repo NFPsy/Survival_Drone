@@ -36,7 +36,14 @@ namespace SurvivalDrone.UI
         private void OnEnable()
         {
             SetStatus("", CyanColor);
-            if (_previewText != null) _previewText.text = PlayLog.BuildPreviewText(SaveManager.Data);
+            if (_previewText != null)
+            {
+                // 저장 슬롯을 쓰는 중이면 지금 슬롯 번호를 알려 주고, 내보내기에는 모든 슬롯의 기록이 합쳐져 들어간다.
+                string slotNote = SaveManager.SlotsEnabled && SaveManager.CurrentSlot > 0
+                    ? $"[지금 슬롯 {SaveManager.CurrentSlot}] 복사·파일 저장에는 모든 슬롯의 기록이 함께 들어갑니다\n\n"
+                    : "";
+                _previewText.text = slotNote + PlayLog.BuildPreviewText(SaveManager.Data);
+            }
         }
 
         public void Open() => gameObject.SetActive(true);
@@ -66,6 +73,9 @@ namespace SurvivalDrone.UI
 
         private static string BuildExport()
         {
+            // 슬롯을 쓰는 중이면 모든 슬롯의 기록을 한 글로 합쳐서 내보낸다. (슬롯마다 구역이 나뉜다)
+            if (SaveManager.SlotsEnabled && SaveManager.CurrentSlot > 0)
+                return PlayLog.BuildMultiSlotExportText(SaveManager.PeekAllSlots(), Application.version, Application.platform.ToString());
             return PlayLog.BuildExportText(SaveManager.Data, Application.version, Application.platform.ToString());
         }
 

@@ -35,11 +35,26 @@ namespace SurvivalDrone.Meta
             SaveManager.Save();
 
             SceneManager.sceneLoaded += HandleSceneLoaded;
+            SaveManager.DataReplaced += HandleDataReplaced;
         }
 
         private void OnDestroy()
         {
-            if (Instance == this) SceneManager.sceneLoaded -= HandleSceneLoaded;
+            if (Instance == this)
+            {
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                SaveManager.DataReplaced -= HandleDataReplaced;
+            }
+        }
+
+        // 저장 슬롯을 새로 골랐을 때: 그 슬롯의 기록에 "접속"을 남긴다.
+        // (슬롯을 고르기 전에 남긴 시작 기록은 임시 데이터에 써서 저장되지 않았기 때문에 여기서 다시 남긴다)
+        private void HandleDataReplaced()
+        {
+            var data = SaveManager.Data;
+            PlayLog.StartSession(data, Application.version, Application.platform.ToString(), $"{Screen.width}x{Screen.height}");
+            PlayLog.RecordScreen(data, SceneManager.GetActiveScene().name);
+            SaveManager.Save();
         }
 
         // 씬이 새로 열릴 때마다 화면 이름을 기록한다. (첫 화면은 Start에서 이미 남겼다)

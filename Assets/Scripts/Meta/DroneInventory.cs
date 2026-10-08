@@ -50,7 +50,18 @@ namespace SurvivalDrone.Meta
             DontDestroyOnLoad(gameObject);
 
             Initialize(SaveManager.Data, _growthTable, _gachaTable, true);
+            SaveManager.DataReplaced += HandleDataReplaced; // 저장 슬롯을 새로 고르면 새 데이터로 다시 연결한다
         }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) SaveManager.DataReplaced -= HandleDataReplaced;
+        }
+
+        private void HandleDataReplaced() => Rebind(SaveManager.Data);
+
+        // 저장 슬롯을 바꿨을 때 새 저장 데이터로 다시 연결한다. (새 데이터가 처음이면 시작 드론을 지급한다)
+        public void Rebind(SaveData data) => Initialize(data, _growthTable, _gachaTable, _saveOnChange);
 
         // 저장 데이터와 수치표를 받아서 준비한다. (검증 도구처럼 씬 없이 쓰고 싶을 때는 saveOnChange를 false로 직접 부른다)
         public void Initialize(SaveData data, DroneGrowthTable growthTable, GachaTable gachaTable, bool saveOnChange)

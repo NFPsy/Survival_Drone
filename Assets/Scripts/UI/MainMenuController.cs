@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using SurvivalDrone.Core;
+using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
 {
@@ -26,6 +27,11 @@ namespace SurvivalDrone.UI
 
         // "설정" 버튼을 누르면 뜨는 팝업(볼륨/전체화면).
         private GameObject settingsPanel;
+
+        // 저장 슬롯 선택 화면. 슬롯 기능(SaveSlotSettings의 Enabled)이 켜져 있을 때만 "게임 시작" 뒤에 나온다.
+        // 슬롯 화면이 없는 옛 메인 메뉴 씬이면 조용히 건너뛴다.
+        private GameObject slotSelectPanel;
+        private SaveSlotSelectUI slotSelectUI;
 
         // 버튼을 누를 때마다 재생할 공용 클릭음.
         [SerializeField] private AudioClip clickSound;
@@ -55,6 +61,19 @@ namespace SurvivalDrone.UI
             WireButton(controlsPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
             WireButton(aboutPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
             WireButton(settingsPanel, "BtnClose", () => { AudioManager.Instance?.PlaySfx(clickSound); ShowTitle(); });
+
+            // 저장 슬롯 선택 화면: 뒤로를 누르면 타이틀로, 슬롯을 고르면 로비로 간다.
+            var slotTransform = transform.Find("SlotSelectPanel");
+            if (slotTransform != null)
+            {
+                slotSelectPanel = slotTransform.gameObject;
+                slotSelectUI = slotTransform.GetComponent<SaveSlotSelectUI>();
+                if (slotSelectUI != null)
+                {
+                    slotSelectUI.BackPressed += ShowTitle;
+                    slotSelectUI.SlotChosen += (slot, created) => SceneManager.LoadScene(lobbySceneName);
+                }
+            }
 
             // 게임을 처음 켰을 때는 항상 타이틀 화면부터 보이도록 초기화.
             ShowTitle();
@@ -106,6 +125,7 @@ namespace SurvivalDrone.UI
             controlsPanel?.SetActive(panelToShow == controlsPanel);
             aboutPanel?.SetActive(panelToShow == aboutPanel);
             settingsPanel?.SetActive(panelToShow == settingsPanel);
+            slotSelectPanel?.SetActive(false);
         }
 
         // 팝업을 닫고 처음 타이틀 화면(버튼 4개)으로 돌아간다.
@@ -115,12 +135,22 @@ namespace SurvivalDrone.UI
             controlsPanel?.SetActive(false);
             aboutPanel?.SetActive(false);
             settingsPanel?.SetActive(false);
+            slotSelectPanel?.SetActive(false);
         }
 
-        // "게임 시작" 버튼을 눌렀을 때 실행. 현재 메뉴 씬을 내리고 로비 씬을 불러온다.
+        // "게임 시작" 버튼을 눌렀을 때 실행.
+        //  - 저장 슬롯 기능이 켜져 있으면: 슬롯 선택 화면을 연다. (슬롯을 고르면 그때 로비로 간다)
+        //  - 꺼져 있으면: 예전처럼 바로 로비 씬을 불러온다.
         private void StartGame()
         {
             AudioManager.Instance?.PlaySfx(clickSound);
+
+            if (SaveManager.SlotsEnabled && slotSelectPanel != null)
+            {
+                titlePanel?.SetActive(false);
+                slotSelectPanel.SetActive(true);
+                return;
+            }
             SceneManager.LoadScene(lobbySceneName);
         }
     }

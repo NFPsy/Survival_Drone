@@ -14,6 +14,9 @@ namespace SurvivalDrone.Meta
         // 저장 형식의 버전. 나중에 저장 구조가 크게 바뀌었을 때 옛 파일을 구분하기 위한 번호.
         public int saveVersion = 1;
 
+        // 마지막으로 저장한 시각 ("10-08 12:30"). 슬롯 선택 화면의 "마지막 저장"에 보여준다. (옛 저장에는 없지만 빈 글자로 안전하게 읽힌다)
+        public string lastSavedAt = "";
+
         // 재화의 "처음 지급"을 이미 받았는지. false인 새 데이터일 때만 CurrencyTable의 시작 재화를 넣어준다.
         public bool isCurrencyInitialized;
 
