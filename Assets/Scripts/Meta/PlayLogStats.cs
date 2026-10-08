@@ -40,6 +40,13 @@ namespace SurvivalDrone.Meta
         public int shardsBought;
         public int creditSpentOnShards;
 
+        // 락온 뽑기: 확정한 횟수, 재뽑기 횟수, 확정한 판들에서 쓴 코어 합계, 코어 부족으로 막힌 횟수.
+        // 옛 저장 파일에는 없지만 0으로 안전하게 읽힌다.
+        public int lockOnConfirms;
+        public int lockOnRerolls;
+        public int lockOnCoreSpent;
+        public int lockOnBlocked;
+
         // 판 도중에 일시정지 메뉴에서 "재시작"/"메인메뉴"로 나간 횟수와, 나간 시점(게임 시간)의 합계(초).
         // 사망·클리어로 끝난 판(matches)과는 따로 센다. 그래야 클리어율·평균 생존 같은 "끝난 판" 통계가 섞이지 않는다.
         // 옛 저장 파일에는 이 값이 없지만, 숫자 기본값이 0이라 그대로 안전하게 읽힌다.

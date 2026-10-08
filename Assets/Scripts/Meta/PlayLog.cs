@@ -153,6 +153,41 @@ namespace SurvivalDrone.Meta
             Add(data, "unlock", $"스테이지={stageNumber}");
         }
 
+        // ---- 락온 뽑기 (시작 → 재뽑기 → 확정, 코어 부족으로 막힘) ----
+
+        // 락온 뽑기를 시작(첫 공개)했을 때. slots = 공개된 칸 요약 (예: "SR:Melee/N:Sniper/R:Heal").
+        public static void RecordLockOnStart(SaveData data, int spentCore, int coreAfter, string slots)
+        {
+            Add(data, "lockon_start", $"사용코어={spentCore} 칸={slots} 남은코어={coreAfter}");
+        }
+
+        // 재뽑기를 했을 때. rerollNumber = 이번 판에서 몇 번째 재뽑기인지, lockedCount = 재뽑기 직전에 잠근 칸 수.
+        public static void RecordLockOnReroll(SaveData data, int rerollNumber, int spentCore, int lockedCount, string slots, int coreAfter)
+        {
+            data.logStats.lockOnRerolls++;
+            Add(data, "lockon_reroll", $"번째={rerollNumber} 사용코어={spentCore} 잠근칸={lockedCount} 칸={slots} 남은코어={coreAfter}");
+        }
+
+        // 확정했을 때. reason = "확정" 또는 화면을 나가며 자동 확정한 "나가기". totalSpentCore = 이번 판에서 쓴 코어 합계.
+        // dupShards = 잠근 칸이 중복이라 받은 조각, convShards = 안 가져간 칸을 환산해 받은 조각.
+        public static void RecordLockOnConfirm(SaveData data, string reason, int lockedCount, int totalSpentCore, int rerolls, int newCount, int promotedCount,
+                                               int dupShards, int convShards, int coreAfter, string slots)
+        {
+            var s = data.logStats;
+            s.lockOnConfirms++;
+            s.lockOnCoreSpent += totalSpentCore;
+            if (s.matchesBeforeFirstPull < 0) s.matchesBeforeFirstPull = s.matches;
+            Add(data, "lockon_confirm",
+                $"방법={reason} 잠근칸={lockedCount} 총사용코어={totalSpentCore} 재뽑기={rerolls} 신규={newCount} 승급={promotedCount} 중복조각={dupShards} 환산조각={convShards} 남은코어={coreAfter} 결과={slots}");
+        }
+
+        // 코어가 모자라 시작이나 재뽑기를 못 했을 때. step = "시작" 또는 "재뽑기".
+        public static void RecordLockOnBlocked(SaveData data, string step, int needCore, int haveCore)
+        {
+            data.logStats.lockOnBlocked++;
+            Add(data, "lockon_blocked", $"단계={step} 필요코어={needCore} 보유코어={haveCore}");
+        }
+
         // ---------------- 내보내기 ----------------
 
         // 테스터가 복사하거나 파일로 저장할 전체 글 = 머리말 + 요약 + 기록 전부.
@@ -216,6 +251,9 @@ namespace SurvivalDrone.Meta
             builder.AppendLine($"- 드론 강화 {s.upgrades}번 · 접속 {s.sessions}번");
             if (s.shardExchanges > 0)
                 builder.AppendLine($"- 조각 교환 {s.shardExchanges}번 (조각 {s.shardsBought:N0}개, 크레딧 {s.creditSpentOnShards:N0} 사용)");
+            // 락온 뽑기는 쓴 적이 있을 때만 한 줄 덧붙인다. (쓰지 않으면 옛 요약 모양 그대로)
+            if (s.lockOnConfirms > 0 || s.lockOnBlocked > 0)
+                builder.AppendLine($"- 락온 뽑기 {s.lockOnConfirms}판 확정 (재뽑기 {s.lockOnRerolls}번, 쓴 코어 {s.lockOnCoreSpent:N0}) · 코어 부족으로 막힘 {s.lockOnBlocked}번");
             return builder.ToString();
         }
 

@@ -52,6 +52,11 @@ namespace SurvivalDrone.UI
         private Text _simInfoText;
         private Button _simResetButton;
 
+        // ---- 락온 뽑기 ----
+        // 기본 뽑기와 별개의 뽑기 화면(LockOnPanel)을 여는 버튼. LockOnTable의 "사용 여부"가 꺼져 있으면 버튼이 아예 보이지 않는다.
+        private LockOnUI _lockOn;
+        private Button _lockOnButton;
+
         private void Awake()
         {
             _coreText = FindText("TopBar/CoreText");
@@ -83,6 +88,16 @@ namespace SurvivalDrone.UI
             _simToggleLabel = FindText("BtnSim/Text");
             _simInfoText = FindText("SimInfoText");
             _simResetButton = WireButton("BtnSimReset", ResetSim);
+
+            // 락온 뽑기 버튼 / 화면. (락온 UI가 없는 옛 씬이면 조용히 건너뛴다. 사용 여부가 꺼져 있으면 버튼을 숨긴다)
+            _lockOnButton = WireButton("BtnLockOn", () => { PlayClick(); if (_lockOn != null) _lockOn.Open(); }, false);
+            var lockOnTransform = transform.Find("LockOnPanel");
+            if (lockOnTransform != null)
+            {
+                _lockOn = lockOnTransform.GetComponent<LockOnUI>();
+                lockOnTransform.gameObject.SetActive(false);
+            }
+            if (_lockOnButton != null) _lockOnButton.gameObject.SetActive(_lockOn != null && _lockOn.IsEnabled);
 
             var popupTransform = transform.Find("ProbabilityPopup");
             if (popupTransform != null)
@@ -274,13 +289,14 @@ namespace SurvivalDrone.UI
             return text;
         }
 
-        private Button WireButton(string path, UnityEngine.Events.UnityAction action)
+        // warnIfMissing을 false로 주면 버튼이 없어도 경고하지 않는다 (락온 뽑기처럼 일부러 없을 수 있는 버튼용).
+        private Button WireButton(string path, UnityEngine.Events.UnityAction action, bool warnIfMissing = true)
         {
             var child = transform.Find(path);
             var button = child != null ? child.GetComponent<Button>() : null;
             if (button == null)
             {
-                Debug.LogWarning($"[Gacha] 뽑기 화면에서 '{path}' 버튼을 찾지 못했습니다.");
+                if (warnIfMissing) Debug.LogWarning($"[Gacha] 뽑기 화면에서 '{path}' 버튼을 찾지 못했습니다.");
                 return null;
             }
             button.onClick.AddListener(action);

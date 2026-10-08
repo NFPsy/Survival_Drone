@@ -145,6 +145,51 @@ namespace SurvivalDrone.Meta
             return outcome;
         }
 
+        // ---------------- 락온 뽑기: 안 가져간 칸의 조각 환산 ----------------
+
+        // 락온 뽑기에서 확정할 때 "안 가져간 칸" 하나를 조각으로 바꿔 보유 드론에 넣는다.
+        //  - 받는 조각 = 그 등급의 중복 조각(GachaTable) × percent / 100 (소수점은 버림)
+        //  - 같은 종류를 보유 중이고 최대 레벨이 아니면 그 드론에 넣는다.
+        //  - 아니면 "다음 강화까지 조각이 가장 조금 모자란" 보유 드론에 넣는다. (시뮬레이터 Tools/EconSim과 같은 규칙)
+        //  - 조각을 받을 드론이 없으면(전부 최대 레벨) 0을 돌려준다.
+        // target = 조각이 실제로 들어간 드론 (아무 데도 못 넣었으면 slotDrone 그대로).
+        public int AddConvertedShards(DroneType slotDrone, GachaRarity rarity, int percent, out DroneType target)
+        {
+            target = slotDrone;
+            if (!_isReady) return 0;
+
+            int shards = _gachaTable.GetDuplicateShards(rarity) * Mathf.Clamp(percent, 0, 100) / 100;
+            if (shards <= 0) return 0;
+
+            var destination = FindOwned(slotDrone);
+            if (destination == null || destination.level >= _growthTable.MaxLevel) destination = FindConversionTarget();
+            if (destination == null) return 0;
+
+            destination.shards += shards;
+            target = destination.droneType;
+            Debug.Log($"[Inventory] 락온 뽑기 조각 환산: {slotDrone} {rarity} → {destination.droneType} 조각 +{shards} (누적 {destination.shards})");
+            Changed();
+            return shards;
+        }
+
+        // 다음 강화까지 필요한 조각이 가장 적게 남은(이미 넘치면 가장 많이 넘치는) 보유 드론. 최대 레벨 드론은 제외. 없으면 null.
+        private OwnedDroneData FindConversionTarget()
+        {
+            OwnedDroneData best = null;
+            int bestNeed = int.MaxValue;
+            foreach (var owned in _data.ownedDrones)
+            {
+                if (owned.level >= _growthTable.MaxLevel) continue;
+                int need = _growthTable.GetUpgradeShardCost(owned.level) - owned.shards;
+                if (best == null || need < bestNeed)
+                {
+                    best = owned;
+                    bestNeed = need;
+                }
+            }
+            return best;
+        }
+
         // ---------------- 강화 ----------------
 
         // 다음 레벨로 올리는 데 필요한 조각 / 크레딧. 미보유이거나 이미 최대 레벨이면 0.
