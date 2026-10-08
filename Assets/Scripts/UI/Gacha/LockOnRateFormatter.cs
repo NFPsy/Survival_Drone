@@ -28,13 +28,13 @@ namespace SurvivalDrone.UI
         {
             string premium = table.RerollPremium > 0f ? $" (잠근 칸이 하나 늘 때마다 +{table.RerollPremium * 100f:0.#}%)" : "";
             string ssr = table.GetRate(GachaRarity.SSR) <= 0f
-                ? "·  SSR은 나오지 않습니다 (SSR은 기본 뽑기에서만 나옵니다)\n"
+                ? "·  SSR은 나오지 않습니다 (SSR은 일반 뽑기에서만 나옵니다)\n"
                 : "";
             return $"·  처음 공개 {table.FirstCost:N0}코어로 드론 {table.SlotCount}칸이 한꺼번에 공개됩니다\n" +
                    $"·  {table.LockMinRarity} 이상인 칸만 잠글 수 있고, 잠그지 않은 칸만 다시 뽑습니다\n" +
                    $"·  재뽑기 비용: 다시 뽑는 칸 × {table.RerollUnitCost:N0}코어{premium}\n" +
                    "·  확정하면 잠근 칸만 받습니다. 쓴 코어는 돌려받지 못합니다\n" +
-                   $"·  받지 못한 칸은 조각으로 바뀝니다 (기본 뽑기 중복 조각의 {table.UnlockedShardPercent}%)\n" +
+                   $"·  받지 못한 칸은 조각으로 바뀝니다 (일반 뽑기 중복 조각의{table.UnlockedShardPercent}%)\n" +
                    ssr +
                    "·  천장은 적용되지 않습니다";
         }

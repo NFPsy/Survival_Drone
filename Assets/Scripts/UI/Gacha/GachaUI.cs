@@ -57,6 +57,13 @@ namespace SurvivalDrone.UI
         private LockOnUI _lockOn;
         private Button _lockOnButton;
 
+        // ---- 뽑기 선택 화면 ----
+        // 락온 뽑기가 켜져 있으면, 이 씬에 들어오자마자 "일반 뽑기 / 락온 뽑기" 선택 화면이 먼저 열린다.
+        // 일반 뽑기를 고르면 선택 화면이 닫히고 아래 일반 뽑기 화면이 보이며, 락온을 고르면 락온 화면이 선택 화면 위로 열린다.
+        // (락온 화면을 닫으면 아래에 남아 있던 선택 화면이 다시 보인다.) 락온 뽑기가 꺼져 있으면 선택 화면 없이 예전처럼 바로 일반 뽑기가 열린다.
+        private GachaSelectUI _select;
+        private bool _selectEnabled;
+
         private void Awake()
         {
             _coreText = FindText("TopBar/CoreText");
@@ -73,7 +80,7 @@ namespace SurvivalDrone.UI
             _softPityBarFill = softFill != null ? softFill.GetComponent<RectTransform>() : null;
             if (_softPityBarFill == null) Debug.LogWarning("[Gacha] 뽑기 화면에서 'SoftPityBar/Fill'을 찾지 못했습니다.");
 
-            WireButton("BtnBack", () => { PlayClick(); SceneManager.LoadScene(lobbySceneName); });
+            WireButton("BtnBack", OnBackClicked);
             WireButton("RatesPanel/BtnRates", () => { PlayClick(); if (_probabilityPopup != null) _probabilityPopup.Open(); });
             _singleButton = WireButton("BtnPullSingle", () => Pull(false));
             _tenButton = WireButton("BtnPullTen", () => Pull(true));
@@ -97,7 +104,22 @@ namespace SurvivalDrone.UI
                 _lockOn = lockOnTransform.GetComponent<LockOnUI>();
                 lockOnTransform.gameObject.SetActive(false);
             }
-            if (_lockOnButton != null) _lockOnButton.gameObject.SetActive(_lockOn != null && _lockOn.IsEnabled);
+
+            // 선택 화면: 락온 뽑기가 켜져 있을 때만 쓴다. (선택 화면이 락온으로 가는 길이 되므로 옛 "락온 뽑기" 버튼은 숨긴다)
+            var selectTransform = transform.Find("GachaSelectPanel");
+            if (selectTransform != null)
+            {
+                _select = selectTransform.GetComponent<GachaSelectUI>();
+                _selectEnabled = _select != null && _lockOn != null && _lockOn.IsEnabled;
+                if (_select != null)
+                {
+                    _select.NormalChosen += () => _select.Close();
+                    _select.LockOnChosen += () => { if (_lockOn != null) _lockOn.Open(); };
+                    _select.BackPressed += () => SceneManager.LoadScene(lobbySceneName);
+                }
+                selectTransform.gameObject.SetActive(_selectEnabled);
+            }
+            if (_lockOnButton != null) _lockOnButton.gameObject.SetActive(_lockOn != null && _lockOn.IsEnabled && !_selectEnabled);
 
             var popupTransform = transform.Find("ProbabilityPopup");
             if (popupTransform != null)
@@ -217,6 +239,14 @@ namespace SurvivalDrone.UI
             if (priceText == null) return;
             priceText.text = $"{cost:N0} 코어";
             priceText.color = core >= cost ? normalColor : ShortColor;
+        }
+
+        // 뒤로: 선택 화면이 있으면 선택 화면으로, 없으면 로비로 나간다. (선택 화면에서 뒤로를 누르면 로비)
+        private void OnBackClicked()
+        {
+            PlayClick();
+            if (_selectEnabled && _select != null) _select.Open();
+            else SceneManager.LoadScene(lobbySceneName);
         }
 
         // ---- 뽑기 ----
