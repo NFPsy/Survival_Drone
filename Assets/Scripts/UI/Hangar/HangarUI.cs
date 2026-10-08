@@ -223,7 +223,7 @@ namespace SurvivalDrone.UI
             if (!owned)
             {
                 SetText(_rarityLevelText, "미획득", DeadColor);
-                SetText(_powerText, "뽑기에서 설계도를 얻으면 사용할 수 있습니다", MutedColor);
+                SetText(_powerText, "뽑기에서 드론을 얻으면 사용할 수 있습니다", MutedColor);
                 SetText(_multiplierText, "", MutedColor);
                 SetText(_shardsText, "", MutedColor);
                 SetText(_costText, "", MutedColor);

@@ -37,9 +37,9 @@ namespace SurvivalDrone.EditorTools
             var banner = NewImage("Banner", root, PanelColor);
             Place(banner.rectTransform, Center, Center, Center, new Vector2(0f, 230f), new Vector2(1000f, 200f));
             AddOutline(banner.gameObject, OutlineColor);
-            var bannerTitle = NewText("TitleText", banner.transform, "드론 설계도 뽑기", 60, LightText, SansFont, TextAnchor.MiddleCenter);
+            var bannerTitle = NewText("TitleText", banner.transform, "드론 뽑기", 60, LightText, SansFont, TextAnchor.MiddleCenter);
             Place(bannerTitle.rectTransform, Center, Center, Center, new Vector2(0f, 30f), new Vector2(900f, 90f));
-            var bannerSub = NewText("SubtitleText", banner.transform, "근접 · 저격 · 수집 · 폭발 · 회복 드론 설계도", 30, MutedText, SansFont, TextAnchor.MiddleCenter);
+            var bannerSub = NewText("SubtitleText", banner.transform, "근접 · 저격 · 수집 · 폭발 · 회복 드론", 30, MutedText, SansFont, TextAnchor.MiddleCenter);
             Place(bannerSub.rectTransform, Center, Center, Center, new Vector2(0f, -45f), new Vector2(900f, 50f));
 
             // ---- 등급 확률 요약 (숫자는 실행할 때 GachaTable에서 읽어 채운다) ----
