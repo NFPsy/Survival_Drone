@@ -14,6 +14,8 @@ namespace SurvivalDrone.EditorTools
             "Assets/Data/Meta/StageData_01.asset",
             "Assets/Data/Meta/StageData_02.asset",
             "Assets/Data/Meta/StageData_03.asset",
+            "Assets/Data/Meta/StageData_04.asset",
+            "Assets/Data/Meta/StageData_05.asset",
         };
 
         [MenuItem("SurvivalDrone/Meta/Verify Stage")]
@@ -75,11 +77,13 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(progress.UnlockedCount == 2, $"이미 열린 다음 스테이지는 그대로 (해금 {progress.UnlockedCount}개)");
 
                 // 8) 마지막 스테이지를 클리어해도 스테이지 수를 넘어서 해금되지 않는다
-                progress.TrySelect(1);
-                progress.RecordMatchResult(true, 600f);
-                progress.TrySelect(2);
-                progress.RecordMatchResult(true, 600f);
-                fails += Check(progress.UnlockedCount == 3, $"마지막 스테이지 클리어 후에도 해금 최대 3개 (해금 {progress.UnlockedCount}개)");
+                // 스테이지 2, 3, 4, 5를 차례로 클리어한다 (마지막 스테이지 5를 클리어해도 더 열리지 않아야 한다)
+                for (int s = 1; s < stages.Length; s++)
+                {
+                    progress.TrySelect(s);
+                    progress.RecordMatchResult(true, 600f);
+                }
+                fails += Check(progress.UnlockedCount == stages.Length, $"마지막 스테이지 클리어 후에도 해금 최대 {stages.Length}개 (해금 {progress.UnlockedCount}개)");
 
                 // 9) 저장 형식(JSON) 왕복
                 string json = JsonUtility.ToJson(data);
@@ -94,13 +98,14 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(oldSave.unlockedStageCount == 1 && oldSave.bestSurvivalSeconds != null && oldSave.bestSurvivalSeconds.Count == 0,
                     "스테이지 항목이 없는 옛 저장 파일도 안전하게 읽힘");
 
-                // 11) 스테이지 수치가 기획(노션 결정 기록)과 같은지: 권장 전투력 100/130/170, 배율 1.0/1.5/2.2
-                int[] expectedPower = { 100, 130, 170 };
-                float[] expectedMultiplier = { 1f, 1.5f, 2.2f };
+                // 11) 스테이지 수치가 기획(노션 결정 기록)과 같은지: 권장 전투력 100/115/130/150/170, 배율 1.0/1.25/1.5/1.85/2.2
+                //     (스테이지 1·3·5가 예전 3스테이지 때의 1·2·3번 값이고, 2·4번이 그 사이)
+                int[] expectedPower = { 100, 115, 130, 150, 170 };
+                float[] expectedMultiplier = { 1f, 1.25f, 1.5f, 1.85f, 2.2f };
                 bool valuesOk = true;
                 for (int i = 0; i < stages.Length; i++)
                     valuesOk &= stages[i].RecommendedPower == expectedPower[i] && Mathf.Approximately(stages[i].EnemyMultiplier, expectedMultiplier[i]) && stages[i].StageNumber == i + 1;
-                fails += Check(valuesOk, "스테이지 데이터가 결정 기록과 일치 (권장 전투력 100/130/170, 적 배율 x1.0/x1.5/x2.2)");
+                fails += Check(valuesOk, "스테이지 데이터가 결정 기록과 일치 (권장 전투력 100/115/130/150/170, 적 배율 x1.0/x1.25/x1.5/x1.85/x2.2)");
             }
             finally
             {

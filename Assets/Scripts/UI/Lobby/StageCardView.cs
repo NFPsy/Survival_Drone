@@ -5,7 +5,7 @@ using SurvivalDrone.Meta;
 namespace SurvivalDrone.UI
 {
     // 스테이지 "카드" 하나에 정보를 채워 넣는 도우미.
-    // 로비의 큰 카드와 스테이지 선택 화면의 작은 카드 3장이 똑같은 글자 칸을 가지고 있어서,
+    // 로비의 큰 카드와 스테이지 선택 화면의 작은 카드들(스테이지 수만큼)이 똑같은 글자 칸을 가지고 있어서,
     // 채우는 코드를 여기 한 곳에 모아 두었다.
     //
     // 카드 안에는 이름이 정해진 글자 칸(Text)이 있어야 한다:
@@ -52,7 +52,7 @@ namespace SurvivalDrone.UI
             SetText(_nameText, stage.DisplayName, unlocked ? NormalTextColor : LockedColor);
             SetText(_powerText, $"권장 전투력  {stage.RecommendedPower:N0}", unlocked ? NormalTextColor : LockedColor);
             SetText(_myPowerText, $"내 전투력  {myPower:N0}", unlocked ? GetPowerColor(myPower, stage.RecommendedPower) : LockedColor);
-            SetText(_multiplierText, $"적 체력·피해  x{stage.EnemyMultiplier:0.0}", unlocked ? MutedColor : LockedColor);
+            SetText(_multiplierText, $"적 체력·피해  x{stage.EnemyMultiplier:0.0#}", unlocked ? MutedColor : LockedColor);
             SetText(_bestTimeText, $"최고 생존  {FormatTime(bestSeconds)}", unlocked ? MutedColor : LockedColor);
 
             if (_lockText != null)
