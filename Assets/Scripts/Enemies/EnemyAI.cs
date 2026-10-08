@@ -50,6 +50,12 @@ namespace SurvivalDrone.Enemies
         // Initialize 시점에 한 번만 계산한다. (엘리트·미니 보스의 크기 변경은 그 전에 끝나 있다)
         private float bodyRadius;
 
+        // 실제로 "부딪혔다"고 보는 거리(플레이어 중심 ~ 이 적 중심). Initialize에서 한 번만 계산한다.
+        // 기본은 contactRange(1)이지만, 몸이 큰 적(보스 등)은 몸 크기만큼 더 멀리서부터 닿은 것으로 본다.
+        // 이유: 적의 충돌체는 단단해서, 플레이어(CharacterController)가 큰 적에게 닿으면 겹치지 않고 밀려난다.
+        // 그러면 보스의 중심과 플레이어 중심이 1보다 가까워질 수 없어서, 몸이 닿아 있는데도 피해가 한 번도 안 들어갔다.
+        private float contactReach;
+
         // ── 엘리트 로봇 관련 ──
         // 엘리트는 가끔 섞여 나오는 "강화판" 적이다. 체력이 훨씬 많고 크고 색이 다르지만,
         // 잡으면 XP를 많이 주고 오버드라이브 게이지를 왕창 채워준다.
@@ -118,6 +124,20 @@ namespace SurvivalDrone.Enemies
             var capsule = GetComponent<CapsuleCollider>();
             Vector3 lossy = transform.lossyScale;
             bodyRadius = capsule != null ? capsule.radius * Mathf.Max(Mathf.Abs(lossy.x), Mathf.Abs(lossy.z)) : 0.5f;
+
+            // 접촉 거리 = 적 몸 반지름 + 플레이어 몸 반지름 + 여유 0.1. 단, 작은 적은 예전처럼 최소 contactRange(1)를 지킨다.
+            // (작은 적은 플레이어와 겹쳐 들어오므로 거의 달라지지 않고, 몸이 큰 적(보스·큰 엘리트)만 닿았을 때 맞게 된다)
+            float playerRadius = 0.5f;
+            if (playerTarget != null)
+            {
+                var playerBody = playerTarget.GetComponent<CharacterController>();
+                if (playerBody != null)
+                {
+                    Vector3 playerScale = playerTarget.lossyScale;
+                    playerRadius = playerBody.radius * Mathf.Max(Mathf.Abs(playerScale.x), Mathf.Abs(playerScale.z));
+                }
+            }
+            contactReach = Mathf.Max(contactRange, bodyRadius + playerRadius + 0.1f);
 
             health = GetComponent<Health>();
             // 엘리트 배율이 반영된 체력으로 설정하고, 가득 채운 상태로 시작.
@@ -235,7 +255,7 @@ namespace SurvivalDrone.Enemies
             contactTimer -= Time.deltaTime;
 
             // 플레이어와 충분히 가깝고, 쿨타임이 다 됐으면 피해를 준다.
-            if (distance <= contactRange && contactTimer <= 0f)
+            if (distance <= contactReach && contactTimer <= 0f)
             {
                 var playerHealth = target.GetComponent<Health>();
                 if (playerHealth != null && !playerHealth.IsDead)
