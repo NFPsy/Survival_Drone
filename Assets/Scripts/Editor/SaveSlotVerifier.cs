@@ -54,6 +54,7 @@ namespace SurvivalDrone.EditorTools
                 fails += CheckSlotsOff(dir);
                 fails += CheckSlotsOn(dir, gachaTable, currencyTable, growthTable, stages);
                 fails += CheckBrokenFile(dir);
+                fails += CheckDeleteAll(dir);
 
                 if (fails == 0) Debug.Log($"[Save] 슬롯 검증 완료: 모든 항목 통과 ({DateTime.Now:HH:mm:ss})");
                 else Debug.LogError($"[Save] 슬롯 검증 완료: {fails}개 항목 실패 ({DateTime.Now:HH:mm:ss})");
@@ -63,6 +64,31 @@ namespace SurvivalDrone.EditorTools
                 SaveManager.ClearTestOverrides();
                 try { Directory.Delete(dir, true); } catch (Exception) { /* 임시 폴더는 못 지워도 괜찮다 */ }
             }
+        }
+
+        // ---------------- 개발용 "저장 파일 모두 삭제" ----------------
+        // 예전에는 지금 쓰는 파일 하나(슬롯을 고르지 않은 에디터에서는 save.json)만 지워서 슬롯 파일이 그대로 남았다.
+        // 임시 폴더에서 save.json과 슬롯 1·2 파일을 만들고, 목록에 전부 나오는지와 한 번에 모두 지워지는지 확인한다.
+        private static int CheckDeleteAll(string dir)
+        {
+            int fails = 0;
+            string subDir = Path.Combine(dir, "deleteall");
+            Directory.CreateDirectory(subDir);
+            File.WriteAllText(Path.Combine(subDir, "save.json"), JsonUtility.ToJson(MakeLegacyData()));
+            File.WriteAllText(Path.Combine(subDir, "save_slot1.json"), JsonUtility.ToJson(MakeLegacyData()));
+            File.WriteAllText(Path.Combine(subDir, "save_slot2.json"), JsonUtility.ToJson(MakeLegacyData()));
+
+            SaveManager.SetTestOverrides(subDir, true, 3);
+            fails += Check(SaveManager.ListSaveFiles().Count == 3, $"삭제 목록에 save.json과 슬롯 파일 2개가 모두 나옴 ({SaveManager.ListSaveFiles().Count}개)");
+
+            int deleted = SaveManager.DeleteAllSaves();
+            fails += Check(deleted == 3 && SaveManager.ListSaveFiles().Count == 0 && Directory.GetFiles(subDir).Length == 0, $"모두 삭제하면 save.json과 슬롯 파일이 전부 사라짐 (지운 파일 {deleted}개)");
+            fails += Check(SaveManager.DeleteAllSaves() == 0, "지울 파일이 없으면 0개를 돌려주고 오류 없이 끝남");
+
+            // 지운 뒤 슬롯을 고르면 옛 데이터가 되살아나지 않고 새로 시작한다.
+            bool ok = SaveManager.SelectSlot(1, out bool created);
+            fails += Check(ok && created && SaveManager.Data.core == 0 && SaveManager.Data.ownedDrones.Count == 0, "지운 뒤 슬롯 1을 고르면 옛 데이터가 아니라 새 슬롯으로 시작함");
+            return fails;
         }
 
         // 예전 저장 파일(save.json) 하나를 만든다. 슬롯 1로 옮겨질 내용이다.

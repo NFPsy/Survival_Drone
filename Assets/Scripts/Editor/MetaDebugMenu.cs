@@ -78,34 +78,48 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Gacha Pull x10 (Play mode)", true)]
         private static bool PullTenValidate() => Application.isPlaying && GachaController.Instance != null;
 
-        // 저장 파일을 지운다. 게임을 실행 중이 아닐 때 눌러야 다음 실행이 완전히 새 데이터로 시작한다.
+        // 저장 파일을 "모두" 지운다: 예전 save.json과 슬롯 파일(save_slot1~3.json) 전부.
+        // 예전에는 "지금 쓰는 파일 하나"만 지웠는데, 에디터에서는 슬롯을 고르지 않은 상태라 save.json만 지워지고
+        // 슬롯 파일은 그대로 남아서, 슬롯을 다시 고르면 옛 데이터가 되살아난 것처럼 보였다.
+        // 게임을 실행 중이 아닐 때 눌러야 다음 실행이 완전히 새 데이터로 시작한다. (실행 중이면 게임이 곧바로 다시 저장해 버린다)
         [MenuItem("SurvivalDrone/Meta/Debug/Delete Save File")]
         private static void DeleteSave()
         {
-            // 지우면 되돌릴 수 없으므로, 지우기 전에 "지금 어떤 저장이 있는지"를 보여 주고 한 번 더 확인한다.
+            // 지우면 되돌릴 수 없으므로, 지우기 전에 "어떤 저장 파일이 있는지"를 하나씩 보여 주고 한 번 더 확인한다.
             // (직접 플레이해서 생긴 저장을 실수로 지우는 사고를 막기 위한 장치)
-            if (!File.Exists(SaveManager.FilePath))
+            var files = SaveManager.ListSaveFiles();
+            if (files.Count == 0)
             {
-                EditorUtility.DisplayDialog("저장 파일 삭제", "지울 저장 파일이 없습니다.", "확인");
+                EditorUtility.DisplayDialog("저장 파일 삭제", "지울 저장 파일이 없습니다. (예전 save.json과 슬롯 1~3 파일을 모두 확인했습니다)", "확인");
                 return;
             }
 
-            string summary = "(내용을 읽지 못했습니다)";
-            try
+            var summary = new System.Text.StringBuilder();
+            foreach (string path in files)
             {
-                var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(SaveManager.FilePath));
-                summary = $"코어 {data.core}, 크레딧 {data.credit}, 보유 드론 {data.ownedDrones.Count}종, 해금 스테이지 {data.unlockedStageCount}개, 테스터 {data.testerId}, 기록 {data.playLog.Count}줄";
-            }
-            catch (System.Exception) { }
+                string info = "(내용을 읽지 못했습니다)";
+                try
+                {
+                    var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
+                    info = $"코어 {data.core}, 크레딧 {data.credit}, 드론 {data.ownedDrones.Count}종, 해금 스테이지 {data.unlockedStageCount}개, 테스터 {data.testerId}, 기록 {data.playLog.Count}줄";
+                }
+                catch (System.Exception) { }
 
-            string modified = File.GetLastWriteTime(SaveManager.FilePath).ToString("yyyy-MM-dd HH:mm:ss");
+                string modified = File.GetLastWriteTime(path).ToString("MM-dd HH:mm:ss");
+                summary.AppendLine($"- {Path.GetFileName(path)} (수정 {modified}): {info}");
+            }
+
             bool confirmed = EditorUtility.DisplayDialog(
                 "저장 파일 삭제",
-                $"이 저장 파일을 삭제합니다. 되돌릴 수 없습니다.\n\n{summary}\n마지막 수정: {modified}\n\n직접 플레이해서 생긴 저장이 아닌지 확인하세요.",
-                "삭제", "취소");
+                $"아래 저장 파일 {files.Count}개를 모두 삭제합니다. 되돌릴 수 없습니다.\n\n{summary}\n직접 플레이해서 생긴 저장이 아닌지 확인하세요.",
+                "모두 삭제", "취소");
             if (!confirmed) return;
 
-            SaveManager.DeleteSave();
+            SaveManager.DeleteAllSaves();
         }
+
+        // 게임을 실행 중일 때는 지워도 게임이 곧바로 다시 저장해 버리므로 메뉴를 막아 둔다.
+        [MenuItem("SurvivalDrone/Meta/Debug/Delete Save File", true)]
+        private static bool DeleteSaveValidate() => !Application.isPlaying;
     }
 }

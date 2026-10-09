@@ -180,6 +180,36 @@ namespace SurvivalDrone.Meta
             Debug.Log($"[Save] 저장 파일을 삭제했습니다 ({path})");
         }
 
+        // 저장 폴더에 있는 "모든" 저장 파일(예전 save.json + 슬롯 파일 전부)의 경로 목록. 개발용 삭제 메뉴가 지우기 전에 보여 주려고 쓴다.
+        // DeleteSave는 "지금 쓰는 파일 하나"만 지우는데, 에디터에서는 슬롯을 고르지 않은 상태라 그 파일이 save.json이다.
+        // 그래서 메뉴로 지워도 슬롯 파일(save_slot1~3.json)이 그대로 남아 있다가 슬롯을 고르면 옛 데이터가 다시 나타났다.
+        public static List<string> ListSaveFiles()
+        {
+            var files = new List<string>();
+            string legacy = Path.Combine(Directory, FileName);
+            if (File.Exists(legacy)) files.Add(legacy);
+            for (int slot = 1; slot <= SlotCount; slot++)
+                if (File.Exists(SlotPath(slot))) files.Add(SlotPath(slot));
+            return files;
+        }
+
+        // 모든 저장 파일(예전 save.json + 슬롯 파일 전부)을 지우고 메모리의 데이터와 고른 슬롯도 비운다.
+        // (개발 중 처음부터 다시 테스트할 때 쓰는 에디터 메뉴 전용. 게임 화면에는 이 기능이 없다. 지운 파일 수를 돌려준다)
+        public static int DeleteAllSaves()
+        {
+            _data = null;
+            _slot = 0;
+            int count = 0;
+            foreach (string path in ListSaveFiles())
+            {
+                File.Delete(path);
+                count++;
+            }
+            if (count > 0) WebGLFileSync.Flush();
+            Debug.Log($"[Save] 저장 파일 {count}개를 모두 삭제했습니다 ({Directory})");
+            return count;
+        }
+
         // ---------------- 슬롯 ----------------
 
         // 슬롯을 고른다. 파일이 있으면 불러오고, 없으면 새 데이터로 시작해서 바로 저장한다(createdNew가 true).
