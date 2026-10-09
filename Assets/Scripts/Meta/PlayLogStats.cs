@@ -53,6 +53,14 @@ namespace SurvivalDrone.Meta
         public int abandons;
         public float abandonSurviveSeconds;
 
+        // 로비에서 마일스톤·일일 퀘스트 코어를 "받은" 횟수와 받은 코어 합계.
+        // 판 보상과 달리 이 코어는 어디서 들어왔는지 기록이 없어서 경제를 실제 데이터로 맞추기 어려웠다.
+        // 옛 저장 파일에는 없지만 숫자 기본값이 0이라 그대로 안전하게 읽힌다.
+        public int milestoneClaims;
+        public int milestoneCoreTotal;
+        public int questClaims;
+        public int questCoreTotal;
+
         // ---- 판 시간 통계 (이 기능이 생긴 뒤에 기록된 판만 집계한다) ----
         // 예전에 기록된 판에는 "실제 소요 시간"이 없어서, 옛 판까지 섞으면 평균이 틀어지기 때문에 새 판만 따로 센다.
         // 시간 기록이 있는 판 수, 그 판들의 실제 소요 시간 합계(일시정지·레벨업 선택 화면 포함, 초)

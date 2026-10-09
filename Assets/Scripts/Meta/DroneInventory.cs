@@ -326,6 +326,23 @@ namespace SurvivalDrone.Meta
             return true;
         }
 
+        // 장착한 드론을 "Melee SR Lv3 / Sniper N Lv1" 모양의 한 줄로 만든다. 테스트 기록(판 시작)에 쓴다.
+        // 빈 슬롯은 "비움". (드론 이름은 장착·강화 기록과 같은 영문 종류 이름을 쓴다)
+        public string BuildLoadoutSummary()
+        {
+            if (!_isReady) return "-";
+            var parts = new System.Collections.Generic.List<string>();
+            for (int slot = 0; slot < _data.equippedDrones.Count; slot++)
+            {
+                var equipped = GetEquipped(slot);
+                if (equipped.HasValue && TryGetInfo(equipped.Value, out var info))
+                    parts.Add($"{info.droneType} {info.rarity} Lv{info.level}");
+                else
+                    parts.Add("비움");
+            }
+            return string.Join(" / ", parts);
+        }
+
         // ---------------- 전투력 ----------------
 
         // 등급 배율 (N ×1.00 ~ SSR ×1.45). 미보유면 0. 격납고가 "성능 = 등급 × 강화"로 나눠 보여줄 때 쓴다.

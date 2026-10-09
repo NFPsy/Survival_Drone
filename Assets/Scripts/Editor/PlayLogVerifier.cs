@@ -134,6 +134,26 @@ namespace SurvivalDrone.EditorTools
                     "JSON 저장/불러오기 왕복 후에도 이탈 누적이 그대로");
                 fails += Check(oldSave.logStats.abandons == 0, "이탈 항목이 없는 옛 저장 파일은 이탈 0번으로 읽힘");
 
+                // ---- 판 시작 기록, 마일스톤·일일 퀘스트 수령 기록 ----
+                var startLog = new SaveData();
+                PlayLog.RecordMatchStart(startLog, 2, 129, "Melee SR Lv3 / Sniper N Lv1");
+                PlayLog.RecordMilestoneClaim(startLog, 2, "3분", 150, 2850);
+                PlayLog.RecordQuestClaim(startLog, "출석하기", 150, 3000);
+                fails += Check(startLog.playLog[0] == "10-09 13:05:07 | match_start | 스테이지=2 내전투력=129 장착=Melee SR Lv3 / Sniper N Lv1",
+                    $"판 시작 기록 문장 형식: '{startLog.playLog[0]}'");
+                fails += Check(startLog.playLog[1] == "10-09 13:05:07 | milestone_claim | 스테이지=2 항목=3분 코어=+150 남은코어=2850",
+                    $"마일스톤 수령 기록 문장 형식: '{startLog.playLog[1]}'");
+                fails += Check(startLog.playLog[2] == "10-09 13:05:07 | quest_claim | 퀘스트=출석하기 코어=+150 남은코어=3000",
+                    $"일일 퀘스트 수령 기록 문장 형식: '{startLog.playLog[2]}'");
+                fails += Check(startLog.logStats.matches == 0 && startLog.logStats.milestoneClaims == 1 && startLog.logStats.milestoneCoreTotal == 150
+                               && startLog.logStats.questClaims == 1 && startLog.logStats.questCoreTotal == 150,
+                    "판 시작은 판 수(matches)에 안 들어가고, 수령 누적은 횟수·코어 합계가 쌓임");
+                fails += Check(PlayLog.BuildSummaryText(startLog).Contains("코어 수령: 마일스톤 1번 (+150) · 일일 퀘스트 1번 (+150)"), "요약: 코어 수령 한 줄");
+                fails += Check(!PlayLog.BuildSummaryText(new SaveData()).Contains("코어 수령"), "수령이 없으면 요약에 '코어 수령' 줄이 없음");
+                var startLoaded = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(startLog));
+                fails += Check(startLoaded.logStats.milestoneClaims == 1 && startLoaded.logStats.questCoreTotal == 150 && oldSave.logStats.milestoneClaims == 0 && oldSave.logStats.questClaims == 0,
+                    "JSON 왕복 후에도 수령 누적이 그대로, 수령 항목이 없는 옛 저장 파일은 0으로 읽힘");
+
                 // ---- 레벨업 선택 요약 (판 기록 끝에 덧붙는 문장) ----
                 LevelUpPickLog.Reset();
                 fails += Check(LevelUpPickLog.BuildSummary() == "", "레벨업 선택이 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
@@ -226,6 +246,27 @@ namespace SurvivalDrone.EditorTools
                 inventory.TryUpgrade(DroneType.Melee, currency);
                 fails += Check(upgradeData.playLog.Exists(l => l.Contains("| upgrade |") && l.Contains("드론=Melee 레벨=2")) && upgradeData.logStats.upgrades == 1,
                     "드론 강화 성공이 기록에 남음 (드론=Melee 레벨=2)");
+
+                // ---- 장착 요약, 실제 매니저의 마일스톤·퀘스트 수령 기록 ----
+                // 이 시점의 장착: 슬롯 1 = 저격(근접과 자리를 바꿨다가 슬롯 2를 비움). 등급은 뽑기 결과로 바뀔 수 있어 모양만 본다.
+                string loadout = inventory.BuildLoadoutSummary();
+                fails += Check(loadout.StartsWith("Sniper ") && loadout.Contains(" Lv1") && loadout.EndsWith(" / 비움"), $"장착 요약 모양: '{loadout}'");
+
+                MatchMilestones.MarkDone(flowData, 0, 0);
+                int coreBeforeClaim = flowData.core;
+                currency.TryClaimMilestone(0, 0);
+                currency.TryClaimMilestone(0, 0);   // 이미 받은 것: 기록이 늘면 안 됨
+                currency.TryClaimMilestone(0, 1);   // 달성하지 않은 것: 기록이 늘면 안 됨
+                DailyQuests.MarkAttendance(flowData);
+                currency.TryClaimDailyQuest(DailyQuests.AttendanceIndex);
+                currency.TryClaimDailyQuest(DailyQuests.AttendanceIndex);
+                int mileLines = flowData.playLog.FindAll(l => l.Contains("| milestone_claim |")).Count;
+                int questLines = flowData.playLog.FindAll(l => l.Contains("| quest_claim |")).Count;
+                int expectedCore = coreBeforeClaim + MatchMilestones.GetCore(0, 0) + DailyQuests.Cores[DailyQuests.AttendanceIndex];
+                fails += Check(mileLines == 1 && questLines == 1 && flowData.core == expectedCore
+                               && flowData.playLog.Exists(l => l.Contains("| milestone_claim |") && l.Contains("항목=3분") && l.EndsWith($"남은코어={coreBeforeClaim + MatchMilestones.GetCore(0, 0)}"))
+                               && flowData.playLog.Exists(l => l.Contains("| quest_claim |") && l.Contains("퀘스트=출석하기") && l.EndsWith($"남은코어={expectedCore}")),
+                    $"실제 수령 흐름이 한 번씩만 기록 (마일스톤 {mileLines}줄, 퀘스트 {questLines}줄, 남은 코어가 실제 보유와 같음)");
             }
             finally
             {

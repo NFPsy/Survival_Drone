@@ -93,6 +93,24 @@ namespace SurvivalDrone.Core
             // 반면 Start()는 씬의 모든 Awake()가 다 끝난 뒤에만 호출되므로,
             // 여기서 불러야 AudioManager.Instance가 확실히 준비되어 있다.
             AudioManager.Instance?.PlayMusic(inGameMusic);
+
+            RecordMatchStartLog();
+        }
+
+        // 테스트(CBT) 기록에 "판 시작"을 남긴다. 끝난 줄 없이 이 줄만 있으면 탭을 닫고 나간 판이다.
+        // 로비를 거치지 않고 InGame만 단독 실행했을 때(저장 데이터 없음)는 남기지 않는다.
+        // 바로 저장하는 이유: 저장하지 않으면 탭을 닫는 순간 이 줄도 사라져서 "닫고 나감"을 알 수 없다.
+        private static void RecordMatchStartLog()
+        {
+            if (CurrencyManager.Instance == null) return;
+
+            int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
+            var inventory = DroneInventory.Instance;
+            int combatPower = inventory != null ? inventory.TotalCombatPower : 0;
+            string loadout = inventory != null ? inventory.BuildLoadoutSummary() : "-";
+
+            PlayLog.RecordMatchStart(SaveManager.Data, stageNumber, combatPower, loadout);
+            SaveManager.Save();
         }
 
         private void OnEnable()

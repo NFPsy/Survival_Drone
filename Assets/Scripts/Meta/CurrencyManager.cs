@@ -171,6 +171,8 @@ namespace SurvivalDrone.Meta
             MatchMilestones.MarkClaimed(_data, stageIndex, index);
             int core = MatchMilestones.GetCore(stageIndex, index);
             Debug.Log($"[Currency] 스테이지 {stageIndex + 1} 마일스톤 {index} 달성: 코어 +{core}");
+            // 코어를 더하기 전에 기록한다. AddCore가 저장까지 하므로, 그 뒤에 남기면 이 줄은 다음 저장 때까지 저장되지 않는다.
+            PlayLog.RecordMilestoneClaim(_data, stageIndex + 1, MatchMilestones.Titles[index], core, _data.core + core);
             AddCore(core);
             return core;
         }
@@ -184,6 +186,7 @@ namespace SurvivalDrone.Meta
             _data.dailyQuestClaimedMask |= 1 << index;
             int core = DailyQuests.Cores[index];
             Debug.Log($"[Currency] 일일 퀘스트 {index} 보상: 코어 +{core}");
+            PlayLog.RecordQuestClaim(_data, DailyQuests.Titles[index], core, _data.core + core); // AddCore의 저장에 함께 들어가도록 그 전에 기록한다
             AddCore(core);
             return core;
         }

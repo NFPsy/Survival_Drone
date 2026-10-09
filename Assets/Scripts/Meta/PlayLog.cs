@@ -74,6 +74,32 @@ namespace SurvivalDrone.Meta
             Add(data, "pull_blocked", $"종류={(isTen ? "10연" : "1회")} 필요코어={needCore} 보유코어={haveCore}");
         }
 
+        // 한 판이 "시작"됐을 때. (InGame 씬이 열릴 때 한 번)
+        //  끝난 줄(match/match_abandon) 없이 시작 줄만 남아 있으면, 일시정지 메뉴를 거치지 않고 탭을 닫고 나간 판이라는 뜻이다.
+        //  loadout = 출격한 드론 구성 요약("Melee SR Lv3 / Sniper N Lv1"). 판 끝 기록에는 드론 수와 전투력만 있어서 따로 남긴다.
+        public static void RecordMatchStart(SaveData data, int stageNumber, int combatPower, string loadout)
+        {
+            Add(data, "match_start", $"스테이지={stageNumber} 내전투력={combatPower} 장착={loadout}");
+        }
+
+        // 마일스톤 코어를 로비에서 받았을 때. milestoneLabel = "3분"/"6분"/"클리어", coreAfter = 받은 뒤 보유 코어.
+        public static void RecordMilestoneClaim(SaveData data, int stageNumber, string milestoneLabel, int core, int coreAfter)
+        {
+            var s = data.logStats;
+            s.milestoneClaims++;
+            s.milestoneCoreTotal += core;
+            Add(data, "milestone_claim", $"스테이지={stageNumber} 항목={milestoneLabel} 코어=+{core} 남은코어={coreAfter}");
+        }
+
+        // 일일 퀘스트 코어를 받았을 때. questTitle = "출석하기" 같은 퀘스트 이름.
+        public static void RecordQuestClaim(SaveData data, string questTitle, int core, int coreAfter)
+        {
+            var s = data.logStats;
+            s.questClaims++;
+            s.questCoreTotal += core;
+            Add(data, "quest_claim", $"퀘스트={questTitle} 코어=+{core} 남은코어={coreAfter}");
+        }
+
         // 한 판이 끝났을 때.
         //  surviveSeconds = 게임 시간(시간이 멈춘 동안은 세지 않음), realSeconds = 실제로 걸린 시간(일시정지·레벨업 선택 화면 포함)
         //  pickSummary = 이번 판에서 레벨업 선택지를 뭘 골랐는지 요약한 문장. 비어 있으면(옛 방식 호출) 기록에 덧붙이지 않는다.
@@ -274,6 +300,9 @@ namespace SurvivalDrone.Meta
                 ? $"- 첫 뽑기 전에 플레이한 판 수: {s.matchesBeforeFirstPull}"
                 : "- 아직 뽑기를 한 번도 안 함");
             builder.AppendLine($"- 드론 강화 {s.upgrades}번 · 접속 {s.sessions}번");
+            // 마일스톤·일일 퀘스트로 받은 코어. 받은 적이 있을 때만 보여준다. (판 보상은 크레딧뿐이라 코어 수입은 여기와 뽑기 시작 지급이 전부다)
+            if (s.milestoneClaims > 0 || s.questClaims > 0)
+                builder.AppendLine($"- 코어 수령: 마일스톤 {s.milestoneClaims}번 (+{s.milestoneCoreTotal:N0}) · 일일 퀘스트 {s.questClaims}번 (+{s.questCoreTotal:N0})");
             if (s.shardExchanges > 0)
                 builder.AppendLine($"- 조각 교환 {s.shardExchanges}번 (조각 {s.shardsBought:N0}개, 크레딧 {s.creditSpentOnShards:N0} 사용)");
             // 락온 뽑기는 쓴 적이 있을 때만 한 줄 덧붙인다. (쓰지 않으면 옛 요약 모양 그대로)
