@@ -149,6 +149,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyAI
   contactDamageInterval: 1
   contactRange: 1
+  eliteHealthMultiplier: 3
+  eliteXpMultiplier: 3
+  eliteScaleMultiplier: 1.35
+  eliteTint: {r: 0.31, g: 0.847, b: 0.91, a: 1}
+  miniBossTint: {r: 1, g: 0.55, b: 0.2, a: 1}
 --- !u!114 &1367798404511814709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5017,7 +5022,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: f0446ec0befbaa34caab710a8c41d02e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
