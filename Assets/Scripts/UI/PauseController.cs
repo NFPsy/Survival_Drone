@@ -17,6 +17,9 @@ namespace SurvivalDrone.UI
         // "메인메뉴" 버튼을 눌렀을 때 돌아갈 씬 이름.
         [SerializeField] private string mainMenuSceneName = "MainMenu";
 
+        // "로비로" 버튼을 눌렀을 때 돌아갈 씬 이름. (메인메뉴를 거치면 "게임 시작 → 슬롯 선택"을 다시 눌러야 해서 로비로 바로 가는 버튼을 따로 뒀다)
+        [SerializeField] private string lobbySceneName = "Lobby";
+
         // 버튼을 누를 때마다 재생할 공용 클릭음.
         [SerializeField] private AudioClip clickSound;
 
@@ -44,6 +47,7 @@ namespace SurvivalDrone.UI
 
             WireButton("BtnContinue", Resume);
             WireButton("BtnRestart", Restart);
+            WireButton("BtnLobby", GoToLobby);
             WireButton("BtnMainMenu", GoToMainMenu);
         }
 
@@ -106,6 +110,16 @@ namespace SurvivalDrone.UI
             RecordAbandon("재시작");
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        // "로비로" 버튼: 로비(스테이지 선택·뽑기·격납고가 있는 허브)로 바로 간다. 저장 슬롯은 그대로 유지된다.
+        // 판 도중에 나가는 것이므로 "메인메뉴"·"재시작"과 같이 이탈 기록을 남긴다.
+        private void GoToLobby()
+        {
+            AudioManager.Instance?.PlaySfx(clickSound);
+            RecordAbandon("로비");
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(lobbySceneName);
         }
 
         // "메인메뉴" 버튼: 타이틀 화면으로 돌아간다.
