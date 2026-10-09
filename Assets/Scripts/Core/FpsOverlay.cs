@@ -50,7 +50,8 @@ namespace SurvivalDrone.Core
         private bool postOn = true;
         private bool bloomOn = true;
         private bool hdrOn = true;
-        private int scaleIndex;
+        // 지금 렌더 크기의 순번. 웹 품질 설정(Mobile_RPAsset)의 기본값이 0.6이라서 처음부터 0.6(= 2번)으로 표시한다.
+        private int scaleIndex = 2;
         private string effectsLine = "";
 
         private void Update()

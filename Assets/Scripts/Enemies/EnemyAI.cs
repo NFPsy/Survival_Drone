@@ -144,6 +144,21 @@ namespace SurvivalDrone.Enemies
             health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
             // 체력이 0이 되면 HandleDeath 함수가 자동으로 호출되도록 연결.
             health.OnDeath += HandleDeath;
+
+            DisableShadowCasting();
+        }
+
+        // 적이 그림자를 만들지 않게 한다. 적이 수십 마리 나와서 모두 그림자를 그리면 웹(WebGL)에서 화면이 많이 느려져서
+        // (그림자를 끄면 FPS가 확 올랐다) 적의 그림자만 뺐다. 플레이어·드론·건물의 그림자는 그대로다.
+        // 스폰할 때마다 새 목록을 만들지 않도록 static 목록을 재사용한다.
+        private static readonly List<Renderer> shadowRendererBuffer = new List<Renderer>();
+
+        private void DisableShadowCasting()
+        {
+            GetComponentsInChildren(true, shadowRendererBuffer);
+            for (int i = 0; i < shadowRendererBuffer.Count; i++)
+                shadowRendererBuffer[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            shadowRendererBuffer.Clear();
         }
 
         // 이 적을 "엘리트"로 만드는 함수.
