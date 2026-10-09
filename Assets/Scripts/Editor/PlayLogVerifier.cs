@@ -215,6 +215,13 @@ namespace SurvivalDrone.EditorTools
                 for (int i = 0; i < 2; i++) SurvivalDrone.Core.PerfLog.Record(0.2f);        // 0.1초 넘는 끊김 2장
                 string perf = SurvivalDrone.Core.PerfLog.BuildSummary();
                 fails += Check(perf == "성능=평균43fps 30fps미만=10% 100ms넘는끊김=2회 최악=200ms", $"성능 요약 문장: '{perf}'");
+                string perfWithScreen = SurvivalDrone.Core.PerfLog.BuildSummary("1280x720");
+                fails += Check(perfWithScreen == perf + " 화면=1280x720", $"화면 크기를 넘기면 성능 요약 끝에 화면=크기가 붙음: '{perfWithScreen}'");
+                var graphicsLog = new SaveData();
+                PlayLog.StartSession(graphicsLog, "0.2.0", "WebGLPlayer", "1280x720", "NVIDIA GeForce\nRTX 3060");
+                PlayLog.StartSession(graphicsLog, "0.2.0", "WebGLPlayer", "1280x720");
+                fails += Check(graphicsLog.playLog[0].EndsWith("접속횟수=1 그래픽=NVIDIA GeForce RTX 3060") && graphicsLog.playLog[1].EndsWith("접속횟수=2"),
+                    $"접속 기록 끝에 그래픽카드 이름이 붙음(줄바꿈은 공백으로), 이름을 안 넘기면 옛 모양 그대로: '{graphicsLog.playLog[0]}'");
                 var withPerf = new SaveData();
                 PlayLog.RecordMatch(withPerf, 1, true, 600f, 689f, 14, 5, 100, 0, 300, picks, lostDamage, perf);
                 PlayLog.RecordAbandon(withPerf, 1, 50f, 60f, 3, 2, 100, "로비", picks, perf);

@@ -30,7 +30,7 @@ namespace SurvivalDrone.Meta
             if (Instance != this) return;
 
             var data = SaveManager.Data;
-            PlayLog.StartSession(data, Application.version, Application.platform.ToString(), $"{Screen.width}x{Screen.height}");
+            PlayLog.StartSession(data, Application.version, Application.platform.ToString(), $"{Screen.width}x{Screen.height}", SystemInfo.graphicsDeviceName);
             PlayLog.RecordScreen(data, SceneManager.GetActiveScene().name);
             SaveManager.Save();
 
@@ -52,7 +52,7 @@ namespace SurvivalDrone.Meta
         private void HandleDataReplaced()
         {
             var data = SaveManager.Data;
-            PlayLog.StartSession(data, Application.version, Application.platform.ToString(), $"{Screen.width}x{Screen.height}");
+            PlayLog.StartSession(data, Application.version, Application.platform.ToString(), $"{Screen.width}x{Screen.height}", SystemInfo.graphicsDeviceName);
             PlayLog.RecordScreen(data, SceneManager.GetActiveScene().name);
             SaveManager.Save();
         }

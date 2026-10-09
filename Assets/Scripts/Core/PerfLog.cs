@@ -50,14 +50,16 @@ namespace SurvivalDrone.Core
         }
 
         // 판 기록 끝에 덧붙일 한 덩어리. 프레임이 거의 없으면 빈 글자(기록에 아무것도 덧붙지 않음).
-        // 예) "성능=평균58fps 30fps미만=4% 100ms넘는끊김=2회 최악=180ms"
-        public static string BuildSummary()
+        // screenInfo = 그 판이 끝날 때의 화면 크기("1280x720"). 창 모드와 전체화면은 FPS가 크게 달라서 구분하려고 함께 남긴다.
+        // 예) "성능=평균58fps 30fps미만=4% 100ms넘는끊김=2회 최악=180ms 화면=1280x720"
+        public static string BuildSummary(string screenInfo = null)
         {
             if (frames < MinFrames || totalSeconds <= 0f) return "";
 
             float averageFps = frames / totalSeconds;
             float slowPercent = slowFrames * 100f / frames;
-            return $"성능=평균{averageFps:F0}fps 30fps미만={slowPercent:F0}% 100ms넘는끊김={hitches}회 최악={worstSeconds * 1000f:F0}ms";
+            string screen = string.IsNullOrEmpty(screenInfo) ? "" : $" 화면={screenInfo}";
+            return $"성능=평균{averageFps:F0}fps 30fps미만={slowPercent:F0}% 100ms넘는끊김={hitches}회 최악={worstSeconds * 1000f:F0}ms{screen}";
         }
     }
 }

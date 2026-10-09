@@ -30,13 +30,14 @@ namespace SurvivalDrone.Meta
         // ---------------- 기록하기 ----------------
 
         // 게임을 켰을 때 한 번. 테스터 번호가 없으면 새로 만든다.
-        public static void StartSession(SaveData data, string version, string platform, string resolution)
+        //  graphics = 그래픽카드(GPU) 이름. 웹에서 "내 PC에서만 느린 건지"를 로그만으로 가리려고 남긴다. (소프트웨어 렌더링이면 SwiftShader 같은 이름이 나온다)
+        public static void StartSession(SaveData data, string version, string platform, string resolution, string graphics = null)
         {
             if (string.IsNullOrEmpty(data.testerId))
                 data.testerId = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpperInvariant();
 
             data.logStats.sessions++;
-            Add(data, "session_start", $"tester={data.testerId} 빌드={version} 플랫폼={platform} 화면={resolution} 접속횟수={data.logStats.sessions}");
+            Add(data, "session_start", $"tester={data.testerId} 빌드={version} 플랫폼={platform} 화면={resolution} 접속횟수={data.logStats.sessions}{GraphicsSuffix(graphics)}");
         }
 
         // 화면(씬)이 바뀔 때. "마지막으로 본 화면"이 이탈 지점을 알려준다.
@@ -129,6 +130,13 @@ namespace SurvivalDrone.Meta
             Add(data, "match",
                 $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
                 $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}");
+        }
+
+        // 그래픽카드 이름이 있으면 " 그래픽=이름"을, 없으면 빈 글자를 돌려준다. 이름 안의 줄바꿈은 기록이 깨지지 않게 공백으로 바꾼다.
+        private static string GraphicsSuffix(string graphics)
+        {
+            if (string.IsNullOrWhiteSpace(graphics)) return "";
+            return " 그래픽=" + graphics.Replace('\r', ' ').Replace('\n', ' ').Trim();
         }
 
         // 레벨업 선택 요약이 있으면 앞에 공백을 붙여 기록 끝에 덧붙일 글자로, 없으면 빈 글자로 만든다.

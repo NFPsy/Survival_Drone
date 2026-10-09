@@ -126,7 +126,7 @@ namespace SurvivalDrone.UI
             float realSeconds = gameManager != null ? gameManager.RealElapsedSeconds : 0f;
 
             // 끝에 덧붙는 요약 두 개: 레벨업 선택, 그리고 맞은 적 종류(패배하면 사망원인 포함).
-            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit, LevelUpPickLog.BuildSummary(), DamageSourceLog.BuildSummary(!won), PerfLog.BuildSummary());
+            PlayLog.RecordMatch(SaveManager.Data, stageNumber, won, elapsed, realSeconds, level, droneCount, combatPower, rewardCore, rewardCredit, LevelUpPickLog.BuildSummary(), DamageSourceLog.BuildSummary(!won), PerfLog.BuildSummary($"{Screen.width}x{Screen.height}"));
             SaveManager.Save();
         }
 
