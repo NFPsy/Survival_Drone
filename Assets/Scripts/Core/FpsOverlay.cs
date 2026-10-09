@@ -47,13 +47,12 @@ namespace SurvivalDrone.Core
         private GUIStyle style;
 
         // 화면 효과를 껐다 켠 상태. (처음에는 모두 켜져 있다 = 게임 원래 모습)
-        private bool shadowsOn = false;
+        private bool shadowsOn = true;
         private bool postOn = true;
         private bool bloomOn = true;
         private bool hdrOn = true;
-        // 지금 렌더 크기의 순번. 웹 품질 설정(Mobile_RPAsset)의 기본값이 0.5라서 처음부터 0.5(= 3번)로 표시한다.
-        // (그림자도 웹 설정에서 이미 꺼 두었다. 그래서 1번 키(그림자)는 웹에서 켜도 그림자가 나오지 않는다)
-        private int scaleIndex = 3;
+        // 지금 렌더 크기의 순번. 웹 품질 설정(Mobile_RPAsset)의 기본값이 0.8이라서 처음부터 0.8(= 1번)로 표시한다.
+        private int scaleIndex = 1;
         private bool uiOn = true;
         private bool belowWorldOn = true;
         private bool decorOn = true;
