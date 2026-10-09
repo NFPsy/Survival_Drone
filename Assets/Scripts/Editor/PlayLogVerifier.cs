@@ -202,6 +202,30 @@ namespace SurvivalDrone.EditorTools
                 DamageSourceLog.Reset();
                 fails += Check(DamageSourceLog.BuildSummary(true) == "", "Reset 하면 지난 판의 맞은 기록이 지워짐");
 
+                // ---- 화면 부드러움(프레임 시간) 요약 (판 기록 끝에 덧붙는 문장) ----
+                SurvivalDrone.Core.PerfLog.Reset();
+                fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "프레임이 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
+                for (int i = 0; i < 29; i++) SurvivalDrone.Core.PerfLog.Record(1f / 60f);
+                fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "프레임이 30개 미만이면(너무 짧은 판) 요약하지 않음");
+                SurvivalDrone.Core.PerfLog.Reset();
+                SurvivalDrone.Core.PerfLog.Record(0f);    // 0 이하는 무시
+                SurvivalDrone.Core.PerfLog.Record(-1f);
+                for (int i = 0; i < 90; i++) SurvivalDrone.Core.PerfLog.Record(1f / 60f);   // 부드러운 프레임 90장
+                for (int i = 0; i < 8; i++) SurvivalDrone.Core.PerfLog.Record(0.05f);       // 느린 프레임 8장 (20fps)
+                for (int i = 0; i < 2; i++) SurvivalDrone.Core.PerfLog.Record(0.2f);        // 0.1초 넘는 끊김 2장
+                string perf = SurvivalDrone.Core.PerfLog.BuildSummary();
+                fails += Check(perf == "성능=평균43fps 30fps미만=10% 100ms넘는끊김=2회 최악=200ms", $"성능 요약 문장: '{perf}'");
+                var withPerf = new SaveData();
+                PlayLog.RecordMatch(withPerf, 1, true, 600f, 689f, 14, 5, 100, 0, 300, picks, lostDamage, perf);
+                PlayLog.RecordAbandon(withPerf, 1, 50f, 60f, 3, 2, 100, "로비", picks, perf);
+                fails += Check(withPerf.playLog[0].EndsWith(picks + " " + lostDamage + " " + perf) && withPerf.playLog[1].EndsWith(picks + " " + perf),
+                    "판 기록·이탈 기록 끝에 성능 요약이 마지막으로 덧붙음 (레벨업 선택 → 받은 피해 → 성능 순서)");
+                var noPerf = new SaveData();
+                PlayLog.RecordMatch(noPerf, 1, true, 600f, 689f, 14, 5, 100, 0, 300, picks, lostDamage);
+                fails += Check(noPerf.playLog[0].EndsWith(lostDamage), "성능 요약을 안 넘기는 호출은 기록 모양이 그대로");
+                SurvivalDrone.Core.PerfLog.Reset();
+                fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "Reset 하면 지난 판의 프레임 기록이 지워짐");
+
                 // ---- 최대 개수 ----
                 var big = new SaveData();
                 for (int i = 0; i < PlayLog.MaxEntries + 50; i++) PlayLog.RecordScreen(big, $"Scene{i}");

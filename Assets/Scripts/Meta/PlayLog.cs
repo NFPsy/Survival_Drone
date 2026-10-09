@@ -104,7 +104,7 @@ namespace SurvivalDrone.Meta
         //  surviveSeconds = 게임 시간(시간이 멈춘 동안은 세지 않음), realSeconds = 실제로 걸린 시간(일시정지·레벨업 선택 화면 포함)
         //  pickSummary = 이번 판에서 레벨업 선택지를 뭘 골랐는지 요약한 문장. 비어 있으면(옛 방식 호출) 기록에 덧붙이지 않는다.
         //  damageSummary = 이번 판에서 어떤 적에게 얼마나 맞았는지(패배한 판은 사망원인 포함) 요약한 문장. 비어 있으면 덧붙이지 않는다.
-        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null)
+        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null, string perfSummary = null)
         {
             var s = data.logStats;
             s.matches++;
@@ -128,7 +128,7 @@ namespace SurvivalDrone.Meta
 
             Add(data, "match",
                 $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
-                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}");
+                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}");
         }
 
         // 레벨업 선택 요약이 있으면 앞에 공백을 붙여 기록 끝에 덧붙일 글자로, 없으면 빈 글자로 만든다.
@@ -141,14 +141,14 @@ namespace SurvivalDrone.Meta
         //  exitMethod = "재시작" 또는 "메인메뉴". 어느 시점에서 많이 나가는지가 "지루하거나 어려워서 나간 구간"을 알려준다.
         //  판 수·클리어율 같은 "끝난 판" 통계에는 넣지 않고, 이탈 횟수와 이탈 시점만 따로 쌓는다.
         //  pickSummary = 그 시점까지 레벨업 선택지를 뭘 골랐는지 요약한 문장 (비어 있으면 덧붙이지 않음)
-        public static void RecordAbandon(SaveData data, int stageNumber, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, string exitMethod, string pickSummary = null)
+        public static void RecordAbandon(SaveData data, int stageNumber, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, string exitMethod, string pickSummary = null, string perfSummary = null)
         {
             var s = data.logStats;
             s.abandons++;
             s.abandonSurviveSeconds += surviveSeconds;
 
             Add(data, "match_abandon",
-                $"스테이지={stageNumber} 나간방법={exitMethod} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount} 내전투력={combatPower}{PickSuffix(pickSummary)}");
+                $"스테이지={stageNumber} 나간방법={exitMethod} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount} 내전투력={combatPower}{PickSuffix(pickSummary)}{PickSuffix(perfSummary)}");
         }
 
         // 드론 강화에 성공했을 때.

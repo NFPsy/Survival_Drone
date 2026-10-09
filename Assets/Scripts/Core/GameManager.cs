@@ -84,6 +84,9 @@ namespace SurvivalDrone.Core
             // 새 판이 시작됐으니 지난 판의 "맞은 적 종류" 기록(테스트 기록용)을 비운다.
             // (static이라 씬을 다시 불러도 값이 남아 있어서, 판이 시작될 때마다 직접 비워줘야 한다)
             DamageSourceLog.Reset();
+
+            // 이번 판의 "화면 부드러움"(프레임 시간) 기록도 같은 이유로 비운다.
+            PerfLog.Reset();
         }
 
         private void Start()
@@ -130,6 +133,10 @@ namespace SurvivalDrone.Core
         {
             // 게임이 이미 끝났으면(승리/패배) 더 이상 타이머를 진행하지 않는다.
             if (State != MatchState.Playing) return;
+
+            // 화면 부드러움 기록: 판이 시작된 직후 2초는 씬을 불러오느라 느린 구간이라 빼고,
+            // 일시정지·레벨업 선택으로 시간이 멈춘 동안(Time.timeScale = 0)도 뺀다.
+            if (ElapsedTime >= 2f && Time.timeScale > 0f) PerfLog.Record(Time.unscaledDeltaTime);
 
             // 매 프레임 지난 시간(Time.deltaTime)만큼 누적.
             // 시간이 다 돼도 바로 승리하지 않는다: 적이 나오는 시간이 끝난 뒤 남은 적을 모두 잡았을 때

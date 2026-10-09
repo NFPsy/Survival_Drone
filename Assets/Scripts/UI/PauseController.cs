@@ -149,7 +149,7 @@ namespace SurvivalDrone.UI
             int level = experience != null ? experience.Level : 1;
             int droneCount = droneManager != null ? droneManager.OwnedCount : 0;
 
-            PlayLog.RecordAbandon(SaveManager.Data, stageNumber, game.ElapsedTime, game.CurrentRealElapsedSeconds, level, droneCount, combatPower, exitMethod, LevelUpPickLog.BuildSummary());
+            PlayLog.RecordAbandon(SaveManager.Data, stageNumber, game.ElapsedTime, game.CurrentRealElapsedSeconds, level, droneCount, combatPower, exitMethod, LevelUpPickLog.BuildSummary(), PerfLog.BuildSummary());
             SaveManager.Save();
         }
     }
