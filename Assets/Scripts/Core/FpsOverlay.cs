@@ -10,7 +10,8 @@ namespace SurvivalDrone.Core
     //
     // 웹(WebGL) 빌드에서는 "무엇이 느리게 만드는지"를 빌드를 다시 하지 않고 바로 찾을 수 있도록, 표시가 켜져 있을 때
     // 아래 키로 화면 효과를 하나씩 껐다 켜 볼 수 있다. 끄고 FPS가 확 오르는 것이 범인이다.
-    //   F3 = 그림자  /  F4 = 후처리 전체  /  F6 = 블룸(빛 번짐)만  /  F7 = 렌더 크기(1.0 → 0.8 → 0.6 → 0.5)  /  F8 = HDR
+    //   숫자 1 = 그림자  /  2 = 후처리 전체  /  3 = 블룸(빛 번짐)만  /  4 = 렌더 크기(1.0 → 0.8 → 0.6 → 0.5)  /  5 = HDR
+    // (처음에는 F3~F8을 썼는데, 크롬이 F3(찾기)·F6(주소창)·F7(캐럿 브라우징)을 가로채서 숫자 키로 바꿨다. 숫자 키는 이 게임에서 쓰지 않는다)
     // 에디터에서는 이 효과 설정 에셋을 실행 중에 바꾸면 에셋 파일이 그대로 바뀌어 버리므로, 웹 빌드에서만 동작한다.
     //
     // 씬에 따로 놓지 않아도 게임이 시작되면 스스로 하나 만들어지고(RuntimeInitializeOnLoadMethod), 씬을 옮겨도 사라지지 않는다.
@@ -32,7 +33,7 @@ namespace SurvivalDrone.Core
         // "최악 프레임"이 최근 몇 초 동안의 값인지.
         private const float WorstWindowSeconds = 5f;
 
-        // F7을 누를 때 순서대로 돌아가는 렌더 크기. (1 = 화면 크기 그대로, 작을수록 흐려지지만 가볍다)
+        // 숫자 4를 누를 때 순서대로 돌아가는 렌더 크기. (1 = 화면 크기 그대로, 작을수록 흐려지지만 가볍다)
         private static readonly float[] RenderScales = { 1f, 0.8f, 0.6f, 0.5f };
 
         private bool visible;
@@ -89,23 +90,23 @@ namespace SurvivalDrone.Core
                    effectsLine;
         }
 
-        // 표시가 켜져 있을 때만 F3·F4·F6·F7·F8로 화면 효과를 하나씩 껐다 켠다. (웹 빌드에서만 실제로 바뀐다)
+        // 표시가 켜져 있을 때만 숫자 1~5로 화면 효과를 하나씩 껐다 켠다. (웹 빌드에서만 실제로 바뀐다)
         private void HandleEffectKeys()
         {
             var keyboard = Keyboard.current;
             if (keyboard == null) return;
 
             bool changed = false;
-            if (keyboard.f3Key.wasPressedThisFrame) { shadowsOn = !shadowsOn; ApplyShadows(); changed = true; }
-            if (keyboard.f4Key.wasPressedThisFrame) { postOn = !postOn; ApplyPostProcessing(); changed = true; }
-            if (keyboard.f6Key.wasPressedThisFrame) { bloomOn = !bloomOn; ApplyBloom(); changed = true; }
-            if (keyboard.f7Key.wasPressedThisFrame) { scaleIndex = (scaleIndex + 1) % RenderScales.Length; ApplyRenderScale(); changed = true; }
-            if (keyboard.f8Key.wasPressedThisFrame) { hdrOn = !hdrOn; ApplyHdr(); changed = true; }
+            if (keyboard.digit1Key.wasPressedThisFrame) { shadowsOn = !shadowsOn; ApplyShadows(); changed = true; }
+            if (keyboard.digit2Key.wasPressedThisFrame) { postOn = !postOn; ApplyPostProcessing(); changed = true; }
+            if (keyboard.digit3Key.wasPressedThisFrame) { bloomOn = !bloomOn; ApplyBloom(); changed = true; }
+            if (keyboard.digit4Key.wasPressedThisFrame) { scaleIndex = (scaleIndex + 1) % RenderScales.Length; ApplyRenderScale(); changed = true; }
+            if (keyboard.digit5Key.wasPressedThisFrame) { hdrOn = !hdrOn; ApplyHdr(); changed = true; }
 
             if (changed || effectsLine.Length == 0)
             {
-                effectsLine = $"F3 Shadow {OnOff(shadowsOn)}  F4 Post {OnOff(postOn)}  F6 Bloom {OnOff(bloomOn)}  " +
-                              $"F7 Scale {RenderScales[scaleIndex]:F1}  F8 HDR {OnOff(hdrOn)}";
+                effectsLine = $"[1] Shadow {OnOff(shadowsOn)}  [2] Post {OnOff(postOn)}  [3] Bloom {OnOff(bloomOn)}  " +
+                              $"[4] Scale {RenderScales[scaleIndex]:F1}  [5] HDR {OnOff(hdrOn)}";
             }
         }
 
