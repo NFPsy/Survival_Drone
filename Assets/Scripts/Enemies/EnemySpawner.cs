@@ -214,19 +214,22 @@ namespace SurvivalDrone.Enemies
         // 실제로 적 하나를 생성(Instantiate)하는 함수.
         // allowElite: 이 적이 엘리트로 승격될 수 있는지. 보스는 이미 충분히 강하므로 false로 넘긴다.
         // miniBossHealthMultiplier: 0보다 크면 이 적을 미니 보스로 만들고 체력에 이 배율을 곱한다. (0이면 일반 적/보스)
-        private void SpawnEnemy(EnemyEntry entry, bool allowElite = true, float miniBossHealthMultiplier = 0f)
+        // radiusOverride: 0보다 크면 spawnRadius 대신 이 거리에서 스폰한다. (개발용 즉시 소환이 화면 안에 나오게 하려고 쓴다)
+        private void SpawnEnemy(EnemyEntry entry, bool allowElite = true, float miniBossHealthMultiplier = 0f, float radiusOverride = 0f)
         {
             if (entry == null || entry.prefab == null || player == null) return;
 
-            // 플레이어를 중심으로 무작위 방향(원 둘레)을 하나 고른 뒤, spawnRadius만큼 떨어진 위치를 계산.
+            float radius = radiusOverride > 0f ? radiusOverride : spawnRadius;
+
+            // 플레이어를 중심으로 무작위 방향(원 둘레)을 하나 고른 뒤, radius만큼 떨어진 위치를 계산.
             // 이렇게 하면 적이 항상 플레이어 주변 "화면 밖"에서 나타나는 것처럼 보인다.
             Vector2 dir2 = Random.insideUnitCircle.normalized;
-            Vector3 spawnPos = player.position + new Vector3(dir2.x, 0f, dir2.y) * spawnRadius;
+            Vector3 spawnPos = player.position + new Vector3(dir2.x, 0f, dir2.y) * radius;
 
             // 계산한 위치가 맵 밖이면, 밖으로 벗어난 축만 반대쪽(플레이어 기준 맵 안쪽)으로 뒤집는다.
             // 예: 플레이어가 오른쪽 끝에 있어서 오른쪽 16m가 맵 밖이면 왼쪽 16m에서 스폰.
-            if (Mathf.Abs(spawnPos.x) > arenaHalfSize) spawnPos.x = player.position.x - dir2.x * spawnRadius;
-            if (Mathf.Abs(spawnPos.z) > arenaHalfSize) spawnPos.z = player.position.z - dir2.y * spawnRadius;
+            if (Mathf.Abs(spawnPos.x) > arenaHalfSize) spawnPos.x = player.position.x - dir2.x * radius;
+            if (Mathf.Abs(spawnPos.z) > arenaHalfSize) spawnPos.z = player.position.z - dir2.y * radius;
 
             // 프리팹으로 실제 게임오브젝트를 생성.
             var obj = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
@@ -250,6 +253,26 @@ namespace SurvivalDrone.Enemies
                 alive.Add(ai);
             }
         }
+
+#if UNITY_EDITOR
+        // ── 개발용 즉시 소환 (에디터 전용, 게임 빌드에는 포함되지 않는다) ──
+        // 미니 보스(3분)·최종 보스(9분)를 기다리지 않고 바로 보면서 효과·밸런스를 확인하려고 만들었다.
+        // 정해진 시간에 나오는 진짜 미니 보스·보스는 그대로 따로 나오고(스폰 여부 기록을 건드리지 않는다),
+        // 화면 안에 바로 보이도록 플레이어 8m 근처에서 나온다.
+        // 미니 보스를 잡으면 진짜처럼 드론 3택1 보상이 뜬다.
+        private const float DebugSpawnRadius = 8f;
+
+        public void DebugSpawnMiniBoss()
+        {
+            float multiplier = miniBossHealthMultipliers.Length > 0 ? miniBossHealthMultipliers[0] : 1f;
+            SpawnEnemy(bossEntry, false, multiplier, DebugSpawnRadius);
+        }
+
+        public void DebugSpawnFinalBoss()
+        {
+            SpawnEnemy(bossEntry, false, 0f, DebugSpawnRadius);
+        }
+#endif
 
         // 적이 죽었을 때 EnemyAI가 호출해주는 콜백 함수. 살아있는 목록에서 제거한다.
         private void HandleEnemyDeath(EnemyAI enemy)
