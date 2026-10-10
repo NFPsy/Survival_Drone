@@ -56,6 +56,29 @@ namespace SurvivalDrone.Enemies
         // 그러면 보스의 중심과 플레이어 중심이 1보다 가까워질 수 없어서, 몸이 닿아 있는데도 피해가 한 번도 안 들어갔다.
         private float contactReach;
 
+        // ── 넉백(맞으면 살짝 밀려남) 관련 ──
+        // 드론에게 맞으면 플레이어 반대쪽으로 아주 짧게 밀려나서, 맞았다는 느낌(타격감)을 더한다.
+        // 적은 물리가 아니라 좌표로 움직이기 때문에 밀려나는 것도 직접 계산한다.
+        // 보스·미니 보스는 면역이다. (밀리면 보스전이 너무 쉬워지고, 안 밀리는 것이 묵직한 느낌을 준다)
+
+        // 한 번 맞았을 때 밀려나는 거리(m).
+        [SerializeField] private float knockbackDistance = 0.5f;
+
+        // 그 거리를 밀려나는 데 걸리는 시간(초). 짧을수록 "툭" 치는 느낌.
+        [SerializeField] private float knockbackDuration = 0.1f;
+
+        // 한 번 밀린 뒤 다시 밀릴 수 있을 때까지의 시간(초). 빠르게 연속으로 맞아도 적이 계속 뒤로 밀려
+        // 영영 다가오지 못하는 일이 없게 하는 안전장치.
+        [SerializeField] private float knockbackCooldown = 0.4f;
+
+        // 엘리트는 몸집이 커서 덜 밀리게 한다 (밀리는 거리에 곱하는 배율).
+        [SerializeField] private float eliteKnockbackMultiplier = 0.5f;
+
+        private float knockbackTimeLeft;      // 밀려나는 중이면 남은 시간
+        private float knockbackCooldownLeft;  // 다시 밀릴 수 있을 때까지 남은 시간
+        private Vector3 knockbackDirection;   // 밀려나는 방향(수평)
+        private float knockbackScale = 1f;    // 이번 넉백의 거리 배율(엘리트 0.5)
+
         // ── 엘리트 로봇 관련 ──
         // 엘리트는 가끔 섞여 나오는 "강화판" 적이다. 체력이 훨씬 많고 크고 색이 다르지만,
         // 잡으면 XP를 많이 주고 오버드라이브 게이지를 왕창 채워준다.
@@ -85,6 +108,13 @@ namespace SurvivalDrone.Enemies
 
         // 미니 보스 표시용 색상 (주황 — 엘리트의 시안색, 보스와 구분되도록).
         [SerializeField] private Color miniBossTint = new Color(1f, 0.55f, 0.2f);
+
+        // 보스급 적 발밑에 붙이는 오라 프리팹 (바닥에서 번져 나가는 링 등).
+        // 전용 모델이 없어서, 보스 모델을 줄여 쓴 미니 보스가 일반 적과 확실히 구분되도록 효과로 보강한다.
+        // 미니 보스는 작은 주황 링만, 최종 보스는 크고 붉은 링 + 불씨로 해서 "보스 > 미니 보스" 서열이 보이게 한다.
+        // 비워두면 오라 없이 예전처럼 동작한다.
+        [SerializeField] private GameObject miniBossAuraPrefab;
+        [SerializeField] private GameObject bossAuraPrefab;
 
         // 외부에서 이 적이 엘리트인지 확인할 수 있게 해주는 프로퍼티.
         public bool IsElite => isElite;
@@ -144,6 +174,10 @@ namespace SurvivalDrone.Enemies
             health.SetMaxHealth(scaledMaxHealth, scaledMaxHealth);
             // 체력이 0이 되면 HandleDeath 함수가 자동으로 호출되도록 연결.
             health.OnDeath += HandleDeath;
+
+            // 최종 보스(미니 보스가 아닌 보스)에게는 크고 붉은 오라를 붙인다.
+            // MakeMiniBoss()가 Initialize()보다 먼저 불리므로 이 시점에 isMiniBoss가 이미 정해져 있다.
+            if (def.kind == EnemyKind.Boss && !isMiniBoss) AttachAura(bossAuraPrefab);
         }
 
         // 이 적을 "엘리트"로 만드는 함수.
@@ -169,6 +203,25 @@ namespace SurvivalDrone.Enemies
             healthMultiplier = healthMultiplierValue;
             transform.localScale *= scaleMultiplier;
             ApplyTint(miniBossTint);
+            AttachAura(miniBossAuraPrefab);
+        }
+
+        // 발밑에 오라 효과를 붙인다.
+        // 오라는 적의 자식으로 붙여서 따라다니고 적이 사라질 때 같이 사라진다.
+        // 단, 적의 크기(보스 모델이 크게 만들어져 있음)에 휘둘리지 않도록 부모의 크기를 상쇄해서
+        // 항상 같은 크기로 보이게 하고, 높이는 바닥(y=0.05) 바로 위에 맞춘다.
+        // ApplyTint보다 뒤에 호출해야 한다. (오라의 파티클 렌더러까지 색이 덧칠되는 것을 막기 위해)
+        private void AttachAura(GameObject auraPrefab)
+        {
+            if (auraPrefab == null) return;
+
+            var aura = Instantiate(auraPrefab, transform);
+            Vector3 parentScale = transform.lossyScale;
+            aura.transform.localScale = new Vector3(
+                1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.x)),
+                1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.y)),
+                1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.z)));
+            aura.transform.position = new Vector3(transform.position.x, 0.05f, transform.position.z);
         }
 
         // 이 적의 모든 렌더러를 지정한 색으로 물들인다. (엘리트·미니 보스 표시용)
@@ -209,13 +262,18 @@ namespace SurvivalDrone.Enemies
             // 아직 초기화되지 않았으면(Initialize가 호출되기 전) 아무것도 하지 않는다.
             if (target == null || definition == null) return;
 
+            // 넉백: 밀려나는 중이면 이번 프레임만큼 밀려나고, 그동안은 플레이어를 향한 걸음을 멈춘다.
+            knockbackCooldownLeft -= Time.deltaTime;
+            bool knockedBack = knockbackTimeLeft > 0f;
+            if (knockedBack) ApplyKnockbackStep();
+
             // 플레이어 방향 벡터를 구한다. y값은 무시해서 위아래가 아니라 바닥 기준 수평 방향만 계산.
             Vector3 toTarget = target.position - transform.position;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
 
             // 아주 가깝지 않다면 플레이어 방향으로 이동하고, 그 방향을 바라보도록 회전.
-            if (distance > 0.05f)
+            if (distance > 0.05f && !knockedBack)
             {
                 // 걸어갈 목표 지점. 평소에는 플레이어이고, 건물(EnemyObstacle)이 사이를 가로막고 있으면
                 // 그 건물의 모서리 지점이 된다. (플레이어처럼 적도 건물을 통과하지 못하게 하기 위함)
@@ -287,6 +345,52 @@ namespace SurvivalDrone.Enemies
             if (!IsInsideArena) return;
 
             health.TakeDamage(amount);
+
+            // 맞았으면 살짝 밀려나게 한다 (이 한 방에 죽었으면 밀 필요 없다).
+            if (amount > 0f) StartKnockback();
+        }
+
+        // 넉백을 시작한다. 방향은 "플레이어 반대쪽"으로 단순하게 정한다.
+        private void StartKnockback()
+        {
+            if (definition == null || target == null || health.IsDead) return;
+
+            // 보스·미니 보스(미니 보스도 보스 데이터를 쓴다)는 면역.
+            if (definition.kind == EnemyKind.Boss) return;
+
+            // 방금 밀렸다면 쿨타임이 끝날 때까지 다시 밀지 않는다.
+            if (knockbackCooldownLeft > 0f) return;
+
+            Vector3 away = transform.position - target.position;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f) return;
+
+            knockbackDirection = away.normalized;
+            knockbackScale = isElite ? eliteKnockbackMultiplier : 1f;
+            knockbackTimeLeft = Mathf.Max(0.01f, knockbackDuration);
+            knockbackCooldownLeft = knockbackCooldown;
+        }
+
+        // 이번 프레임 만큼 밀려난다. 걸을 때와 똑같이 건물 안으로 밀려 들어가지 않게 바깥으로 밀어내고,
+        // 맵 밖(여기서는 피해를 받지 않는 구역)으로 밀려나지 않게 가장자리 안쪽에서 멈춘다.
+        private void ApplyKnockbackStep()
+        {
+            float duration = Mathf.Max(0.01f, knockbackDuration);
+            float dt = Mathf.Min(Time.deltaTime, knockbackTimeLeft);
+            float stepDistance = knockbackDistance * knockbackScale * dt / duration;
+
+            Vector3 newPosition = transform.position + knockbackDirection * stepDistance;
+
+            var obstacles = EnemyObstacle.All;
+            for (int i = 0; i < obstacles.Count; i++)
+                obstacles[i].PushOut(ref newPosition, bodyRadius);
+
+            float limit = ArenaHalfSize - 0.5f;
+            newPosition.x = Mathf.Clamp(newPosition.x, -limit, limit);
+            newPosition.z = Mathf.Clamp(newPosition.z, -limit, limit);
+
+            transform.position = newPosition;
+            knockbackTimeLeft -= dt;
         }
 
         // 체력이 0이 되어 죽었을 때 호출되는 함수.
