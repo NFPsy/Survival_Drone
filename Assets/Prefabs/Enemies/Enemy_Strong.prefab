@@ -5043,11 +5043,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyAI
   contactDamageInterval: 1
   contactRange: 1
+  knockbackDistance: 0.5
+  knockbackDuration: 0.1
+  knockbackCooldown: 0.4
+  eliteKnockbackMultiplier: 0.5
   eliteHealthMultiplier: 3
   eliteXpMultiplier: 3
   eliteScaleMultiplier: 1.35
   eliteTint: {r: 0.31, g: 0.847, b: 0.91, a: 1}
   miniBossTint: {r: 1, g: 0.55, b: 0.2, a: 1}
+  miniBossAuraPrefab: {fileID: 0}
+  bossAuraPrefab: {fileID: 0}
 --- !u!114 &5485379537652892192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5143,8 +5149,35 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 89783cb067cc34845800621fe06eeb37, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7963650191409367898}
   m_SourcePrefab: {fileID: 100100000, guid: 89783cb067cc34845800621fe06eeb37, type: 3}
+--- !u!1 &7138631444620602620 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 89783cb067cc34845800621fe06eeb37, type: 3}
+  m_PrefabInstance: {fileID: 8057197757469184429}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7963650191409367898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7138631444620602620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cbb82015e2f9b24f9980bd6e6879bc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyWalkMotion
+  stepsPerSecond: 1.6
+  referenceSpeed: 3.5
+  bobHeight: 0.06
+  rollDegrees: 7
+  leanDegrees: 4
+  idleBreathHeight: 0.015
+  speedSmoothing: 10
 --- !u!4 &7519414708948645446 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 89783cb067cc34845800621fe06eeb37, type: 3}

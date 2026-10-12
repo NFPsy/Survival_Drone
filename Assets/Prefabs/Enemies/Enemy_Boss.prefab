@@ -149,6 +149,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyAI
   contactDamageInterval: 1
   contactRange: 1
+  knockbackDistance: 0.5
+  knockbackDuration: 0.1
+  knockbackCooldown: 0.4
+  eliteKnockbackMultiplier: 0.5
   eliteHealthMultiplier: 3
   eliteXpMultiplier: 3
   eliteScaleMultiplier: 1.35
@@ -5145,13 +5149,40 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ece9923ff5a3a994dbab1d4641e3a945, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3701539192962578835}
   m_SourcePrefab: {fileID: 100100000, guid: ece9923ff5a3a994dbab1d4641e3a945, type: 3}
 --- !u!23 &5308399285012562588 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: ece9923ff5a3a994dbab1d4641e3a945, type: 3}
   m_PrefabInstance: {fileID: 6803440023036108312}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &5957072044799763273 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ece9923ff5a3a994dbab1d4641e3a945, type: 3}
+  m_PrefabInstance: {fileID: 6803440023036108312}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3701539192962578835
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5957072044799763273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cbb82015e2f9b24f9980bd6e6879bc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Enemies.EnemyWalkMotion
+  stepsPerSecond: 0.9
+  referenceSpeed: 1.8
+  bobHeight: 0.05
+  rollDegrees: 4
+  leanDegrees: 2
+  idleBreathHeight: 0.015
+  speedSmoothing: 10
 --- !u!4 &6476200293980928499 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ece9923ff5a3a994dbab1d4641e3a945, type: 3}
