@@ -120,6 +120,10 @@ namespace SurvivalDrone.Enemies
         [SerializeField] private GameObject miniBossAuraPrefab;
         [SerializeField] private GameObject bossAuraPrefab;
 
+        // 적이 죽는 순간 그 자리에서 터뜨리는 연출(불꽃 + 번쩍임 파티클). 적이 한 프레임에 사라지는 게 밋밋해서 넣었다.
+        // 적의 크기(보스·엘리트·미니 보스)에 맞춰 크기·속도·개수를 키워 터뜨린다. 비워두면 연출 없이 예전처럼 사라진다.
+        [SerializeField] private GameObject deathEffectPrefab;
+
         // 외부에서 이 적이 엘리트인지 확인할 수 있게 해주는 프로퍼티.
         public bool IsElite => isElite;
 
@@ -446,8 +450,41 @@ namespace SurvivalDrone.Enemies
             // 스포너에게 "나 죽었어, 살아있는 목록에서 빼줘"라고 알림.
             onDeathCallback?.Invoke(this);
 
+            // 몸이 사라지는 자리에서 불꽃을 터뜨린다. (적 오브젝트가 사라져도 효과는 따로 끝까지 재생된다)
+            SpawnDeathEffect();
+
             // 이 적 오브젝트를 씬에서 완전히 제거.
             Destroy(gameObject);
+        }
+
+        // 죽은 자리(몸 중심)에 사망 연출을 만든다. 효과는 스스로 재생을 마치면 사라진다(프리팹의 Stop Action = Destroy).
+        // 적이 클수록 불꽃이 크고 멀리 튀고 많이 나온다. (속도는 크기의 제곱근만큼만 키워서 보스 불꽃이 화면 밖까지 날아가지 않게 한다)
+        private void SpawnDeathEffect()
+        {
+            if (deathEffectPrefab == null) return;
+
+            float size = Mathf.Abs(transform.lossyScale.y);
+            float speedScale = Mathf.Sqrt(size);
+            float countScale = Mathf.Clamp(size, 0.8f, 2f);
+
+            var effect = Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
+            foreach (var particles in effect.GetComponentsInChildren<ParticleSystem>())
+            {
+                var main = particles.main;
+                main.startSizeMultiplier *= size;
+                main.startSpeedMultiplier *= speedScale;
+
+                var emission = particles.emission;
+                if (emission.burstCount > 0)
+                {
+                    var burst = emission.GetBurst(0);
+                    burst.count = Mathf.Max(1f, burst.count.constant * countScale);
+                    emission.SetBurst(0, burst);
+                }
+
+                var shape = particles.shape;
+                if (shape.enabled) shape.radius *= size;
+            }
         }
     }
 }

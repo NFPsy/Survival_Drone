@@ -160,6 +160,7 @@ MonoBehaviour:
   miniBossTint: {r: 1, g: 0.55, b: 0.2, a: 1}
   miniBossAuraPrefab: {fileID: 0}
   bossAuraPrefab: {fileID: 0}
+  deathEffectPrefab: {fileID: 1247480622381071792, guid: 1730157d29d95b544a56c642161ea74e, type: 3}
 --- !u!114 &8666790850388717586
 MonoBehaviour:
   m_ObjectHideFlags: 0
