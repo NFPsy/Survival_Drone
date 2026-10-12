@@ -35,6 +35,11 @@ namespace SurvivalDrone.Drones
         // 공격할 때마다 재생할 효과음.
         [SerializeField] private AudioClip attackSound;
 
+        // 적을 실제로 맞혔을 때 공격 범위만큼 순간적으로 퍼졌다 사라지는 베기 링.
+        // 맞힌 적이 없으면 재생하지 않아서, 빙글 도는 동안 계속 번쩍여 화면이 지저분해지는 것을 막는다.
+        // 비워두면 링 없이 예전처럼 작은 불꽃만 나온다.
+        [SerializeField] private ParticleSystem hitRing;
+
         private void Awake()
         {
             if (attackEffect == null) attackEffect = GetComponentInChildren<ParticleSystem>();
@@ -66,25 +71,49 @@ namespace SurvivalDrone.Drones
                 attackTimer = 1f / (attacksPerSecond * OverdriveAttackSpeed);
 
                 // 공격 판정 범위도 레벨에 따라 커진다.
-                DealDamageToNearby(baseAttackRadius * Mathf.Sqrt(scale));
+                float attackRadius = baseAttackRadius * Mathf.Sqrt(scale);
+                int hitCount = DealDamageToNearby(attackRadius);
 
                 // 공격할 때마다 파티클을 한 번씩 터뜨려서 눈에 보이게 한다.
                 attackEffect?.Play();
+
+                // 적을 맞혔다면 공격 범위를 보여 주는 베기 링도 함께 재생한다.
+                if (hitCount > 0) PlayHitRing(attackRadius);
                 SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(attackSound, 0.5f);
             }
         }
 
-        // 지정한 반경(radius) 안에 있는 모든 적에게 피해를 주는 함수.
-        private void DealDamageToNearby(float radius)
+        // 지정한 반경(radius) 안에 있는 모든 적에게 피해를 주는 함수. 맞힌 적의 수를 돌려준다.
+        private int DealDamageToNearby(float radius)
         {
+            int hitCount = 0;
+
             // Physics.OverlapSphere: 이 위치를 중심으로 한 구(sphere) 안에 있는 모든 콜라이더를 찾아준다.
             var colliders = Physics.OverlapSphere(transform.position, radius);
             foreach (var col in colliders)
             {
                 // 찾은 콜라이더가 적(EnemyAI)이라면 피해를 준다. 적이 아니면(바닥, 건물 등) 무시.
                 var enemy = col.GetComponent<EnemyAI>();
-                if (enemy != null) enemy.ApplyDamage(damage);
+                if (enemy != null)
+                {
+                    enemy.ApplyDamage(damage);
+                    hitCount++;
+                }
             }
+
+            return hitCount;
+        }
+
+        // 공격 범위를 보여 주는 링을 재생한다. 월드 기준으로 시뮬레이션되는 파티클이라, 재생 직전에 위치를 정해 두면
+        // 드론이 계속 돌아도 친 자리에서 퍼져 나간다. 링은 바닥 바로 위에 눕혀 놓고, 크기는 지름(반지름 x 2)으로 맞춘다.
+        private void PlayHitRing(float radius)
+        {
+            if (hitRing == null) return;
+
+            hitRing.transform.position = new Vector3(transform.position.x, 0.1f, transform.position.z);
+            var ringMain = hitRing.main;
+            ringMain.startSize = radius * 2f;
+            hitRing.Play();
         }
     }
 }

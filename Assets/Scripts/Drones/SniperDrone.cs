@@ -23,6 +23,18 @@ namespace SurvivalDrone.Drones
         // 발사할 때마다 재생할 효과음.
         [SerializeField] private AudioClip fireSound;
 
+        // 광선이 화면에 남아 있는 시간(초). 너무 짧으면(예전 0.1초) 눈에 거의 안 띄어서 조금 늘렸다.
+        [SerializeField] private float tracerDuration = 0.18f;
+
+        // 광선의 굵기 배율. 프리팹의 가로·세로 두께에 곱한다. (1 = 프리팹 그대로)
+        [SerializeField] private float tracerThicknessMultiplier = 2.2f;
+
+        // 발사하는 순간 드론 위치(총구)에서 번쩍이는 빛. 비워두면 번쩍임이 없다.
+        [SerializeField] private ParticleSystem muzzleFlash;
+
+        // 광선이 맞은 자리에서 번쩍이는 빛. 비워두면 번쩍임이 없다.
+        [SerializeField] private ParticleSystem impactFlash;
+
         // 다음 공격까지 남은 시간.
         private float attackTimer;
 
@@ -63,11 +75,27 @@ namespace SurvivalDrone.Drones
                 float distance = Vector3.Distance(start, end);
 
                 var tracer = Instantiate(tracerPrefab, midpoint, Quaternion.LookRotation(end - start));
-                // 프리팹의 가로/세로 두께는 그대로 두고, 길이(z축)만 드론-적 사이 거리에 맞춰 늘린다.
+                // 길이(z축)는 드론-적 사이 거리에 맞추고, 가로/세로 두께는 프리팹 값에 굵기 배율을 곱해 더 잘 보이게 한다.
                 Vector3 tracerScale = tracer.transform.localScale;
-                tracer.transform.localScale = new Vector3(tracerScale.x, tracerScale.y, distance);
-                Destroy(tracer, 0.1f);
+                tracer.transform.localScale = new Vector3(
+                    tracerScale.x * tracerThicknessMultiplier,
+                    tracerScale.y * tracerThicknessMultiplier,
+                    distance);
+                Destroy(tracer, tracerDuration);
             }
+
+            PlayFlash(muzzleFlash, transform.position);
+            PlayFlash(impactFlash, target.transform.position);
+        }
+
+        // 번쩍임 파티클을 지정한 위치에서 재생한다. 월드 기준으로 시뮬레이션되는 파티클이라,
+        // 재생 직전에 위치를 정해 두면 드론이 움직이거나 적이 사라져도 그 자리에서 터진다.
+        private static void PlayFlash(ParticleSystem flash, Vector3 position)
+        {
+            if (flash == null) return;
+
+            flash.transform.position = position;
+            flash.Play();
         }
 
         // 사거리 안에 있는 적들 중 "가장 가까이 있는" 적 하나를 찾는 함수.

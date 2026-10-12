@@ -28,6 +28,13 @@ namespace SurvivalDrone.Drones
         // 터질 때 재생할 효과음.
         [SerializeField] private AudioClip explosionSound;
 
+        // 터질 때 바닥에서 피해 범위 끝까지 퍼져 나가는 충격파 링. "어디까지 피해가 닿는지"를 눈으로 보여 준다.
+        // 비워두면 링 없이 예전처럼 불꽃만 터진다.
+        [SerializeField] private ParticleSystem shockwaveRing;
+
+        // 터지는 순간 드론 위치에서 한 번 크게 번쩍이는 빛. 비워두면 번쩍임이 없다.
+        [SerializeField] private ParticleSystem coreFlash;
+
         private void Awake()
         {
             if (explosionEffect == null) explosionEffect = GetComponentInChildren<ParticleSystem>();
@@ -74,7 +81,33 @@ namespace SurvivalDrone.Drones
                 shape.radius = radius;
                 explosionEffect.Play();
             }
+            PlayShockwave(radius);
             SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(explosionSound);
+        }
+
+        // 충격파 링과 중심 번쩍임을 재생한다. 두 효과는 "월드 기준"으로 시뮬레이션되는 파티클이라,
+        // 재생 직전에 위치를 정해 두면 그 뒤에 드론이 움직여도 터진 자리에 남아 퍼져 나간다.
+        private void PlayShockwave(float radius)
+        {
+            if (shockwaveRing != null)
+            {
+                // 링은 바닥 바로 위(y=0.1)에 눕혀서 드론 바로 아래부터 퍼지게 한다.
+                shockwaveRing.transform.position = new Vector3(transform.position.x, 0.1f, transform.position.z);
+
+                // 링 그림은 한가운데부터 가장자리까지가 한 장이라서, 크기를 "지름"(반지름 x 2)으로 맞추면
+                // 다 퍼졌을 때 링의 바깥 가장자리가 실제 피해 범위와 같아진다.
+                var ringMain = shockwaveRing.main;
+                ringMain.startSize = radius * 2f;
+                shockwaveRing.Play();
+            }
+
+            if (coreFlash != null)
+            {
+                coreFlash.transform.position = transform.position;
+                var flashMain = coreFlash.main;
+                flashMain.startSize = Mathf.Max(1.5f, radius * 0.8f);
+                coreFlash.Play();
+            }
         }
     }
 }
