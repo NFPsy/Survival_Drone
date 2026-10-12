@@ -53,6 +53,41 @@ namespace SurvivalDrone.EditorTools
             Debug.Log("[LoopClip] 주인공 달리기 루프 동작을 만들고 컨트롤러에 연결했습니다: " + PlayerRunLoopPath);
         }
 
+        // 보스(Rusted Battle Mech) 걷기·대기 동작에 쓴 값. (2026-10-12, 측정으로 찾은 값)
+        //  걷기: 원본 4.5초 중 시작 4프레임부터 67프레임(2.23초)이 한 주기. 대기: 시작 3프레임부터 96프레임(3.2초)이 한 주기.
+        private const string BossWalkSourceFbx = "Assets/Models/Enemies/Boss/Boss_Walk.fbx";
+        private const string BossIdleSourceFbx = "Assets/Models/Enemies/Boss/Boss_Idle.fbx";
+        private const string BossWalkLoopPath = "Assets/Animations/Boss/Boss_Walk_Loop.anim";
+        private const string BossIdleLoopPath = "Assets/Animations/Boss/Boss_Idle_Loop.anim";
+
+        // 보스 걷기·대기 루프 동작을 만든다. (컨트롤러 연결은 보스 설정 단계에서 따로 한다)
+        [MenuItem("SurvivalDrone/Animation/Make Boss Walk and Idle Loop Clips")]
+        private static void MakeBossLoops()
+        {
+            EnsureFolder("Assets/Animations/Boss");
+
+            AnimationClip walk = FindClip(BossWalkSourceFbx);
+            AnimationClip idle = FindClip(BossIdleSourceFbx);
+            if (walk == null || idle == null)
+            {
+                Debug.LogError("[LoopClip] 보스 걷기/대기 원본 동작을 찾지 못했습니다.");
+                return;
+            }
+
+            Make(walk, 4, 67, 10, BossWalkLoopPath);
+            Make(idle, 3, 96, 12, BossIdleLoopPath);
+            Debug.Log("[LoopClip] 보스 걷기·대기 루프 동작을 만들었습니다: " + BossWalkLoopPath + ", " + BossIdleLoopPath);
+        }
+
+        // Assets/ 아래 폴더가 없으면 만든다.
+        private static void EnsureFolder(string folder)
+        {
+            if (AssetDatabase.IsValidFolder(folder)) return;
+            string parent = System.IO.Path.GetDirectoryName(folder).Replace('\\', '/');
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(folder));
+        }
+
         // FBX 안에 들어 있는 동작(미리보기용 복사본 제외)을 하나 찾는다.
         public static AnimationClip FindClip(string fbxPath)
         {

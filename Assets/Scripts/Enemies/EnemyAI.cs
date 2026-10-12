@@ -155,6 +155,17 @@ namespace SurvivalDrone.Enemies
             Vector3 lossy = transform.lossyScale;
             bodyRadius = capsule != null ? capsule.radius * Mathf.Max(Mathf.Abs(lossy.x), Mathf.Abs(lossy.z)) : 0.5f;
 
+            // 발이 바닥(y=0)에 닿도록 높이를 맞춘다.
+            // 적은 "플레이어와 같은 높이"에서 스폰되는데, 적 모델은 몸 중심이 기준점이라 그대로 두면 몸이 바닥에 묻힌다.
+            // (특히 몸이 큰 보스는 2m 넘게 묻힌다.) 캡슐의 바닥 = 모델의 발바닥이므로 그 높이만큼 올려 준다.
+            // 크기 배율(엘리트·미니 보스)이 이미 적용된 뒤인 이 시점에 계산해야 정확하다.
+            if (capsule != null)
+            {
+                Vector3 grounded = transform.position;
+                grounded.y = (capsule.height * 0.5f - capsule.center.y) * Mathf.Abs(lossy.y);
+                transform.position = grounded;
+            }
+
             // 접촉 거리 = 적 몸 반지름 + 플레이어 몸 반지름 + 여유 0.1. 단, 작은 적은 예전처럼 최소 contactRange(1)를 지킨다.
             // (작은 적은 플레이어와 겹쳐 들어오므로 거의 달라지지 않고, 몸이 큰 적(보스·큰 엘리트)만 닿았을 때 맞게 된다)
             float playerRadius = 0.5f;
