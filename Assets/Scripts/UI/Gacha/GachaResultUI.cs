@@ -22,6 +22,13 @@ namespace SurvivalDrone.UI
     {
         [SerializeField] private AudioClip clickSound;
 
+        // 뽑기 연출 소리. 비워 두면(씬에 아직 연결하지 않았으면) 소리 없이 예전처럼 동작한다.
+        // 효과음 볼륨 슬라이더에 따라 크기가 조절되는 AudioManager.PlaySfx로 재생한다.
+        [SerializeField] private AudioClip revealSoundN;    // 등급별 공개음
+        [SerializeField] private AudioClip revealSoundR;
+        [SerializeField] private AudioClip revealSoundSR;
+        [SerializeField] private AudioClip revealSoundSSR;
+
         // 카드를 뒤집는 데 걸리는 시간(초). 카드 하나의 공개 시간 중 마지막 이만큼이 뒤집는 동작이고, 나머지는 기다리는 시간이다.
         private const float FlipSeconds = 0.2f;
 
@@ -209,6 +216,7 @@ namespace SurvivalDrone.UI
                 }
                 RevealFace(i);
                 SetCardScaleX(card, 1f);
+                StartCoroutine(PopRoutine(card, pull.rarity)); // 뒤집기가 끝난 카드가 "톡" 튀어 오른다
 
                 cardStart = cardEnd;
             }
@@ -217,7 +225,9 @@ namespace SurvivalDrone.UI
         }
 
         // i번째 카드를 앞면으로 바꾸고 내용을 채운다. (연출 없이 즉시)
-        private void RevealFace(int index)
+        // playEffects: 등급별 공개음과 번쩍임을 낼지. 스킵으로 한꺼번에 공개할 때는 끈다(소리가 겹쳐 시끄러워지는 것을 막으려고).
+        //              단, SSR의 금색 번쩍임은 스킵해도 예전처럼 낸다.
+        private void RevealFace(int index, bool playEffects = true)
         {
             var card = _cards[index];
             if (card.revealed) return;
@@ -263,25 +273,74 @@ namespace SurvivalDrone.UI
                 card.outline.effectDistance = pull.rarity == GachaRarity.SSR ? new Vector2(4f, 4f) : new Vector2(2f, 2f);
             }
 
-            // SSR이 공개되는 순간 화면 전체가 금색으로 번쩍인다
-            if (pull.rarity == GachaRarity.SSR && _flash != null)
-            {
-                if (_flashRoutine != null) StopCoroutine(_flashRoutine);
-                _flashRoutine = StartCoroutine(FlashRoutine());
-            }
+            // 등급이 공개되는 순간의 소리와 화면 번쩍임.
+            if (playEffects) PlayRevealSound(pull.rarity);
+            if (playEffects || pull.rarity == GachaRarity.SSR) StartFlash(pull.rarity, rarityColor);
         }
 
-        private IEnumerator FlashRoutine()
+        // 등급에 맞는 공개음을 낸다. 높은 등급일수록 소리가 화려하다.
+        private void PlayRevealSound(GachaRarity rarity)
         {
-            const float duration = 0.45f;
-            var color = RarityColors.Gold;
+            AudioClip clip;
+            switch (rarity)
+            {
+                case GachaRarity.SSR: clip = revealSoundSSR; break;
+                case GachaRarity.SR: clip = revealSoundSR; break;
+                case GachaRarity.R: clip = revealSoundR; break;
+                default: clip = revealSoundN; break;
+            }
+            AudioManager.Instance?.PlaySfx(clip, 0.75f);
+        }
+
+        // 화면 전체 번쩍임: SSR은 금색으로 강하게(예전과 같음), SR은 보라색으로 중간, R은 파란색으로 은은하게. N은 없다.
+        private void StartFlash(GachaRarity rarity, Color color)
+        {
+            if (_flash == null || rarity == GachaRarity.N) return;
+
+            float alpha = rarity == GachaRarity.SSR ? 0.45f : rarity == GachaRarity.SR ? 0.25f : 0.10f;
+            float duration = rarity == GachaRarity.SSR ? 0.45f : rarity == GachaRarity.SR ? 0.35f : 0.25f;
+
+            if (_flashRoutine != null) StopCoroutine(_flashRoutine);
+            _flashRoutine = StartCoroutine(FlashRoutine(color, alpha, duration));
+        }
+
+        private IEnumerator FlashRoutine(Color color, float alpha, float duration)
+        {
             for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
             {
-                _flash.color = new Color(color.r, color.g, color.b, 0.45f * (1f - t / duration));
+                _flash.color = new Color(color.r, color.g, color.b, alpha * (1f - t / duration));
                 yield return null;
             }
             _flash.color = new Color(color.r, color.g, color.b, 0f);
             _flashRoutine = null;
+        }
+
+        // 카드가 뒤집힌 직후 살짝 커졌다 돌아오는 "톡" 효과. SSR은 그 뒤에도 테두리가 금색으로 천천히 맥동한다.
+        // 카드가 지워지면(다시 뽑기) 스스로 끝난다.
+        private IEnumerator PopRoutine(CardView card, GachaRarity rarity)
+        {
+            const float popDuration = 0.25f;
+            for (float t = 0f; t < popDuration; t += Time.unscaledDeltaTime)
+            {
+                if (card.root == null) yield break;
+                float k = 1f + 0.12f * Mathf.Sin(Mathf.PI * t / popDuration);
+                card.root.transform.localScale = new Vector3(k, k, 1f);
+                yield return null;
+            }
+            if (card.root == null) yield break;
+            card.root.transform.localScale = Vector3.one;
+
+            if (rarity != GachaRarity.SSR || card.outline == null) yield break;
+
+            Color gold = RarityColors.Gold;
+            Color bright = Color.Lerp(gold, Color.white, 0.6f);
+            while (card.root != null && card.outline != null)
+            {
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                card.outline.effectColor = Color.Lerp(gold, bright, pulse);
+                card.outline.effectDistance = Vector2.one * Mathf.Lerp(3f, 6f, pulse);
+                yield return null;
+            }
         }
 
         private static void SetCardScaleX(CardView card, float x)
@@ -297,11 +356,16 @@ namespace SurvivalDrone.UI
             PlayClick();
 
             StopRoutines();
+
+            // 스킵: 카드마다 소리를 내면 한꺼번에 겹쳐 시끄러우므로, 이번 뽑기에서 가장 높은 등급의 공개음 하나만 낸다.
+            GachaRarity highest = GachaRarity.N;
             for (int i = 0; i < _cards.Count; i++)
             {
                 SetCardScaleX(_cards[i], 1f);
-                RevealFace(i);
+                RevealFace(i, false);
+                if (_report.pulls[i].rarity > highest) highest = _report.pulls[i].rarity;
             }
+            PlayRevealSound(highest);
             Finish();
         }
 

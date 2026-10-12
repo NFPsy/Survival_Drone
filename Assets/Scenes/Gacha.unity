@@ -12332,6 +12332,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.UI.GachaResultUI
   clickSound: {fileID: 8300000, guid: 442d36d73e46c40498985d862c5da596, type: 3}
+  revealSoundN: {fileID: 8300000, guid: cef0f9205cc0d2d408ff04922c3226d7, type: 3}
+  revealSoundR: {fileID: 8300000, guid: d6895ef789edac443a9873092bc7b1fd, type: 3}
+  revealSoundSR: {fileID: 8300000, guid: fdc981553459d83459398dc258e0efd2, type: 3}
+  revealSoundSSR: {fileID: 8300000, guid: 1c204c3f1e08be644a36b7420cb9e2c2, type: 3}
 --- !u!114 &1790408648
 MonoBehaviour:
   m_ObjectHideFlags: 0
