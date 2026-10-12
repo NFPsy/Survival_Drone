@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,8 @@ namespace SurvivalDrone.UI
     //
     // 흐름 (LockOnPhase):
     //   Idle   : 카드 3장이 뒷면("?")으로 놓여 있고 "락온 시작" 버튼만 보인다.
-    //   Active : 3칸이 공개됨. SR 이상 칸에 "잠금" 버튼이 나타난다. 아래에 "재뽑기"(잠그지 않은 칸만 다시)와 "확정" 버튼.
+    //   Active : 3칸이 뒷면으로 놓이고, 플레이어가 카드를 눌러 한 장씩 개봉한다("모두 개봉" 버튼으로 한 번에 열 수도 있다).
+    //            열린 칸 중 SR 이상에 "잠금" 버튼이 나타난다. 칸을 모두 연 뒤에만 "재뽑기"(잠그지 않은 칸만 다시 — 그 칸들은 다시 뒷면)와 "확정" 버튼이 나온다.
     //   Done   : 확정한 결과(받은 칸 NEW/승급/조각, 못 받은 칸의 환산 조각)를 카드에 보여주고 "한 번 더" / "나가기" 버튼.
     //
     // 안전장치: 잠근 칸이 없는데 확정하려 하거나, 진행 중인 판을 두고 나가려 하면 먼저 확인창을 띄운다.
@@ -20,13 +22,22 @@ namespace SurvivalDrone.UI
     //
     // 구조: LockOnSceneBuilder가 아래 이름의 자식을 만든다. 이름을 바꾸면 연결이 끊긴다:
     //   BtnBack, CoreText, SubtitleText, BtnRates, SlotContainer/Slot_0.._N(Back, Face/{RarityText,DroneNameText,TagText}, BtnLock),
-    //   InfoText, MessageText, BtnStart, BtnReroll, BtnConfirm, BtnAgain, BtnClose,
+    //   InfoText, MessageText, BtnStart, BtnOpenAll, BtnReroll, BtnConfirm, BtnAgain, BtnClose,
     //   RatesPopup(Box/RatesText, Box/RulesText, Box/BtnClose), ConfirmPopup(Box/MessageText, Box/BtnYes, Box/BtnNo)
     public class LockOnUI : MonoBehaviour
     {
         // 규칙 수치(확률·가격·사용 여부)가 들어 있는 데이터 파일. 씬 빌더가 연결한다.
         [SerializeField] private LockOnTable _table;
         [SerializeField] private AudioClip clickSound;
+
+        // 카드를 열 때 나는 등급별 공개음. 일반 뽑기 결과 화면(GachaResultUI)과 같은 소리를 쓴다. 비워 두면 소리 없이 동작한다.
+        [SerializeField] private AudioClip revealSoundN;
+        [SerializeField] private AudioClip revealSoundR;
+        [SerializeField] private AudioClip revealSoundSR;
+        [SerializeField] private AudioClip revealSoundSSR;
+
+        // 카드를 뒤집는 데 걸리는 시간(초).
+        private const float FlipSeconds = 0.2f;
 
         private static readonly Color CyanColor = new Color(0.310f, 0.847f, 0.910f);
         private static readonly Color MutedColor = new Color(0.588f, 0.706f, 0.714f);
@@ -64,7 +75,12 @@ namespace SurvivalDrone.UI
         private Text _infoText;
         private Text _messageText;
 
-        private Button _startButton, _rerollButton, _confirmButton, _againButton, _closeButton;
+        // 칸마다 "플레이어가 열어 봤는지". 시작·재뽑기로 새로 뽑은 칸은 false(뒷면)가 되고, 눌러서 열면 true가 된다.
+        // 기본값은 true: 화면이 모르는 사이에 진행 중이던 판은 그냥 열린 채로 보여준다.
+        private bool[] _opened = new bool[0];
+        private Coroutine[] _flipRoutines = new Coroutine[0];
+
+        private Button _startButton, _openAllButton, _rerollButton, _confirmButton, _againButton, _closeButton;
         private Text _startLabel, _rerollLabel, _confirmLabel, _againLabel;
         private Color _startNormalColor, _rerollNormalColor, _againNormalColor;
 
@@ -106,6 +122,12 @@ namespace SurvivalDrone.UI
                     nameText = slot.Find("Face/DroneNameText").GetComponent<Text>(),
                     tagText = slot.Find("Face/TagText").GetComponent<Text>(),
                 };
+                // 칸을 누르면 그 칸을 개봉한다. (잠금 버튼은 자식이라 먼저 눌린다)
+                var slotButton = slot.gameObject.AddComponent<Button>();
+                slotButton.transition = Selectable.Transition.None;
+                int slotIndex = i;
+                slotButton.onClick.AddListener(() => OpenSlot(slotIndex));
+
                 var lockTransform = slot.Find("BtnLock");
                 view.lockButton = lockTransform != null ? lockTransform.GetComponent<Button>() : null;
                 view.lockLabel = lockTransform != null ? lockTransform.Find("Text").GetComponent<Text>() : null;
@@ -117,8 +139,12 @@ namespace SurvivalDrone.UI
                 _slots.Add(view);
             }
             if (_slots.Count == 0) Debug.LogWarning("[LockOn] 락온 화면에서 'SlotContainer/Slot_0' 카드를 찾지 못했습니다.");
+            _opened = new bool[_slots.Count];
+            for (int i = 0; i < _opened.Length; i++) _opened[i] = true;
+            _flipRoutines = new Coroutine[_slots.Count];
 
             _startButton = WireButton("BtnStart", OnStart);
+            _openAllButton = WireButton("BtnOpenAll", OnOpenAll, false); // 옛 씬에는 없을 수 있다(없으면 칸을 눌러서만 연다)
             _rerollButton = WireButton("BtnReroll", OnReroll);
             _confirmButton = WireButton("BtnConfirm", OnConfirmClicked);
             _againButton = WireButton("BtnAgain", OnAgain);
@@ -278,6 +304,7 @@ namespace SurvivalDrone.UI
             {
                 if (_infoText != null) _infoText.text = "락온 뽑기를 사용할 수 없습니다 (메인 메뉴부터 시작했는지 확인해주세요)";
                 SetActive(_startButton, false);
+                SetActive(_openAllButton, false);
                 SetActive(_rerollButton, false);
                 SetActive(_confirmButton, false);
                 SetActive(_againButton, false);
@@ -300,6 +327,9 @@ namespace SurvivalDrone.UI
                             ? $"시뮬레이터: 코어를 쓰지 않아요  ·  확률과 가격 규칙은 실제와 같아요 (처음 공개 {_session.FirstCost:N0}코어로 계산)"
                             : $"처음 공개 {_session.FirstCost:N0}코어  ·  공개된 칸 중 {_table.LockMinRarity} 이상을 잠그고 나머지만 다시 뽑을 수 있어요";
                         break;
+                    case LockOnPhase.Active when !AllOpened():
+                        _infoText.text = "카드를 눌러 개봉하세요  ·  \"모두 개봉\"으로 한 번에 열 수도 있어요";
+                        break;
                     case LockOnPhase.Active:
                         _infoText.text = $"{(_session.IsSimulation ? "이번 판에서 가상으로 쓴 코어" : "이번 판에서 쓴 코어")} {_session.SpentCore:N0}  ·  재뽑기 {_session.RerollCount}번  ·  잠근 칸 {_session.LockedCount} / {_session.SlotCount}";
                         break;
@@ -311,8 +341,11 @@ namespace SurvivalDrone.UI
 
             // 버튼: 단계에 맞는 것만 보인다. 코어가 모자라면 글자만 빨갛게 (눌러서 "부족" 안내를 볼 수 있게 켜 둔다).
             SetActive(_startButton, phase == LockOnPhase.Idle);
-            SetActive(_rerollButton, phase == LockOnPhase.Active);
-            SetActive(_confirmButton, phase == LockOnPhase.Active);
+            // 칸을 모두 열기 전에는 "모두 개봉"만 보이고, 다 연 뒤에 재뽑기·확정이 나온다. (안 보고 확정하는 사고를 막으려고)
+            bool allOpened = AllOpened();
+            SetActive(_openAllButton, phase == LockOnPhase.Active && !allOpened);
+            SetActive(_rerollButton, phase == LockOnPhase.Active && allOpened);
+            SetActive(_confirmButton, phase == LockOnPhase.Active && allOpened);
             SetActive(_againButton, phase == LockOnPhase.Done);
             SetActive(_closeButton, phase == LockOnPhase.Done);
 
@@ -348,7 +381,10 @@ namespace SurvivalDrone.UI
 
                 switch (_session.Phase)
                 {
-                    case LockOnPhase.Active: ShowActiveSlot(view, i); break;
+                    case LockOnPhase.Active:
+                        if (IsOpened(i)) ShowActiveSlot(view, i);
+                        else ShowBackSlot(view); // 아직 안 연 칸은 뒷면
+                        break;
                     case LockOnPhase.Done: ShowDoneSlot(view, i); break;
                     default: ShowBackSlot(view); break;
                 }
@@ -442,12 +478,116 @@ namespace SurvivalDrone.UI
             }
         }
 
+        // ---------------- 개봉 ----------------
+        private bool IsOpened(int index) => index < 0 || index >= _opened.Length || _opened[index];
+
+        // 모든 칸이 열렸는지 (진행 중이 아니면 따질 필요가 없으니 true).
+        private bool AllOpened()
+        {
+            if (_session == null || _session.Phase != LockOnPhase.Active) return true;
+            for (int i = 0; i < _opened.Length && i < _session.SlotCount; i++)
+                if (!_opened[i]) return false;
+            return true;
+        }
+
+        // 칸 하나를 누르면: 가로로 납작해졌다가(그 순간 앞면으로 바꾸고) 다시 펴지며 열린다.
+        private void OpenSlot(int index)
+        {
+            if (_session == null || _session.Phase != LockOnPhase.Active) return;
+            if (index < 0 || index >= _opened.Length || _opened[index] || _flipRoutines[index] != null) return;
+            _flipRoutines[index] = StartCoroutine(FlipRoutine(index));
+        }
+
+        private IEnumerator FlipRoutine(int index)
+        {
+            var root = _slots[index].root.transform;
+            float start = Time.unscaledTime;
+            while (true)
+            {
+                float progress = Mathf.Clamp01((Time.unscaledTime - start) / FlipSeconds);
+                if (progress < 0.5f)
+                {
+                    root.localScale = new Vector3(Mathf.Max(0.02f, 1f - progress * 2f), 1f, 1f);
+                }
+                else
+                {
+                    if (!_opened[index]) MarkOpened(index); // 절반을 넘는 순간 앞면으로 바뀐다
+                    root.localScale = new Vector3(Mathf.Max(0.02f, (progress - 0.5f) * 2f), 1f, 1f);
+                }
+                if (progress >= 1f) break;
+                yield return null;
+            }
+            root.localScale = Vector3.one;
+            _flipRoutines[index] = null;
+        }
+
+        // 칸을 "열림"으로 표시하고 그 칸의 등급 공개음을 낸 뒤 화면을 다시 그린다.
+        private void MarkOpened(int index)
+        {
+            _opened[index] = true;
+            if (_session != null && _session.Phase == LockOnPhase.Active) PlayRevealSound(_session.Slots[index].rarity);
+            Refresh();
+        }
+
+        // "모두 개봉": 아직 안 연 칸을 한 번에 연다. 소리는 새로 연 칸 중 가장 높은 등급 것 하나만 낸다.
+        private void OnOpenAll()
+        {
+            if (_session == null || _session.Phase != LockOnPhase.Active) return;
+            PlayClick();
+            ClearMessage();
+
+            bool openedAny = false;
+            GachaRarity highest = GachaRarity.N;
+            for (int i = 0; i < _opened.Length && i < _session.SlotCount; i++)
+            {
+                if (_flipRoutines[i] != null)
+                {
+                    StopCoroutine(_flipRoutines[i]); // 뒤집는 도중이면 거기서 끊는다
+                    _flipRoutines[i] = null;
+                    _slots[i].root.transform.localScale = Vector3.one;
+                }
+                if (_opened[i]) continue;
+                _opened[i] = true;
+                openedAny = true;
+                if (_session.Slots[i].rarity > highest) highest = _session.Slots[i].rarity;
+            }
+            if (openedAny) PlayRevealSound(highest);
+            Refresh();
+        }
+
+        // 새로 뽑은 칸은 뒷면으로 덮는다. 진행 중인 뒤집기 동작은 끊고 크기를 되돌린다.
+        private void CoverSlot(int index)
+        {
+            if (_flipRoutines[index] != null)
+            {
+                StopCoroutine(_flipRoutines[index]);
+                _flipRoutines[index] = null;
+                _slots[index].root.transform.localScale = Vector3.one;
+            }
+            _opened[index] = false;
+        }
+
+        private void PlayRevealSound(GachaRarity rarity)
+        {
+            AudioClip clip;
+            switch (rarity)
+            {
+                case GachaRarity.SSR: clip = revealSoundSSR; break;
+                case GachaRarity.SR: clip = revealSoundSR; break;
+                case GachaRarity.R: clip = revealSoundR; break;
+                default: clip = revealSoundN; break;
+            }
+            AudioManager.Instance?.PlaySfx(clip, 0.75f);
+        }
+
         // ---------------- 버튼 ----------------
         private void OnStart()
         {
             if (_session == null) return;
             PlayClick();
             ClearMessage();
+            // 새 판은 모든 칸이 뒷면으로 시작한다. (Start() 안에서 화면이 다시 그려지기 전에 미리 덮어 둔다)
+            for (int i = 0; i < _opened.Length; i++) CoverSlot(i);
             if (_session.Start() == LockOnFailure.InsufficientCore) ShowMessage("코어가 부족합니다");
             Refresh();
         }
@@ -465,7 +605,14 @@ namespace SurvivalDrone.UI
             if (_session == null) return;
             PlayClick();
             ClearMessage();
-            if (_session.Reroll() == LockOnFailure.InsufficientCore) ShowMessage("코어가 부족합니다");
+
+            // 다시 뽑는 칸(안 잠근 칸)만 뒷면으로 덮는다. 실패하면(코어 부족 등) 원래대로 되돌린다.
+            var before = (bool[])_opened.Clone();
+            for (int i = 0; i < _opened.Length && i < _session.SlotCount; i++)
+                if (!_session.Slots[i].locked) CoverSlot(i);
+            var result = _session.Reroll();
+            if (result != LockOnFailure.None) System.Array.Copy(before, _opened, _opened.Length);
+            if (result == LockOnFailure.InsufficientCore) ShowMessage("코어가 부족합니다");
             Refresh();
         }
 

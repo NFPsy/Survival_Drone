@@ -7,17 +7,18 @@ using SurvivalDrone.Meta;
 
 namespace SurvivalDrone.UI
 {
-    // 뽑기 결과 화면. 뽑은 카드들을 순서대로 하나씩 공개하고, 신규 / 승급 / 중복(조각)을 표시한다.
+    // 뽑기 결과 화면. 뽑은 카드들을 플레이어가 직접 눌러서 한 장씩 개봉하고, 신규 / 승급 / 중복(조각)을 표시한다.
     //
     // 흐름:
-    //   1) 카드 뒷면("?")이 먼저 깔린다. 1회는 1장, 10연은 5x2 격자.
-    //   2) 카드를 순서대로 한 장씩 공개한다. 공개 시간은 등급별로 다르다 (N 0.4 / R 0.6 / SR 1.0 / SSR 2.0초 — GachaTable).
-    //      기다리는 동안 카드 테두리가 그 등급 색으로 맥동하고, SSR은 공개되는 순간 금색 번쩍임이 있다.
-    //   3) 우상단 "스킵"을 누르면 언제든 남은 카드를 한 번에 공개한다.
-    //   4) 다 공개되면 "확인"(닫기)과 "다시 뽑기"(같은 종류로 한 번 더, 코어가 모자라면 비활성) 버튼이 나타난다.
+    //   1) 카드 뒷면("?")이 먼저 깔린다. 1회는 1장, 10연은 5x2 격자. 안 연 카드의 테두리는 등급과 무관하게 똑같은 색으로 은은하게 맥동한다.
+    //      (등급 색으로 맥동하면 열기 전에 등급이 보이기 때문)
+    //   2) 카드를 누르면 그 카드만 뒤집힌다. 뒤집히는 순간 등급별 소리·화면 번쩍임·카드 팝이 나온다.
+    //   3) 우상단 "모두 개봉"을 누르면 아직 안 연 카드를 한 번에 연다.
+    //   4) 다 열리면 "확인"(닫기)과 "다시 뽑기"(같은 종류로 한 번 더, 코어가 모자라면 비활성) 버튼이 나타난다.
+    //      (코어는 뽑는 순간 이미 쓰였고 결과도 정해져 있으므로, 열어 보는 순서는 결과에 영향이 없다)
     //
     // 구조: 이 스크립트가 붙은 패널 아래에 정해진 이름의 자식이 있어야 한다 (GachaSceneBuilder가 만든다):
-    //   CardContainer, CardTemplate(꺼져 있는 견본), BtnSkip, BtnConfirm, BtnAgain(LabelText, PriceText), Flash
+    //   CardContainer, CardTemplate(꺼져 있는 견본), BtnSkip("모두 개봉" 버튼), BtnConfirm, BtnAgain(LabelText, PriceText), Flash
     public class GachaResultUI : MonoBehaviour
     {
         [SerializeField] private AudioClip clickSound;
@@ -29,8 +30,11 @@ namespace SurvivalDrone.UI
         [SerializeField] private AudioClip revealSoundSR;
         [SerializeField] private AudioClip revealSoundSSR;
 
-        // 카드를 뒤집는 데 걸리는 시간(초). 카드 하나의 공개 시간 중 마지막 이만큼이 뒤집는 동작이고, 나머지는 기다리는 시간이다.
+        // 카드를 뒤집는 데 걸리는 시간(초).
         private const float FlipSeconds = 0.2f;
+
+        // 안 연 카드가 남아 있는 동안 제목 자리에 보여주는 안내 문구.
+        private const string HintTitle = "카드를 눌러 개봉하세요";
 
         private static readonly Color CyanColor = new Color(0.310f, 0.847f, 0.910f);
         private static readonly Color MutedColor = new Color(0.588f, 0.706f, 0.714f);
@@ -48,6 +52,8 @@ namespace SurvivalDrone.UI
             public Text tagText;
             public Image droneIcon; // 드론 이름 왼쪽의 종류 아이콘 (견본에 "Icon"이 없으면 null)
             public bool revealed;
+            public bool opening;          // 지금 뒤집히는 중인지 (같은 카드를 두 번 누르는 것을 막는다)
+            public Coroutine flipRoutine; // 뒤집는 동작 코루틴 ("모두 개봉"이 중간에 끊을 수 있게 들고 있는다)
         }
 
         private readonly List<CardView> _cards = new List<CardView>();
@@ -62,6 +68,8 @@ namespace SurvivalDrone.UI
         private Text _againPrice;
         private Color _againPriceNormalColor;
         private Image _flash;
+        private Text _titleText;
+        private string _titleNormal;
 
         private GachaPullReport _report;
         private bool _isTen;
@@ -83,12 +91,16 @@ namespace SurvivalDrone.UI
                 Debug.LogWarning("[Gacha] 결과 화면에서 CardContainer(GridLayoutGroup) 또는 CardTemplate을 찾지 못했습니다.");
             if (_template != null) _template.SetActive(false);
 
-            _skipButton = WireButton("BtnSkip", Skip);
+            _skipButton = WireButton("BtnSkip", OpenAll); // 글자는 씬에서 "모두 개봉"
             _confirmButton = WireButton("BtnConfirm", Confirm);
             _againButton = WireButton("BtnAgain", Again);
             _againLabel = FindText("BtnAgain/LabelText");
             _againPrice = FindText("BtnAgain/PriceText");
             if (_againPrice != null) _againPriceNormalColor = _againPrice.color;
+
+            // 제목 글자: 안 연 카드가 남아 있는 동안은 안내 문구로 바꿔 보여주고, 다 열리면 원래 글자로 되돌린다.
+            _titleText = FindText("TitleText");
+            if (_titleText != null) _titleNormal = _titleText.text;
 
             var flash = transform.Find("Flash");
             _flash = flash != null ? flash.GetComponent<Image>() : null;
@@ -121,7 +133,8 @@ namespace SurvivalDrone.UI
             StopRoutines();
             BuildCards();
             SetButtons(revealing: true);
-            _routine = StartCoroutine(RevealRoutine());
+            if (_titleText != null) _titleText.text = HintTitle;
+            _routine = StartCoroutine(HintRoutine());
         }
 
         // ---------------- 카드 만들기 ----------------
@@ -163,70 +176,83 @@ namespace SurvivalDrone.UI
                     card.outline.effectColor = BackOutlineColor;
                     card.outline.effectDistance = new Vector2(1f, 1f);
                 }
+                // 카드를 누르면 그 카드를 개봉한다. 모양이 변하지 않게 전환 효과는 끈다.
+                var button = root.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+                int index = i; // 반복문 변수를 그대로 쓰면 모든 카드가 마지막 번호를 보게 되므로 복사해 둔다
+                button.onClick.AddListener(() => OpenCard(index));
+
                 _cards.Add(card);
             }
         }
 
-        // ---------------- 공개 연출 ----------------
-        // 카드마다 "공개 시간"이 정해져 있고(등급별), 카드들을 순서대로 이어 붙인 시간표를 따라간다.
-        // 프레임마다 조금씩 늦어지는 오차가 카드 10장에 걸쳐 쌓이지 않도록, 카드별로 "지난 시간을 더하는" 대신
-        // 처음 시각(startTime)을 기준으로 한 목표 시각에 맞춰 진행한다.
-        private IEnumerator RevealRoutine()
+        // ---------------- 개봉 ----------------
+        // 안 연 카드의 테두리를 등급과 무관한 똑같은 색으로 은은하게 맥동시켜 "눌러 보라"는 신호를 준다.
+        private IEnumerator HintRoutine()
         {
-            var table = GachaController.Instance != null ? GachaController.Instance.Table : null;
-            float startTime = Time.unscaledTime;
-            float cardStart = 0f; // 지금 카드의 시작 시각 (startTime 기준 초)
-
-            for (int i = 0; i < _cards.Count; i++)
+            while (true)
             {
-                var card = _cards[i];
-                var pull = _report.pulls[i];
-                Color rarityColor = RarityColors.Get(pull.rarity);
-                float duration = table != null ? table.GetRevealSeconds(pull.rarity) : 0.4f;
-                float flip = Mathf.Min(FlipSeconds, duration);
-                float cardEnd = cardStart + duration;
-                float flipStart = cardEnd - flip;
-
-                // 기다리는 동안: 테두리가 그 등급 색으로 맥동한다 (높은 등급일수록 오래 반짝인다)
-                while (Time.unscaledTime - startTime < flipStart)
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f);
+                foreach (var card in _cards)
                 {
-                    float pulse = 0.5f + 0.5f * Mathf.Sin((Time.unscaledTime - startTime - cardStart) * 14f);
-                    if (card.outline != null)
-                    {
-                        card.outline.effectColor = Color.Lerp(BackOutlineColor, rarityColor, pulse);
-                        card.outline.effectDistance = Vector2.one * Mathf.Lerp(1f, 3f, pulse);
-                    }
-                    yield return null;
+                    if (card.revealed || card.opening || card.outline == null) continue;
+                    card.outline.effectColor = Color.Lerp(BackOutlineColor, CyanColor, pulse * 0.6f);
+                    card.outline.effectDistance = Vector2.one * Mathf.Lerp(1f, 2.5f, pulse);
                 }
-
-                // 뒤집기: 가로로 납작해졌다가(그 순간 앞면으로 바꾸고) 다시 펴진다
-                while (Time.unscaledTime - startTime < cardEnd)
-                {
-                    float progress = flip > 0f ? Mathf.Clamp01((Time.unscaledTime - startTime - flipStart) / flip) : 1f;
-                    if (progress < 0.5f)
-                    {
-                        SetCardScaleX(card, 1f - progress * 2f);
-                    }
-                    else
-                    {
-                        RevealFace(i); // 이미 공개됐다면 아무 일도 하지 않는다
-                        SetCardScaleX(card, (progress - 0.5f) * 2f);
-                    }
-                    yield return null;
-                }
-                RevealFace(i);
-                SetCardScaleX(card, 1f);
-                StartCoroutine(PopRoutine(card, pull.rarity)); // 뒤집기가 끝난 카드가 "톡" 튀어 오른다
-
-                cardStart = cardEnd;
+                yield return null;
             }
+        }
 
-            Finish();
+        // 카드 한 장을 누르면: 가로로 납작해졌다가(그 순간 앞면으로 바꾸고) 다시 펴지며 열린다.
+        private void OpenCard(int index)
+        {
+            if (_finished || index < 0 || index >= _cards.Count) return;
+            var card = _cards[index];
+            if (card.revealed || card.opening) return;
+
+            card.opening = true;
+            card.flipRoutine = StartCoroutine(FlipRoutine(index));
+        }
+
+        private IEnumerator FlipRoutine(int index)
+        {
+            var card = _cards[index];
+            float start = Time.unscaledTime;
+            while (true)
+            {
+                float progress = Mathf.Clamp01((Time.unscaledTime - start) / FlipSeconds);
+                if (progress < 0.5f)
+                {
+                    SetCardScaleX(card, 1f - progress * 2f);
+                }
+                else
+                {
+                    RevealFace(index); // 이미 공개됐다면 아무 일도 하지 않는다
+                    SetCardScaleX(card, (progress - 0.5f) * 2f);
+                }
+                if (progress >= 1f) break;
+                yield return null;
+            }
+            RevealFace(index);
+            SetCardScaleX(card, 1f);
+            card.opening = false;
+            card.flipRoutine = null;
+            StartCoroutine(PopRoutine(card, _report.pulls[index].rarity)); // 뒤집기가 끝난 카드가 "톡" 튀어 오른다
+
+            if (AllOpened()) Finish();
+        }
+
+        // 모든 카드가 완전히 열렸는지 (뒤집는 중인 카드는 아직 아니다).
+        private bool AllOpened()
+        {
+            foreach (var card in _cards)
+                if (!card.revealed || card.opening) return false;
+            return true;
         }
 
         // i번째 카드를 앞면으로 바꾸고 내용을 채운다. (연출 없이 즉시)
-        // playEffects: 등급별 공개음과 번쩍임을 낼지. 스킵으로 한꺼번에 공개할 때는 끈다(소리가 겹쳐 시끄러워지는 것을 막으려고).
-        //              단, SSR의 금색 번쩍임은 스킵해도 예전처럼 낸다.
+        // playEffects: 등급별 공개음과 번쩍임을 낼지. "모두 개봉"으로 한꺼번에 열 때는 끈다(소리가 겹쳐 시끄러워지는 것을 막으려고).
+        //              단, SSR의 금색 번쩍임은 "모두 개봉"에서도 낸다.
         private void RevealFace(int index, bool playEffects = true)
         {
             var card = _cards[index];
@@ -349,23 +375,36 @@ namespace SurvivalDrone.UI
         }
 
         // ---------------- 버튼 ----------------
-        // 스킵: 남은 카드를 연출 없이 한 번에 공개한다.
-        private void Skip()
+        // 모두 개봉: 아직 안 연 카드를 연출 없이 한 번에 연다.
+        private void OpenAll()
         {
             if (_finished) return;
             PlayClick();
 
             StopRoutines();
 
-            // 스킵: 카드마다 소리를 내면 한꺼번에 겹쳐 시끄러우므로, 이번 뽑기에서 가장 높은 등급의 공개음 하나만 낸다.
+            // 카드마다 소리를 내면 한꺼번에 겹쳐 시끄러우므로, 이번에 새로 연 카드 중 가장 높은 등급의 공개음 하나만 낸다.
             GachaRarity highest = GachaRarity.N;
+            bool openedAny = false;
             for (int i = 0; i < _cards.Count; i++)
             {
-                SetCardScaleX(_cards[i], 1f);
+                var card = _cards[i];
+                if (card.revealed && !card.opening) continue; // 이미 다 열린 카드
+
+                if (card.flipRoutine != null) StopCoroutine(card.flipRoutine); // 뒤집는 도중이면 거기서 끊고 바로 연다
+                card.flipRoutine = null;
+                card.opening = false;
+                SetCardScaleX(card, 1f);
+
+                bool wasRevealed = card.revealed;
                 RevealFace(i, false);
-                if (_report.pulls[i].rarity > highest) highest = _report.pulls[i].rarity;
+                if (!wasRevealed)
+                {
+                    openedAny = true;
+                    if (_report.pulls[i].rarity > highest) highest = _report.pulls[i].rarity;
+                }
             }
-            PlayRevealSound(highest);
+            if (openedAny) PlayRevealSound(highest);
             Finish();
         }
 
@@ -402,11 +441,14 @@ namespace SurvivalDrone.UI
             Show(report, _isTen);
         }
 
-        // 모든 카드가 공개된 뒤: 스킵 버튼을 숨기고 확인 / 다시 뽑기 버튼을 보여준다.
+        // 모든 카드가 열린 뒤: "모두 개봉" 버튼을 숨기고 확인 / 다시 뽑기 버튼을 보여준다.
         private void Finish()
         {
             _finished = true;
+            // 안 연 카드 테두리 맥동을 끝낸다. (방금 낸 화면 번쩍임은 끊기지 않게 StopRoutines는 쓰지 않는다)
+            if (_routine != null) StopCoroutine(_routine);
             _routine = null;
+            if (_titleText != null) _titleText.text = _titleNormal;
             SetButtons(revealing: false);
             RefreshAgainButton();
         }
