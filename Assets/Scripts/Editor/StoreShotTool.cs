@@ -15,7 +15,7 @@ namespace SurvivalDrone.EditorTools
     //       메인 카메라를 복제한 임시 카메라로 따로 그려서 저장한다.
     //     - HUD 같은 "화면 위에 바로 그리는 캔버스"는 카메라로 못 찍으므로, 찍는 순간만 카메라 기준 캔버스로 바꿨다가 되돌린다.
     //  2) AutoPlayStart/Stop: 사람이 없어도 판이 진행되게 해 준다. 플레이어를 죽지 않게 하고(피해 0),
-    //     레벨업 선택 화면이 뜨면 "신규 드론" 선택지를 우선으로 골라서 드론이 여러 종류 모이게 한다.
+    //     레벨업 선택 화면이 뜨면 "NEW"(신규 드론) 선택지를 우선으로 골라서 드론이 여러 종류 모이게 한다.
     //     (화면이 풍성한 장면을 찍으려고, 연출용으로만 쓴다. 게임 규칙은 바꾸지 않는다)
     public static class StoreShotTool
     {
@@ -212,21 +212,21 @@ namespace SurvivalDrone.EditorTools
                 if (health != null) health.DamageTakenMultiplier = 0f;
             }
 
-            // 레벨업 선택 화면이 열려 있으면 하나 고른다. ("신규 드론"이 있으면 그것을 우선)
+            // 레벨업 선택 화면이 열려 있으면 하나 고른다. ("NEW" 라벨의 신규 드론이 있으면 그것을 우선)
             foreach (var ui in Resources.FindObjectsOfTypeAll<SurvivalDrone.LevelUp.LevelUpUI>())
             {
                 if (!ui.gameObject.scene.IsValid()) continue;
                 var panelField = typeof(SurvivalDrone.LevelUp.LevelUpUI).GetField("panel", BindingFlags.NonPublic | BindingFlags.Instance);
                 var buttonsField = typeof(SurvivalDrone.LevelUp.LevelUpUI).GetField("optionButtons", BindingFlags.NonPublic | BindingFlags.Instance);
-                var titlesField = typeof(SurvivalDrone.LevelUp.LevelUpUI).GetField("optionTitles", BindingFlags.NonPublic | BindingFlags.Instance);
+                var tagsField = typeof(SurvivalDrone.LevelUp.LevelUpUI).GetField("optionTags", BindingFlags.NonPublic | BindingFlags.Instance);
                 var panel = panelField.GetValue(ui) as GameObject;
                 if (panel == null || !panel.activeSelf) continue;
 
                 var buttons = buttonsField.GetValue(ui) as Button[];
-                var titles = titlesField.GetValue(ui) as Text[];
+                var tags = tagsField.GetValue(ui) as Text[];
                 int pick = 0;
-                for (int i = 0; i < titles.Length; i++)
-                    if (titles[i] != null && titles[i].text.Contains("신규 드론")) { pick = i; break; }
+                for (int i = 0; tags != null && i < tags.Length; i++)
+                    if (tags[i] != null && tags[i].text == "NEW") { pick = i; break; }
                 if (buttons != null && pick < buttons.Length && buttons[pick] != null) buttons[pick].onClick.Invoke();
             }
         }

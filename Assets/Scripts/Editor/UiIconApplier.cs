@@ -82,6 +82,8 @@ namespace SurvivalDrone.EditorTools
             set.droneExplosion = LoadSprite("icon_drone_explosion");
             set.droneHeal = LoadSprite("icon_drone_heal");
             set.droneCollector = LoadSprite("icon_drone_collector");
+            set.statSpeed = LoadSprite("icon_stat_speed");
+            set.statHealth = LoadSprite("icon_stat_health");
             EditorUtility.SetDirty(set);
         }
 

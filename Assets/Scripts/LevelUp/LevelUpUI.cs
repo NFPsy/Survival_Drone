@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using SurvivalDrone.Drones;
 using SurvivalDrone.Player;
@@ -11,6 +12,10 @@ namespace SurvivalDrone.LevelUp
 {
     // 플레이어가 레벨업할 때마다 화면에 3개의 선택지를 보여주고,
     // 플레이어가 고른 것을 실제로 적용해주는 UI 스크립트.
+    //
+    // 카드 한 장의 구성 (위에서 아래로):
+    //   종류 라벨(NEW / 강화 / 능력치) → 큰 아이콘 → 이름 → 설명 → "무엇이 어떻게 바뀌는지"(예: Lv 2 → 3)
+    // 마우스를 올리면 카드가 밝아지고(LevelUpCardHover), 키보드 1·2·3으로도 고를 수 있다.
     public class LevelUpUI : MonoBehaviour
     {
         // 레벨업 신호(OnLevelUp)를 받기 위해 연결해두는 플레이어 경험치 스크립트.
@@ -34,15 +39,34 @@ namespace SurvivalDrone.LevelUp
         // 각 버튼 위에 표시될 설명 텍스트들.
         [SerializeField] private Text[] optionDescriptions;
 
-        // 각 선택지 제목 왼쪽에 보여줄 드론 종류 아이콘들. 드론을 고르는 선택지에서만 보이고 능력치 선택지에서는 숨긴다.
+        // 각 카드의 큰 아이콘들. 드론 선택지는 드론 종류 아이콘, 능력치 선택지는 속도·체력 아이콘을 넣는다.
         // 비워 두면(씬에 아직 안 붙였으면) 아이콘 없이 예전처럼 동작한다.
         [SerializeField] private Image[] optionIcons;
+
+        // 아래 칸들도 모두 비워 두면(옛 씬) 그 부분만 건너뛰고 예전처럼 동작한다.
+        // 각 카드 맨 위 작은 라벨 (NEW / 강화 / 능력치)
+        [SerializeField] private Text[] optionTags;
+
+        // 각 카드 맨 아래 "무엇이 바뀌는지" (예: Lv 2 → 3)
+        [SerializeField] private Text[] optionChanges;
+
+        // 각 카드 모서리의 키 안내 (예: [1])
+        [SerializeField] private Text[] optionKeyHints;
+
+        // 화면 위쪽 제목 ("레벨 업!")과 작은 안내 글자
+        [SerializeField] private Text headerText;
+        [SerializeField] private Text subHeaderText;
 
         // 레벨업 선택 화면이 뜰 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
         [SerializeField] private AudioClip levelUpSound;
 
         // 선택지를 고를 때 재생할 효과음.
         [SerializeField] private AudioClip chooseSound;
+
+        // 라벨 색: 신규 드론 = 시안, 강화 = 연한 초록, 능력치 = 회색. (주황은 "잠금" 전용색이라 쓰지 않는다)
+        private static readonly Color NewColor = new Color(0.31f, 0.847f, 0.91f);
+        private static readonly Color UpgradeColor = new Color(0.55f, 0.95f, 0.6f);
+        private static readonly Color StatColor = new Color(0.72f, 0.78f, 0.8f);
 
         // 지금 화면에 보여지고 있는 선택지 3개를 기억해두는 목록.
         // (버튼을 눌렀을 때 "몇 번째 버튼이 어떤 선택지였는지" 알아야 하기 때문에 필요)
@@ -73,10 +97,29 @@ namespace SurvivalDrone.LevelUp
             LevelUpPickLog.Reset();
         }
 
+        // 선택 화면이 떠 있는 동안 키보드 1·2·3으로도 고를 수 있다. (게임이 멈춰 있어도 Update는 계속 돈다)
+        private void Update()
+        {
+            if (panel == null || !panel.activeSelf || optionButtons == null) return;
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame) ChooseByKey(0);
+            else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) ChooseByKey(1);
+            else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) ChooseByKey(2);
+        }
+
+        // 그 번호의 카드가 화면에 켜져 있을 때만 고른다.
+        private void ChooseByKey(int index)
+        {
+            if (index >= optionButtons.Length || optionButtons[index] == null || !optionButtons[index].gameObject.activeSelf) return;
+            ChooseOption(index);
+        }
+
         // 레벨업이 일어났을 때 호출되는 함수. 새 레벨 번호는 지금 로직에서는 사용하지 않는다.
         private void HandleLevelUp(int newLevel)
         {
-            ShowOptions();
+            ShowOptions(false);
         }
 
         // 미니 보스 보상으로 받을 선택 화면이 밀려 있는 횟수. 이미 선택 화면이 떠 있을 때 미니 보스를 잡으면 하나 쌓아두고,
@@ -87,16 +130,20 @@ namespace SurvivalDrone.LevelUp
         private void HandleMiniBossKilled()
         {
             if (panel != null && panel.activeSelf) pendingBonusChoices++;
-            else ShowOptions();
+            else ShowOptions(true);
         }
 
-        // 선택지 3개를 화면에 만들어서 보여주는 함수.
-        private void ShowOptions()
+        // 선택지 3개를 화면에 만들어서 보여주는 함수. bonus: 미니 보스 처치 보상으로 뜬 화면인지 (제목 글자만 달라진다).
+        private void ShowOptions(bool bonus = false)
         {
             currentOptions.Clear();
 
             // 지금 상황에서 고를 수 있는 모든 선택지 후보를 만든다.
             var pool = BuildOptionPool();
+
+            // 화면 위쪽 제목
+            if (headerText != null) headerText.text = bonus ? "미니 보스 처치 보상!" : "레벨 업!";
+            if (subHeaderText != null) subHeaderText.text = "하나를 골라 주세요   (키보드 1 · 2 · 3)";
 
             for (int i = 0; i < optionButtons.Length; i++)
             {
@@ -115,13 +162,27 @@ namespace SurvivalDrone.LevelUp
 
                 // 버튼을 켜고, 제목/설명 텍스트를 이 선택지 내용으로 채운다.
                 optionButtons[i].gameObject.SetActive(true);
-                if (optionTitles.Length > i && optionTitles[i] != null) optionTitles[i].text = option.Title;
-                if (optionDescriptions.Length > i && optionDescriptions[i] != null) optionDescriptions[i].text = option.Description;
+                SetText(optionTitles, i, option.Title);
+                SetText(optionDescriptions, i, option.Description);
+                SetText(optionChanges, i, option.ChangeText);
+                SetText(optionKeyHints, i, $"[{i + 1}]");
 
-                // 드론 선택지(신규·강화)면 그 드론의 종류 아이콘을, 능력치 선택지면 아이콘을 숨긴다.
+                // 종류 라벨: 종류마다 색을 달리한다.
+                SetText(optionTags, i, option.TagText);
+                if (optionTags != null && i < optionTags.Length && optionTags[i] != null)
+                {
+                    optionTags[i].color = option.Kind == LevelUpOptionKind.NewDrone ? NewColor
+                                        : option.Kind == LevelUpOptionKind.UpgradeDrone ? UpgradeColor
+                                        : StatColor;
+                }
+                if (optionChanges != null && i < optionChanges.Length && optionChanges[i] != null)
+                    optionChanges[i].color = option.Kind == LevelUpOptionKind.UpgradeDrone ? UpgradeColor : NewColor;
+
+                // 큰 아이콘: 드론 선택지는 그 드론의 종류 아이콘, 능력치 선택지는 속도·체력 아이콘.
                 if (optionIcons != null && optionIcons.Length > i && optionIcons[i] != null)
                 {
-                    if (option.Kind == LevelUpOptionKind.StatBoost) optionIcons[i].gameObject.SetActive(false);
+                    if (option.Kind == LevelUpOptionKind.StatBoost)
+                        UiIcons.SetStatIcon(optionIcons[i], option.StatBoost == StatBoostKind.MoveSpeed);
                     else UiIcons.SetDroneIcon(optionIcons[i], option.DroneType);
                 }
 
@@ -137,6 +198,39 @@ namespace SurvivalDrone.LevelUp
             if (panel != null) panel.SetActive(true);
             Time.timeScale = 0f;
             AudioManager.Instance?.PlaySfx(levelUpSound);
+        }
+
+        private static void SetText(Text[] texts, int index, string value)
+        {
+            if (texts != null && index < texts.Length && texts[index] != null) texts[index].text = value;
+        }
+
+        // 신규 드론 카드에 쓰는 한 줄 설명: 그 드론이 무엇을 하는지.
+        private static string NewDroneDescription(DroneType type)
+        {
+            switch (type)
+            {
+                case DroneType.Melee: return "플레이어 주위를 돌며\n가까운 적을 자동으로 베어요.";
+                case DroneType.Sniper: return "가장 가까운 적을\n멀리서 쏴요.";
+                case DroneType.Collector: return "경험치 구슬을\n더 멀리서 끌어와요.";
+                case DroneType.Explosion: return "몇 초마다 주변의 적을\n한꺼번에 터뜨려요.";
+                case DroneType.Heal: return "공격은 안 해요.\n체력을 조금씩 채워 줘요.";
+                default: return "새로운 드론을 장착해요.";
+            }
+        }
+
+        // 강화 카드에 쓰는 한 줄 설명: 강화하면 무엇이 좋아지는지.
+        private static string UpgradeDescription(DroneType type)
+        {
+            switch (type)
+            {
+                case DroneType.Melee: return "회전 속도와\n공격 범위가 늘어요.";
+                case DroneType.Sniper: return "공격력과\n공격 속도가 늘어요.";
+                case DroneType.Collector: return "구슬을 끌어당기는\n범위가 늘어요.";
+                case DroneType.Explosion: return "폭발 범위와\n피해가 늘어요.";
+                case DroneType.Heal: return "회복량이 늘고\n더 자주 회복해요.";
+                default: return "드론의 레벨을 올려요.";
+            }
         }
 
         // 지금 고를 수 있는 모든 선택지 후보를 만들어서 리스트로 반환하는 함수.
@@ -159,19 +253,26 @@ namespace SurvivalDrone.LevelUp
                         {
                             Kind = LevelUpOptionKind.NewDrone,
                             DroneType = type,
-                            Title = $"신규 드론: {type}",
-                            Description = "새로운 드론을 장착합니다."
+                            Title = DroneNames.Get(type),
+                            Description = NewDroneDescription(type),
+                            TagText = "NEW",
+                            ChangeText = "Lv 1 로 시작"
                         });
                     }
                     // 이미 있고 아직 최대 레벨이 아니면 "강화" 선택지를 추가.
                     else if (droneManager.CanUpgradeDrone(type))
                     {
+                        var owned = droneManager.Owned[type];
+                        int next = owned.Level + 1;
+                        bool becomesMax = next >= owned.MaxLevel;
                         pool.Add(new LevelUpOption
                         {
                             Kind = LevelUpOptionKind.UpgradeDrone,
                             DroneType = type,
-                            Title = $"강화: {type}",
-                            Description = "보유한 드론의 레벨을 올립니다."
+                            Title = DroneNames.Get(type),
+                            Description = UpgradeDescription(type) + (becomesMax ? "\n최대 레벨: 변신해서 더 강해져요!" : ""),
+                            TagText = "강화",
+                            ChangeText = becomesMax ? $"Lv {owned.Level} → {next}  변신!" : $"Lv {owned.Level} → {next}"
                         });
                     }
                     // 둘 다 아니면(이미 최대 레벨) 이 드론에 대한 선택지는 만들지 않는다.
@@ -179,19 +280,24 @@ namespace SurvivalDrone.LevelUp
             }
 
             // 능력치 강화 선택지 두 가지는 항상 후보에 포함시킨다.
+            // 맨 아래 줄에는 "지금 값 → 고른 뒤 값"을 보여준다. (playerStats 연결이 없으면 비워 둔다)
             pool.Add(new LevelUpOption
             {
                 Kind = LevelUpOptionKind.StatBoost,
                 StatBoost = StatBoostKind.MoveSpeed,
                 Title = "이동 속도 +6%",
-                Description = "이동 속도를 증가시킵니다."
+                Description = "더 빠르게 움직여서\n적을 피하기 쉬워져요.",
+                TagText = "능력치",
+                ChangeText = playerStats != null ? $"{playerStats.MoveSpeed:0.0} → {playerStats.MoveSpeed * 1.06f:0.0}" : ""
             });
             pool.Add(new LevelUpOption
             {
                 Kind = LevelUpOptionKind.StatBoost,
                 StatBoost = StatBoostKind.MaxHealth,
                 Title = "최대 체력 +12",
-                Description = "최대 체력을 증가시킵니다."
+                Description = "더 오래 버틸 수 있어요.\n늘어난 만큼 체력도 채워져요.",
+                TagText = "능력치",
+                ChangeText = playerStats != null ? $"{playerStats.MaxHealth:0} → {playerStats.MaxHealth + 12f:0}" : ""
             });
 
             return pool;
@@ -232,8 +338,9 @@ namespace SurvivalDrone.LevelUp
             }
 
             // 나중에 콘솔에서 "몇 초에 어떤 선택을 골랐는지" 순서대로 복기할 수 있도록 기록해둔다.
+            // (기록 형식은 예전과 같게 유지한다: 테스트 기록의 선택 요약이 이 이름을 읽는다)
             float elapsed = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
-            Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{option.Title}\" 선택");
+            Debug.Log($"[LevelUp] {elapsed:F0}초 - \"{LogTitle(option)}\" 선택");
 
             // 웹 빌드의 테스트 기록에도 남도록, 어떤 종류를 골랐는지 센다. (판 결과 기록 끝에 요약이 붙는다)
             LevelUpPickLog.Record(option, elapsed);
@@ -248,7 +355,18 @@ namespace SurvivalDrone.LevelUp
             if (pendingBonusChoices > 0)
             {
                 pendingBonusChoices--;
-                ShowOptions();
+                ShowOptions(true);
+            }
+        }
+
+        // 콘솔 기록용 이름. 화면 제목은 이제 "근접 드론"처럼 종류 표시가 빠졌으므로, 기록에는 예전처럼 종류를 붙여 남긴다.
+        private static string LogTitle(LevelUpOption option)
+        {
+            switch (option.Kind)
+            {
+                case LevelUpOptionKind.NewDrone: return $"신규 드론: {option.DroneType}";
+                case LevelUpOptionKind.UpgradeDrone: return $"강화: {option.DroneType}";
+                default: return option.Title;
             }
         }
     }

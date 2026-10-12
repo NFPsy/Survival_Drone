@@ -21,5 +21,9 @@ namespace SurvivalDrone.UI
         public Sprite droneExplosion;
         public Sprite droneHeal;
         public Sprite droneCollector;
+
+        // 능력치 강화(이동 속도·최대 체력) 선택지용 아이콘
+        public Sprite statSpeed;
+        public Sprite statHealth;
     }
 }

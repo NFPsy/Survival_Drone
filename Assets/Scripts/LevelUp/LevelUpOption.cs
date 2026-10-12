@@ -22,10 +22,16 @@ namespace SurvivalDrone.LevelUp
         // Kind가 StatBoost일 때, 어떤 능력치를 올리는지.
         public StatBoostKind StatBoost;
 
-        // 화면에 보여줄 제목 (예: "신규 드론: Sniper").
+        // 화면에 보여줄 제목 (예: "저격 드론").
         public string Title;
 
-        // 화면에 보여줄 설명 (예: "새로운 드론을 장착합니다.").
+        // 화면에 보여줄 설명 (예: "플레이어 주위를 돌며 가까운 적을 자동으로 베어요.").
         public string Description;
+
+        // 카드 맨 위 작은 라벨 ("NEW" / "강화" / "능력치").
+        public string TagText;
+
+        // 카드 맨 아래 "무엇이 어떻게 바뀌는지" (예: "Lv 2 → 3", "5.0 → 5.3").
+        public string ChangeText;
     }
 }

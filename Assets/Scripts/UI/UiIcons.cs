@@ -29,6 +29,10 @@ namespace SurvivalDrone.UI
         public static Sprite Credit => Set != null ? Set.credit : null;
         public static Sprite Shard => Set != null ? Set.shard : null;
 
+        // 능력치 강화 아이콘 (이동 속도 / 최대 체력). 아이콘 모음에 없으면 null.
+        public static Sprite StatSpeed => Set != null ? Set.statSpeed : null;
+        public static Sprite StatHealth => Set != null ? Set.statHealth : null;
+
         // 드론 종류에 맞는 아이콘 그림.
         public static Sprite Drone(DroneType type)
         {
@@ -56,6 +60,16 @@ namespace SurvivalDrone.UI
                 case DroneType.Collector: return new Color(1f, 0.88f, 0.3f);
                 default: return Color.white;
             }
+        }
+
+        // 능력치 강화 아이콘을 이미지에 넣는다. (speed = true면 이동 속도, false면 최대 체력)
+        public static void SetStatIcon(UnityEngine.UI.Image image, bool speed)
+        {
+            if (image == null) return;
+            Sprite sprite = speed ? StatSpeed : StatHealth;
+            image.sprite = sprite;
+            image.color = speed ? new Color(0.55f, 0.92f, 1f) : new Color(1f, 0.45f, 0.5f);
+            image.gameObject.SetActive(sprite != null);
         }
 
         // 아이콘 이미지에 그림과 색을 한 번에 넣는다. 이미지나 그림이 없으면 이미지를 숨긴다.

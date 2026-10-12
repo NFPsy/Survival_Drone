@@ -20,3 +20,5 @@ MonoBehaviour:
   droneExplosion: {fileID: 21300000, guid: 52245fb43656afc4e95a3cdd4b9d867b, type: 3}
   droneHeal: {fileID: 21300000, guid: 645a089b0198ba64395b6c471887d11b, type: 3}
   droneCollector: {fileID: 21300000, guid: d7320c42e0b75cc42ab7c9ea21b29216, type: 3}
+  statSpeed: {fileID: 21300000, guid: bf8f08c59a510a14f82bf14379526214, type: 3}
+  statHealth: {fileID: 21300000, guid: 045cedcbe4743ec4a87f87f759f49718, type: 3}

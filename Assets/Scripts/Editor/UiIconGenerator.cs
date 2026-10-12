@@ -49,6 +49,9 @@ namespace SurvivalDrone.EditorTools
             Entry("icon_drone_explosion", Explosion),
             Entry("icon_drone_heal", Heal),
             Entry("icon_drone_collector", Collector),
+            // 능력치 강화 2개
+            Entry("icon_stat_speed", StatSpeed),
+            Entry("icon_stat_health", StatHealth),
         };
 
         private static KeyValuePair<string, Func<float, float, bool>> Entry(string name, Func<float, float, bool> shape)
@@ -110,13 +113,14 @@ namespace SurvivalDrone.EditorTools
             AddText(canvasObj.transform, "UI 아이콘 미리보기 (흰색 아이콘을 용도별 색으로 칠한 모습)", 34, new Color(0.89f, 0.96f, 0.96f), font, new Vector2(0f, 480f), new Vector2(1500f, 60f));
 
             // 이름(한글)과 색. 순서는 Icons 목록과 같다.
-            string[] labels = { "출격", "뽑기", "격납고", "일일 퀘스트", "마일스톤", "테스트 로그", "코어", "크레딧", "조각", "근접 드론", "저격 드론", "폭발 드론", "회복 드론", "수집 드론" };
+            string[] labels = { "출격", "뽑기", "격납고", "일일 퀘스트", "마일스톤", "테스트 로그", "코어", "크레딧", "조각", "근접 드론", "저격 드론", "폭발 드론", "회복 드론", "수집 드론", "이동 속도", "최대 체력" };
             Color cyan = new Color(0.31f, 0.847f, 0.91f);
             Color[] colors =
             {
                 cyan, cyan, cyan, cyan, cyan, cyan,
                 cyan, new Color(1f, 0.82f, 0.30f), new Color(0.72f, 0.55f, 1f),
                 new Color(0.55f, 0.92f, 1f), new Color(1f, 0.62f, 0.28f), new Color(1f, 0.45f, 0.25f), new Color(0.45f, 1f, 0.6f), new Color(1f, 0.88f, 0.3f),
+                new Color(0.55f, 0.92f, 1f), new Color(1f, 0.45f, 0.5f),
             };
 
             int cols = 7;
@@ -421,6 +425,26 @@ namespace SurvivalDrone.EditorTools
             bool ring = Ring(x, y, 0f, 0f, 0.92f, 0.78f);
             bool plus = Box(x, y, -0.13f, 0.13f, -0.5f, 0.5f) || Box(x, y, -0.5f, 0.5f, -0.13f, 0.13f);
             return ring || plus;
+        }
+
+        // ── 능력치 강화 아이콘 ──
+
+        // 이동 속도: 오른쪽을 가리키는 꺾쇠 세 개(>>>).
+        private static bool StatSpeed(float x, float y)
+        {
+            return Chevron(x, y, -0.3f) || Chevron(x, y, 0.1f) || Chevron(x, y, 0.5f);
+        }
+
+        // 꺾쇠 하나. offset만큼 옆으로 옮겨서 나란히 놓는다.
+        private static bool Chevron(float x, float y, float offset)
+        {
+            return Poly(x, y, -0.5f + offset, 0.75f, -0.2f + offset, 0.75f, 0.28f + offset, 0f, -0.2f + offset, -0.75f, -0.5f + offset, -0.75f, -0.06f + offset, 0f);
+        }
+
+        // 최대 체력: 하트.
+        private static bool StatHealth(float x, float y)
+        {
+            return Circle(x, y, -0.34f, 0.28f, 0.44f) || Circle(x, y, 0.34f, 0.28f, 0.44f) || Poly(x, y, -0.74f, 0.14f, 0.74f, 0.14f, 0f, -0.88f);
         }
 
         // 수집 드론: 말굽 자석.
