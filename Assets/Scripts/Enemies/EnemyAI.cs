@@ -24,6 +24,10 @@ namespace SurvivalDrone.Enemies
         // 저격 드론이 "가장 먼 적"을 찾을 때 씬 전체를 뒤지지 않고 이 목록만 보면 되므로 훨씬 빠르다.
         public static readonly List<EnemyAI> ActiveEnemies = new List<EnemyAI>();
 
+        // 적이 피해를 입을 때마다 알려 주는 신호. 매개변수는 (맞은 적, 이번 공격의 피해량, 이 공격으로 죽었는지).
+        // 화면에 데미지 숫자를 띄우는 DamageNumberDisplay가 받아서 쓴다. 게임 규칙에는 영향이 없다.
+        public static event Action<EnemyAI, float, bool> DamageDealt;
+
         // 이 적이 어떤 종류인지에 대한 데이터(체력, 속도, 피해량 등).
         private EnemyDefinition definition;
 
@@ -369,7 +373,13 @@ namespace SurvivalDrone.Enemies
             // 맵 밖에 있는 적은 피해를 받지 않는다. (맵 안으로 들어오면 다시 맞는다)
             if (!IsInsideArena) return;
 
+            // "피해를 줬다"는 신호를 보낸다. (데미지 숫자 표시가 이 신호를 받는다)
+            // 숫자에는 "이번 공격의 피해량"을 그대로 보여 준다. 남은 체력이 적어서 실제로는 덜 깎였더라도(마지막 일격)
+            // 공격 자체의 세기를 보여 줘야 흰 숫자와 노란 숫자를 서로 비교할 수 있기 때문이다.
+            // 이미 죽은 적에게는 피해가 들어가지 않으므로 신호도 보내지 않는다.
+            bool wasAlive = !health.IsDead;
             health.TakeDamage(amount);
+            if (wasAlive && amount > 0f) DamageDealt?.Invoke(this, amount * health.DamageTakenMultiplier, health.IsDead);
 
             // 맞았으면 살짝 밀려나게 한다 (이 한 방에 죽었으면 밀 필요 없다).
             if (amount > 0f) StartKnockback();
