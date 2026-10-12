@@ -169,12 +169,15 @@ namespace SurvivalDrone.LevelUp
 
                 // 종류 라벨: 종류마다 색을 달리한다.
                 SetText(optionTags, i, option.TagText);
+                Color kindColor = option.Kind == LevelUpOptionKind.NewDrone ? NewColor
+                                : option.Kind == LevelUpOptionKind.UpgradeDrone ? UpgradeColor
+                                : StatColor;
                 if (optionTags != null && i < optionTags.Length && optionTags[i] != null)
-                {
-                    optionTags[i].color = option.Kind == LevelUpOptionKind.NewDrone ? NewColor
-                                        : option.Kind == LevelUpOptionKind.UpgradeDrone ? UpgradeColor
-                                        : StatColor;
-                }
+                    optionTags[i].color = kindColor;
+
+                // 카드 장식(위쪽 띠·빛·모서리 꺾쇠)도 같은 종류 색으로 칠한다. (장식이 없는 카드면 건너뜀)
+                var accent = optionButtons[i].GetComponent<LevelUpCardAccent>();
+                if (accent != null) accent.SetColor(kindColor);
                 if (optionChanges != null && i < optionChanges.Length && optionChanges[i] != null)
                     optionChanges[i].color = option.Kind == LevelUpOptionKind.UpgradeDrone ? UpgradeColor : NewColor;
 
