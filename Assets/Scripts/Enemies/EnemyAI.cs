@@ -56,6 +56,10 @@ namespace SurvivalDrone.Enemies
         // 그러면 보스의 중심과 플레이어 중심이 1보다 가까워질 수 없어서, 몸이 닿아 있는데도 피해가 한 번도 안 들어갔다.
         private float contactReach;
 
+        // 발밑에 붙인 오라(없으면 null)와, 오라를 놓을 월드 높이(바닥 바로 위).
+        private Transform auraObject;
+        private const float AuraHeight = 0.05f;
+
         // ── 넉백(맞으면 살짝 밀려남) 관련 ──
         // 드론에게 맞으면 플레이어 반대쪽으로 아주 짧게 밀려나서, 맞았다는 느낌(타격감)을 더한다.
         // 적은 물리가 아니라 좌표로 움직이기 때문에 밀려나는 것도 직접 계산한다.
@@ -164,6 +168,11 @@ namespace SurvivalDrone.Enemies
                 Vector3 grounded = transform.position;
                 grounded.y = (capsule.height * 0.5f - capsule.center.y) * Mathf.Abs(lossy.y);
                 transform.position = grounded;
+
+                // 미니 보스 오라는 이 함수보다 먼저(MakeMiniBoss에서) 붙었다. 오라는 적의 자식이라 위에서 적을 올릴 때
+                // 같이 딸려 올라갔으므로 다시 바닥 높이로 내려 준다. (최종 보스 오라는 아래에서 붙어서 해당 없음)
+                if (auraObject != null)
+                    auraObject.position = new Vector3(auraObject.position.x, AuraHeight, auraObject.position.z);
             }
 
             // 접촉 거리 = 적 몸 반지름 + 플레이어 몸 반지름 + 여유 0.1. 단, 작은 적은 예전처럼 최소 contactRange(1)를 지킨다.
@@ -227,12 +236,13 @@ namespace SurvivalDrone.Enemies
             if (auraPrefab == null) return;
 
             var aura = Instantiate(auraPrefab, transform);
+            auraObject = aura.transform;
             Vector3 parentScale = transform.lossyScale;
             aura.transform.localScale = new Vector3(
                 1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.x)),
                 1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.y)),
                 1f / Mathf.Max(0.0001f, Mathf.Abs(parentScale.z)));
-            aura.transform.position = new Vector3(transform.position.x, 0.05f, transform.position.z);
+            aura.transform.position = new Vector3(transform.position.x, AuraHeight, transform.position.z);
         }
 
         // 이 적의 모든 렌더러를 지정한 색으로 물들인다. (엘리트·미니 보스 표시용)
@@ -417,7 +427,11 @@ namespace SurvivalDrone.Enemies
             // 죽은 위치에 XP 오브를 하나 만들고, 이 적의 xpReward 값을 지급하도록 설정.
             if (xpOrbPrefab != null)
             {
-                var orbObj = Instantiate(xpOrbPrefab, transform.position, Quaternion.identity);
+                // 구슬은 적의 몸 중심이 아니라 플레이어 발 높이에 둔다. (몸 중심 높이에서 만들면 보스 구슬이 2.5m 공중에 떠서
+                // 자석·획득 판정(3D 거리)이 닿지 않고 화면에서도 떠 보인다)
+                Vector3 orbPosition = transform.position;
+                if (target != null) orbPosition.y = target.position.y;
+                var orbObj = Instantiate(xpOrbPrefab, orbPosition, Quaternion.identity);
                 var orb = orbObj.GetComponent<XPOrb>();
                 // 구슬이 플레이어를 직접 찾지 않아도 되도록, 이 적이 쫓던 플레이어를 넘겨준다.
                 if (orb != null) orb.SetTarget(target);
