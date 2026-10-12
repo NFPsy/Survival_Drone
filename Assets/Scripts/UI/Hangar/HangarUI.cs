@@ -37,6 +37,7 @@ namespace SurvivalDrone.UI
             public Text nameText;
             public Text tagText;
             public Text infoText;
+            public Image icon; // 줄 왼쪽의 드론 종류 아이콘 (견본에 "Icon"이 없으면 null)
         }
 
         private readonly List<Row> _rows = new List<Row>();
@@ -53,6 +54,8 @@ namespace SurvivalDrone.UI
         private Text _shardsText;
         private RectTransform _shardBarFill;
         private Text _costText;
+        private Image _nameIcon;  // 상세 패널 제목(드론 이름) 왼쪽의 종류 아이콘
+        private Image _costIcon;  // "크레딧 500"처럼 크레딧이 드는 줄에서만 보이는 크레딧 아이콘
         private Button _upgradeButton;
         private Text _upgradeLabel;
         private Button _exchangeButton;
@@ -76,6 +79,12 @@ namespace SurvivalDrone.UI
             _statusText = FindText("DetailPanel/StatusText");
             _totalPowerText = FindText("TotalPowerText");
             _upgradeLabel = FindText("DetailPanel/BtnUpgrade/Text");
+
+            // 아이콘은 없어도(씬에 아직 안 붙였어도) 예전처럼 동작하므로 못 찾아도 경고하지 않는다.
+            var nameIcon = transform.Find("DetailPanel/NameText/Icon");
+            _nameIcon = nameIcon != null ? nameIcon.GetComponent<Image>() : null;
+            var costIcon = transform.Find("DetailPanel/CostText/Icon");
+            _costIcon = costIcon != null ? costIcon.GetComponent<Image>() : null;
 
             var fill = transform.Find("DetailPanel/ShardBar/Fill");
             _shardBarFill = fill != null ? fill.GetComponent<RectTransform>() : null;
@@ -160,6 +169,12 @@ namespace SurvivalDrone.UI
                     tagText = rowObject.transform.Find("TagText").GetComponent<Text>(),
                     infoText = rowObject.transform.Find("InfoText").GetComponent<Text>(),
                 };
+                var iconTransform = rowObject.transform.Find("Icon");
+                if (iconTransform != null)
+                {
+                    row.icon = iconTransform.GetComponent<Image>();
+                    UiIcons.SetDroneIcon(row.icon, type);
+                }
                 rowObject.GetComponent<Button>().onClick.AddListener(() => OnRowClicked(rowType));
                 _rows.Add(row);
             }
@@ -190,6 +205,7 @@ namespace SurvivalDrone.UI
 
                 row.nameText.text = DroneNames.Get(row.type);
                 row.nameText.color = owned ? LightColor : DeadColor;
+                if (row.icon != null) row.icon.color = owned ? UiIcons.DroneColor(row.type) : DeadColor; // 미획득은 흐리게
 
                 if (owned)
                 {
@@ -219,6 +235,10 @@ namespace SurvivalDrone.UI
         {
             bool owned = inventory.TryGetInfo(_selected, out var info);
             SetText(_nameText, DroneNames.Get(_selected), owned ? LightColor : DeadColor);
+            UiIcons.SetDroneIcon(_nameIcon, _selected, owned ? (Color?)null : DeadColor);
+
+            // 크레딧 아이콘은 아래에서 "크레딧  N"을 실제로 보여 줄 때만 켠다. (미획득·최대 레벨일 때는 끈다)
+            if (_costIcon != null) _costIcon.gameObject.SetActive(false);
 
             if (!owned)
             {
@@ -260,6 +280,7 @@ namespace SurvivalDrone.UI
 
             int credit = currency != null ? currency.Credit : 0;
             SetText(_costText, $"크레딧  {creditCost:N0}", credit >= creditCost ? LightColor : ShortColor);
+            if (_costIcon != null) _costIcon.gameObject.SetActive(true);
             if (_upgradeButton != null) _upgradeButton.interactable = true; // 모자라도 눌러서 이유를 안내받을 수 있게 켜 둔다
             if (_upgradeLabel != null) _upgradeLabel.text = "강화";
             RefreshExchange(inventory, true, false);

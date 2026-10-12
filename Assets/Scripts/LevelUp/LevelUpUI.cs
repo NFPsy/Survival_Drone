@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using SurvivalDrone.Drones;
 using SurvivalDrone.Player;
 using SurvivalDrone.Core;
+using SurvivalDrone.UI;
 
 namespace SurvivalDrone.LevelUp
 {
@@ -32,6 +33,10 @@ namespace SurvivalDrone.LevelUp
 
         // 각 버튼 위에 표시될 설명 텍스트들.
         [SerializeField] private Text[] optionDescriptions;
+
+        // 각 선택지 제목 왼쪽에 보여줄 드론 종류 아이콘들. 드론을 고르는 선택지에서만 보이고 능력치 선택지에서는 숨긴다.
+        // 비워 두면(씬에 아직 안 붙였으면) 아이콘 없이 예전처럼 동작한다.
+        [SerializeField] private Image[] optionIcons;
 
         // 레벨업 선택 화면이 뜰 때 재생할 효과음. 사운드 파일이 아직 없다면 비워둬도 안전하다.
         [SerializeField] private AudioClip levelUpSound;
@@ -112,6 +117,13 @@ namespace SurvivalDrone.LevelUp
                 optionButtons[i].gameObject.SetActive(true);
                 if (optionTitles.Length > i && optionTitles[i] != null) optionTitles[i].text = option.Title;
                 if (optionDescriptions.Length > i && optionDescriptions[i] != null) optionDescriptions[i].text = option.Description;
+
+                // 드론 선택지(신규·강화)면 그 드론의 종류 아이콘을, 능력치 선택지면 아이콘을 숨긴다.
+                if (optionIcons != null && optionIcons.Length > i && optionIcons[i] != null)
+                {
+                    if (option.Kind == LevelUpOptionKind.StatBoost) optionIcons[i].gameObject.SetActive(false);
+                    else UiIcons.SetDroneIcon(optionIcons[i], option.DroneType);
+                }
 
                 // 버튼 클릭 시 실행할 함수를 연결한다.
                 // capturedIndex를 따로 만드는 이유: for문의 i를 그대로 쓰면 버튼을 눌렀을 때

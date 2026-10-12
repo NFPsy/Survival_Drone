@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04fca52313e06e6409b6016c57b2646a, type: 3}
+  m_Name: UiIconSet
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.UI.UiIconSet
+  core: {fileID: 21300000, guid: 99a4ed2032d1bee4598e794160346de9, type: 3}
+  credit: {fileID: 21300000, guid: cca97184f1b4d3a4999e936df1dd93d2, type: 3}
+  shard: {fileID: 21300000, guid: f83cb3f626a284f489957170a7dca613, type: 3}
+  droneMelee: {fileID: 21300000, guid: 86c48d86a882cba43862e4bd1e0fa905, type: 3}
+  droneSniper: {fileID: 21300000, guid: 560d2a7eac7a2734fa353b5036080a15, type: 3}
+  droneExplosion: {fileID: 21300000, guid: 52245fb43656afc4e95a3cdd4b9d867b, type: 3}
+  droneHeal: {fileID: 21300000, guid: 645a089b0198ba64395b6c471887d11b, type: 3}
+  droneCollector: {fileID: 21300000, guid: d7320c42e0b75cc42ab7c9ea21b29216, type: 3}

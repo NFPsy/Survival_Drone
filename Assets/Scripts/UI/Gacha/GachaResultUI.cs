@@ -39,6 +39,7 @@ namespace SurvivalDrone.UI
             public Text rarityText;
             public Text nameText;
             public Text tagText;
+            public Image droneIcon; // 드론 이름 왼쪽의 종류 아이콘 (견본에 "Icon"이 없으면 null)
             public bool revealed;
         }
 
@@ -146,6 +147,8 @@ namespace SurvivalDrone.UI
                     nameText = root.transform.Find("Face/DroneNameText").GetComponent<Text>(),
                     tagText = root.transform.Find("Face/TagText").GetComponent<Text>(),
                 };
+                var droneIcon = root.transform.Find("Face/DroneNameText/Icon");
+                card.droneIcon = droneIcon != null ? droneIcon.GetComponent<Image>() : null;
                 card.back.SetActive(true);
                 card.face.SetActive(false);
                 if (card.outline != null)
@@ -229,6 +232,7 @@ namespace SurvivalDrone.UI
             card.rarityText.text = pull.rarity.ToString();
             card.rarityText.color = rarityColor;
             card.nameText.text = DroneNames.Get(pull.drone);
+            UiIcons.SetDroneIcon(card.droneIcon, pull.drone);
 
             switch (outcome.outcome)
             {
