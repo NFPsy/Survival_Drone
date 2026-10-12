@@ -52,6 +52,22 @@ namespace SurvivalDrone.EditorTools
             // 능력치 강화 2개
             Entry("icon_stat_speed", StatSpeed),
             Entry("icon_stat_health", StatHealth),
+            // 2차: 판 안 HUD·일시정지·공통 12개
+            Entry("icon_clock", Clock),
+            Entry("icon_bolt", Bolt),
+            Entry("icon_star", StarIcon),
+            Entry("icon_play", Play),
+            Entry("icon_restart", Restart),
+            Entry("icon_home", Home),
+            Entry("icon_back", Back),
+            Entry("icon_close", Close),
+            Entry("icon_gear", Gear),
+            Entry("icon_sound", Sound),
+            Entry("icon_music", Music),
+            Entry("icon_lock", Lock),
+            // 3차: 메인메뉴 시작 화면 버튼용 2개
+            Entry("icon_controls", Controls),
+            Entry("icon_info", Info),
         };
 
         private static KeyValuePair<string, Func<float, float, bool>> Entry(string name, Func<float, float, bool> shape)
@@ -89,6 +105,55 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/UI/Create Icon Preview Sheet")]
         public static void CreatePreviewSheet()
         {
+            Color cyan = new Color(0.31f, 0.847f, 0.91f);
+            var keys = new[]
+            {
+                "icon_launch", "icon_gacha", "icon_hangar", "icon_quest", "icon_milestone", "icon_log", "icon_core", "icon_credit", "icon_shard",
+                "icon_drone_melee", "icon_drone_sniper", "icon_drone_explosion", "icon_drone_heal", "icon_drone_collector", "icon_stat_speed", "icon_stat_health",
+            };
+            string[] labels = { "출격", "뽑기", "격납고", "일일 퀘스트", "마일스톤", "테스트 로그", "코어", "크레딧", "조각", "근접 드론", "저격 드론", "폭발 드론", "회복 드론", "수집 드론", "이동 속도", "최대 체력" };
+            Color[] colors =
+            {
+                cyan, cyan, cyan, cyan, cyan, cyan,
+                cyan, new Color(1f, 0.82f, 0.30f), new Color(0.72f, 0.55f, 1f),
+                new Color(0.55f, 0.92f, 1f), new Color(1f, 0.62f, 0.28f), new Color(1f, 0.45f, 0.25f), new Color(0.45f, 1f, 0.6f), new Color(1f, 0.88f, 0.3f),
+                new Color(0.55f, 0.92f, 1f), new Color(1f, 0.45f, 0.5f),
+            };
+            BuildPreviewSheet("UI 아이콘 미리보기 (흰색 아이콘을 용도별 색으로 칠한 모습)", keys, labels, colors, 7, PreviewPath);
+        }
+
+        // 2차 아이콘 12개 승인용 미리보기 한 장. (판 안 HUD·일시정지·공통 버튼용. 체력은 1차 하트를 그대로 쓴다)
+        [MenuItem("SurvivalDrone/UI/Create Icon Preview Sheet (2nd)")]
+        public static void CreatePreviewSheet2()
+        {
+            Color cyan = new Color(0.31f, 0.847f, 0.91f);
+            var keys = new[]
+            {
+                "icon_clock", "icon_bolt", "icon_star", "icon_play", "icon_restart", "icon_home",
+                "icon_back", "icon_close", "icon_gear", "icon_sound", "icon_music", "icon_lock",
+            };
+            string[] labels = { "시간", "오버드라이브", "레벨·경험치", "계속하기", "재도전·재시작", "로비·메인메뉴", "뒤로", "닫기", "설정", "효과음", "배경음악", "잠금" };
+            Color[] colors =
+            {
+                cyan, new Color(1f, 0.72f, 0.25f), new Color(1f, 0.82f, 0.30f), new Color(0.45f, 1f, 0.6f), cyan, cyan,
+                cyan, new Color(0.85f, 0.92f, 0.94f), cyan, cyan, cyan, new Color(1f, 0.62f, 0.28f),
+            };
+            BuildPreviewSheet("2차 UI 아이콘 미리보기 (체력은 1차 하트를 그대로 씁니다)", keys, labels, colors, 6, "Assets/Screenshots/UI/icons_preview_2.png");
+        }
+
+        // 메인메뉴 시작 화면 버튼 4개(게임 시작·조작법·게임 설명·설정)가 나란히 어떻게 보일지 보는 미리보기.
+        [MenuItem("SurvivalDrone/UI/Create Icon Preview Sheet (Main Menu)")]
+        public static void CreatePreviewSheetMainMenu()
+        {
+            Color cyan = new Color(0.31f, 0.847f, 0.91f);
+            var keys = new[] { "icon_launch", "icon_controls", "icon_info", "icon_gear" };
+            string[] labels = { "게임 시작", "조작법", "게임 설명", "설정" };
+            Color[] colors = { cyan, cyan, cyan, cyan };
+            BuildPreviewSheet("메인메뉴 버튼 아이콘 미리보기 (출격 로켓·톱니바퀴는 기존 아이콘)", keys, labels, colors, 4, "Assets/Screenshots/UI/icons_preview_3.png");
+        }
+
+        private static void BuildPreviewSheet(string title, string[] keys, string[] labels, Color[] colors, int cols, string previewPath)
+        {
             if (EditorApplication.isPlaying) return;
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             SceneManager.SetActiveScene(scene);
@@ -110,28 +175,16 @@ namespace SurvivalDrone.EditorTools
             var font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard-Regular.otf");
 
             // 제목
-            AddText(canvasObj.transform, "UI 아이콘 미리보기 (흰색 아이콘을 용도별 색으로 칠한 모습)", 34, new Color(0.89f, 0.96f, 0.96f), font, new Vector2(0f, 480f), new Vector2(1500f, 60f));
+            AddText(canvasObj.transform, title, 34, new Color(0.89f, 0.96f, 0.96f), font, new Vector2(0f, 480f), new Vector2(1500f, 60f));
 
-            // 이름(한글)과 색. 순서는 Icons 목록과 같다.
-            string[] labels = { "출격", "뽑기", "격납고", "일일 퀘스트", "마일스톤", "테스트 로그", "코어", "크레딧", "조각", "근접 드론", "저격 드론", "폭발 드론", "회복 드론", "수집 드론", "이동 속도", "최대 체력" };
-            Color cyan = new Color(0.31f, 0.847f, 0.91f);
-            Color[] colors =
-            {
-                cyan, cyan, cyan, cyan, cyan, cyan,
-                cyan, new Color(1f, 0.82f, 0.30f), new Color(0.72f, 0.55f, 1f),
-                new Color(0.55f, 0.92f, 1f), new Color(1f, 0.62f, 0.28f), new Color(1f, 0.45f, 0.25f), new Color(0.45f, 1f, 0.6f), new Color(1f, 0.88f, 0.3f),
-                new Color(0.55f, 0.92f, 1f), new Color(1f, 0.45f, 0.5f),
-            };
-
-            int cols = 7;
             float cellW = 250f, cellH = 330f;
-            for (int i = 0; i < Icons.Count; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 int col = i % cols, row = i / cols;
                 float cx = (col - (cols - 1) * 0.5f) * cellW;
                 float cy = 260f - row * cellH;
 
-                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{IconFolder}/{Icons[i].Key}.png");
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{IconFolder}/{keys[i]}.png");
 
                 var card = NewImage(canvasObj.transform, "Card" + i, new Color(0.063f, 0.078f, 0.11f, 1f), new Vector2(cx, cy), new Vector2(cellW - 20f, cellH - 20f));
                 var big = NewImage(card.transform, "Big", colors[i], new Vector2(0f, 40f), new Vector2(150f, 150f));
@@ -155,8 +208,8 @@ namespace SurvivalDrone.EditorTools
             tex.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
             tex.Apply();
             RenderTexture.active = prev;
-            Directory.CreateDirectory(Path.GetDirectoryName(PreviewPath));
-            File.WriteAllBytes(PreviewPath, tex.EncodeToPNG());
+            Directory.CreateDirectory(Path.GetDirectoryName(previewPath));
+            File.WriteAllBytes(previewPath, tex.EncodeToPNG());
 
             UnityEngine.Object.DestroyImmediate(tex);
             cam.targetTexture = null;
@@ -164,7 +217,7 @@ namespace SurvivalDrone.EditorTools
             UnityEngine.Object.DestroyImmediate(rt);
             EditorSceneManager.CloseScene(scene, true);
             AssetDatabase.Refresh();
-            Debug.Log("[UiIconGenerator] 미리보기를 " + PreviewPath + "에 저장했습니다.");
+            Debug.Log("[UiIconGenerator] 미리보기를 " + previewPath + "에 저장했습니다.");
         }
 
         private static Image NewImage(Transform parent, string name, Color color, Vector2 pos, Vector2 size)
@@ -454,6 +507,136 @@ namespace SurvivalDrone.EditorTools
             bool legs = Box(x, y, 0.5f, 0.82f, 0.05f, 0.78f) || Box(x, y, -0.82f, -0.5f, 0.05f, 0.78f);
             bool tipGap = Box(x, y, -0.9f, 0.9f, 0.5f, 0.57f);
             return (arc || legs) && !tipGap;
+        }
+
+        // ── 2차 아이콘: 판 안 HUD·일시정지·공통 ──
+
+        // 시간: 시계(테두리 + 시침·분침).
+        private static bool Clock(float x, float y)
+        {
+            bool ring = Ring(x, y, 0f, 0f, 0.92f, 0.74f);
+            bool hands = Line(x, y, 0f, 0f, 0f, 0.5f, 0.15f) || Line(x, y, 0f, 0f, 0.36f, -0.2f, 0.15f);
+            return ring || hands;
+        }
+
+        // 오버드라이브: 번개.
+        private static bool Bolt(float x, float y)
+        {
+            return Poly(x, y, 0.25f, 0.95f, -0.55f, -0.05f, -0.08f, -0.05f, -0.28f, -0.95f, 0.58f, 0.12f, 0.1f, 0.12f, 0.5f, 0.95f);
+        }
+
+        // 레벨·경험치: 별.
+        private static bool StarIcon(float x, float y)
+        {
+            return Star(x, y, 5, 0.95f, 0.4f);
+        }
+
+        // 계속하기: 오른쪽을 향한 재생 삼각형.
+        private static bool Play(float x, float y)
+        {
+            return Poly(x, y, -0.5f, 0.82f, 0.88f, 0f, -0.5f, -0.82f);
+        }
+
+        // 재도전·재시작: 시계 방향으로 도는 원형 화살표.
+        private static bool Restart(float x, float y)
+        {
+            // 오른쪽 위에 틈(25~65도)을 낸 고리 + 틈 쪽을 가리키는 화살촉.
+            float angle = Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+            bool gap = angle > 25f && angle < 65f;
+            bool arc = Ring(x, y, 0f, 0f, 0.74f, 0.52f) && !gap;
+
+            float rad = 65f * Mathf.Deg2Rad;
+            float cx = Mathf.Cos(rad) * 0.63f, cy = Mathf.Sin(rad) * 0.63f;   // 고리 한가운데 선 위의 끝점
+            float tx = Mathf.Sin(rad), ty = -Mathf.Cos(rad);                   // 시계 방향 접선
+            float nx = Mathf.Cos(rad), ny = Mathf.Sin(rad);                    // 바깥쪽 방향
+            bool head = Poly(x, y,
+                cx + nx * 0.36f, cy + ny * 0.36f,
+                cx - nx * 0.36f, cy - ny * 0.36f,
+                cx + tx * 0.5f, cy + ty * 0.5f);
+            return arc || head;
+        }
+
+        // 로비·메인메뉴: 집(지붕 + 몸통 + 문).
+        private static bool Home(float x, float y)
+        {
+            bool roof = Poly(x, y, -0.95f, 0.08f, 0f, 0.92f, 0.95f, 0.08f) && !Poly(x, y, -0.62f, 0.08f, 0f, 0.6f, 0.62f, 0.08f);
+            bool body = Box(x, y, -0.62f, 0.62f, -0.85f, 0.1f) && !Box(x, y, -0.17f, 0.17f, -0.85f, -0.22f);
+            return roof || body;
+        }
+
+        // 뒤로: 왼쪽 화살표.
+        private static bool Back(float x, float y)
+        {
+            return Line(x, y, 0.8f, 0f, -0.75f, 0f, 0.2f) || Line(x, y, -0.75f, 0f, -0.1f, 0.62f, 0.2f) || Line(x, y, -0.75f, 0f, -0.1f, -0.62f, 0.2f);
+        }
+
+        // 닫기: X 표시.
+        private static bool Close(float x, float y)
+        {
+            return Line(x, y, -0.65f, 0.65f, 0.65f, -0.65f, 0.22f) || Line(x, y, -0.65f, -0.65f, 0.65f, 0.65f, 0.22f);
+        }
+
+        // 설정: 톱니바퀴(이 8개 + 가운데 구멍).
+        private static bool Gear(float x, float y)
+        {
+            bool body = Circle(x, y, 0f, 0f, 0.66f);
+            bool teeth = false;
+            for (int k = 0; k < 8 && !teeth; k++)
+            {
+                float a = -k * 45f * Mathf.Deg2Rad;
+                float rx = x * Mathf.Cos(a) - y * Mathf.Sin(a);
+                float ry = x * Mathf.Sin(a) + y * Mathf.Cos(a);
+                teeth = Box(rx, ry, 0.5f, 0.93f, -0.17f, 0.17f);
+            }
+            return (body || teeth) && !Circle(x, y, 0f, 0f, 0.28f);
+        }
+
+        // 효과음: 소리가 퍼지는 스피커.
+        private static bool Sound(float x, float y)
+        {
+            bool box = Box(x, y, -0.88f, -0.5f, -0.24f, 0.24f);
+            bool cone = Poly(x, y, -0.5f, 0.24f, -0.02f, 0.66f, -0.02f, -0.66f, -0.5f, -0.24f);
+            bool wave1 = Ring(x, y, -0.05f, 0f, 0.62f, 0.48f) && x > 0.1f && Mathf.Abs(y) < (x + 0.05f);
+            bool wave2 = Ring(x, y, -0.05f, 0f, 0.96f, 0.82f) && x > 0.1f && Mathf.Abs(y) < (x + 0.05f);
+            return box || cone || wave1 || wave2;
+        }
+
+        // 배경음악: 이어진 음표 두 개.
+        private static bool Music(float x, float y)
+        {
+            bool heads = Circle(x, y, -0.5f, -0.6f, 0.27f) || Circle(x, y, 0.42f, -0.45f, 0.27f);
+            bool stems = Box(x, y, -0.3f, -0.14f, -0.6f, 0.75f) || Box(x, y, 0.58f, 0.74f, -0.45f, 0.9f);
+            bool beam = Poly(x, y, -0.3f, 0.75f, 0.74f, 0.9f, 0.74f, 0.55f, -0.3f, 0.4f);
+            return heads || stems || beam;
+        }
+
+        // 잠금: 자물쇠.
+        private static bool Lock(float x, float y)
+        {
+            bool body = Box(x, y, -0.7f, 0.7f, -0.88f, 0.08f);
+            bool shackle = (Ring(x, y, 0f, 0.2f, 0.5f, 0.3f) && y > 0.2f) || Box(x, y, 0.3f, 0.5f, 0f, 0.2f) || Box(x, y, -0.5f, -0.3f, 0f, 0.2f);
+            bool keyhole = Circle(x, y, 0f, -0.3f, 0.14f) || Box(x, y, -0.05f, 0.05f, -0.62f, -0.3f);
+            return (body && !keyhole) || shackle;
+        }
+
+        // 조작법: 게임 패드(십자 버튼 + 버튼 두 개는 구멍으로 비움).
+        private static bool Controls(float x, float y)
+        {
+            bool body = Box(x, y, -0.5f, 0.5f, -0.5f, 0.5f)
+                        || Circle(x, y, -0.5f, 0f, 0.5f) || Circle(x, y, 0.5f, 0f, 0.5f)
+                        || Circle(x, y, -0.62f, -0.42f, 0.32f) || Circle(x, y, 0.62f, -0.42f, 0.32f);
+            bool dpad = Box(x, y, -0.68f, -0.28f, 0.06f, 0.18f) || Box(x, y, -0.54f, -0.42f, -0.08f, 0.32f);
+            bool buttons = Circle(x, y, 0.3f, 0.02f, 0.11f) || Circle(x, y, 0.56f, 0.2f, 0.11f);
+            return body && !dpad && !buttons;
+        }
+
+        // 게임 설명: 원 안의 i(정보) 표시.
+        private static bool Info(float x, float y)
+        {
+            bool ring = Ring(x, y, 0f, 0f, 0.92f, 0.76f);
+            bool dot = Circle(x, y, 0f, 0.42f, 0.12f);
+            bool stem = Box(x, y, -0.1f, 0.1f, -0.5f, 0.2f);
+            return ring || dot || stem;
         }
     }
 }

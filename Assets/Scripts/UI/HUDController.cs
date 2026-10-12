@@ -52,6 +52,9 @@ namespace SurvivalDrone.UI
         // 남은 시간을 보여줄 텍스트.
         [SerializeField] private Text timerText;
 
+        // 남은 시간 글자 왼쪽의 시계 아이콘. "남은 적 N"이 보일 때는 시계가 어울리지 않아 숨긴다. (없으면 아무것도 안 함)
+        [SerializeField] private GameObject timerIcon;
+
         // 현재 레벨을 보여줄 텍스트.
         [SerializeField] private Text levelText;
 
@@ -110,6 +113,7 @@ namespace SurvivalDrone.UI
                         shownEnemies = enemies;
                         shownSeconds = -1;
                         timerText.text = $"남은 적 {enemies}";
+                        SetTimerIcon(false);
                     }
                     return;
                 }
@@ -126,7 +130,13 @@ namespace SurvivalDrone.UI
 
                 // "00:00" 형식으로 자릿수를 맞춰서 표시 (예: 5분 5초 -> "05:05").
                 timerText.text = $"{minutes:00}:{seconds:00}";
+                SetTimerIcon(true);
             }
+        }
+
+        private void SetTimerIcon(bool visible)
+        {
+            if (timerIcon != null && timerIcon.activeSelf != visible) timerIcon.SetActive(visible);
         }
 
         // 체력이 바뀔 때 호출되어 체력바를 채워진 비율로 갱신.

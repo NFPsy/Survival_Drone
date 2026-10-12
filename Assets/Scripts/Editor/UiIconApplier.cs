@@ -289,5 +289,212 @@ namespace SurvivalDrone.EditorTools
                 }
             }
         }
+
+        // ───────────────────────── 2차 아이콘 (판 안 HUD·일시정지·결과·공통 버튼) ─────────────────────────
+        // 위 1차(ApplyAll)와 별개로 실행한다. 여러 번 실행해도 안전하다(이미 붙은 아이콘은 그림·색·크기만 맞춘다).
+        // 1차의 InGame 부분(레벨업 카드)은 건드리지 않는다.
+
+        private static readonly Color BoltColor = new Color(1f, 0.72f, 0.25f);
+        private static readonly Color OrangeColor = new Color(1f, 0.62f, 0.28f);   // "잠금" 전용색
+        private static readonly Color GreenColor = new Color(0.45f, 1f, 0.6f);
+        private static readonly Color HeartColor = new Color(1f, 0.9f, 0.92f);   // 빨간 체력바 위에서도 보이도록 밝게
+        private static readonly Color LightColor = new Color(0.85f, 0.92f, 0.94f);
+
+        [MenuItem("SurvivalDrone/UI/Apply Icons To Scenes (2nd)")]
+        public static void ApplyAll2()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("[UiIconApplier] 플레이 모드 중에는 쓸 수 없습니다.");
+                return;
+            }
+
+            ApplyScene("Assets/Scenes/MainMenu.unity", ApplyMainMenu2);
+            ApplyScene("Assets/Scenes/Lobby.unity", ApplyLobby2);
+            ApplyScene("Assets/Scenes/Hangar.unity", ApplyHangar2);
+            ApplyScene("Assets/Scenes/Gacha.unity", ApplyGacha2);
+            ApplyScene("Assets/Scenes/InGame.unity", ApplyInGame2);
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[UiIconApplier] 2차 아이콘을 메인메뉴·로비·격납고·뽑기·InGame 씬에 붙였습니다.");
+        }
+
+        // 버튼 글자 왼쪽에 아이콘을 붙인다. 채워진(밝은) 버튼이면 어두운 아이콘, 어두운 버튼이면 지정한 색.
+        // newLabel을 주면 글자를 그 말로 바꾼다("<  뒤로" 같은 글자 기호를 없앨 때).
+        private static void AddButtonIcon2(Transform button, string spriteName, Color tint, string newLabel = null)
+        {
+            if (button == null)
+            {
+                Debug.LogWarning($"[UiIconApplier] 버튼을 찾지 못했습니다: {spriteName}");
+                return;
+            }
+            var label = button.GetComponentInChildren<Text>(true);
+            if (label == null) return;
+            if (newLabel != null && label.text != newLabel)
+            {
+                label.text = newLabel;
+                EditorUtility.SetDirty(label);
+            }
+
+            var fill = button.GetComponent<Image>();
+            float luminance = fill != null ? fill.color.r * 0.299f + fill.color.g * 0.587f + fill.color.b * 0.114f : 0f;
+            Color color = luminance > 0.5f ? UiIcons.Dark : tint;
+            float size = Mathf.Round(((RectTransform)button).rect.height * 0.5f);
+            const float gap = 12f;
+            AddPrefixIcon(label, LoadSprite(spriteName), color, size, gap);
+
+            // 왼쪽 정렬 글자(메인메뉴 시작 화면 버튼)는 아이콘이 글자 왼쪽에 놓여서 버튼 왼쪽 끝 밖으로 삐져나올 수 있다.
+            // 아이콘이 버튼 안쪽 16px 이상에서 시작하도록 글자의 왼쪽 끝을 오른쪽으로 민다. (이미 충분하면 아무것도 안 해서 여러 번 실행해도 안전)
+            bool leftAligned = label.alignment == TextAnchor.MiddleLeft || label.alignment == TextAnchor.UpperLeft || label.alignment == TextAnchor.LowerLeft;
+            var rect = label.rectTransform;
+            if (leftAligned && rect.anchorMin.x == 0f && rect.anchorMax.x == 1f)
+            {
+                const float minPadding = 16f;
+                float iconLeft = rect.offsetMin.x - gap - size;
+                if (iconLeft < minPadding)
+                {
+                    var min = rect.offsetMin;
+                    min.x += minPadding - iconLeft;
+                    rect.offsetMin = min;
+                    label.GetComponent<TextIconPrefix>().Reposition();
+                    EditorUtility.SetDirty(label.gameObject);
+                }
+            }
+        }
+
+        // 일반 글자 왼쪽에 아이콘을 붙인다(크기는 글자 크기에 맞춤).
+        private static Image AddTextIcon2(Text text, string spriteName, Color tint, float gap = 10f)
+        {
+            if (text == null) return null;
+            return AddPrefixIcon(text, LoadSprite(spriteName), tint, Mathf.Round(text.fontSize * TextIconScale), gap);
+        }
+
+        // 왼쪽 정렬 글자(슬라이더 이름 등)에 아이콘을 붙인다. 아이콘 자리를 만들려고 글자 왼쪽 끝을 오른쪽으로 민다. (처음 붙일 때만)
+        private static void AddLeftLabelIcon2(Text text, string spriteName, Color tint)
+        {
+            if (text == null) return;
+            bool isNew = text.transform.Find("Icon") == null;
+            float size = Mathf.Round(text.fontSize * TextIconScale);
+            const float gap = 10f;
+            AddPrefixIcon(text, LoadSprite(spriteName), tint, size, gap);
+            if (!isNew) return;
+
+            var rect = text.rectTransform;
+            var min = rect.offsetMin;
+            min.x += size + gap;
+            rect.offsetMin = min;
+            text.GetComponent<TextIconPrefix>().Reposition();
+            EditorUtility.SetDirty(text.gameObject);
+        }
+
+        private static void ApplyMainMenu2(Scene scene)
+        {
+            var canvas = FindByName(scene, "Canvas");
+            if (canvas == null) return;
+
+            AddButtonIcon2(canvas.Find("TitlePanel/BtnStart"), "icon_launch", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("TitlePanel/BtnControls"), "icon_controls", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("TitlePanel/BtnAbout"), "icon_info", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("TitlePanel/BtnSettings"), "icon_gear", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("SlotSelectPanel/BtnBack"), "icon_back", UiIcons.Cyan, "뒤로");
+            foreach (var panel in new[] { "ControlsPanel", "AboutPanel", "SettingsPanel" })
+                AddButtonIcon2(canvas.Find(panel + "/BtnClose"), "icon_close", LightColor);
+
+            AddLeftLabelIcon2(GetText(canvas, "SettingsPanel/MusicLabel"), "icon_music", UiIcons.Cyan);
+            AddLeftLabelIcon2(GetText(canvas, "SettingsPanel/SfxLabel"), "icon_sound", UiIcons.Cyan);
+        }
+
+        private static void ApplyLobby2(Scene scene)
+        {
+            var canvas = FindByName(scene, "Canvas");
+            if (canvas == null) return;
+
+            AddButtonIcon2(canvas.Find("BtnBack"), "icon_home", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("StageSelectPanel/BtnClose"), "icon_back", UiIcons.Cyan);
+            foreach (var popup in new[] { "TestLogPopup", "DailyQuestPopup", "MilestonePopup" })
+                AddButtonIcon2(canvas.Find(popup + "/Box/BtnClose"), "icon_close", LightColor);
+
+            // 잠긴 스테이지 안내("STAGE N 클리어 필요")는 잠겼을 때만 보이는 글자라 자물쇠가 늘 어울린다.
+            AddTextIcon2(GetText(canvas, "StageCard/LockText"), "icon_lock", OrangeColor);
+            AddTextIcon2(GetText(canvas, "StageSelectPanel/CardTemplate/LockText"), "icon_lock", OrangeColor, 6f);
+        }
+
+        private static void ApplyHangar2(Scene scene)
+        {
+            var canvas = FindByName(scene, "Canvas");
+            if (canvas == null) return;
+
+            AddButtonIcon2(canvas.Find("BtnBack"), "icon_back", UiIcons.Cyan, "뒤로");
+        }
+
+        private static void ApplyGacha2(Scene scene)
+        {
+            var canvas = FindByName(scene, "Canvas");
+            if (canvas == null) return;
+
+            foreach (var path in new[] { "BtnBack", "GachaSelectPanel/BtnBack", "LockOnPanel/BtnBack" })
+                AddButtonIcon2(canvas.Find(path), "icon_back", UiIcons.Cyan, "뒤로");
+            foreach (var path in new[] { "ProbabilityPopup/Box/BtnClose", "LockOnPanel/RatesPopup/Box/BtnClose" })
+                AddButtonIcon2(canvas.Find(path), "icon_close", LightColor);
+            for (int i = 0; i < 3; i++)
+                AddButtonIcon2(canvas.Find($"LockOnPanel/SlotContainer/Slot_{i}/BtnLock"), "icon_lock", OrangeColor);
+        }
+
+        private static void ApplyInGame2(Scene scene)
+        {
+            var canvas = FindByName(scene, "Canvas");
+            if (canvas == null) return;
+
+            // 판 안 HUD: 시계(시간)·하트(체력)·번개(오버드라이브)·별(레벨)
+            var timerIcon = AddTextIcon2(GetText(canvas, "HUD/TimerText"), "icon_clock", UiIcons.Cyan);
+            AddTextIcon2(GetText(canvas, "HUD/HealthText"), "icon_stat_health", HeartColor, 6f);
+            AddTextIcon2(GetText(canvas, "HUD/OverdriveText"), "icon_bolt", BoltColor, 6f);
+
+            // 레벨 글자는 체력바 바로 오른쪽이라 아이콘이 바와 겹치지 않게 글자를 아이콘 폭만큼 오른쪽으로 민다. (처음 붙일 때만)
+            var levelText = GetText(canvas, "HUD/LevelText");
+            if (levelText != null)
+            {
+                bool isNew = levelText.transform.Find("Icon") == null;
+                float size = Mathf.Round(levelText.fontSize * TextIconScale);
+                AddPrefixIcon(levelText, LoadSprite("icon_star"), UiIcons.Gold, size, 8f);
+                if (isNew)
+                {
+                    var rect = levelText.rectTransform;
+                    var pos = rect.anchoredPosition;
+                    pos.x += size + 8f;
+                    rect.anchoredPosition = pos;
+                    levelText.GetComponent<TextIconPrefix>().Reposition();
+                    EditorUtility.SetDirty(levelText.gameObject);
+                }
+            }
+
+            // HUDController가 "남은 적 N"일 때 시계를 숨길 수 있게 연결한다.
+            if (timerIcon != null)
+            {
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    foreach (var hud in root.GetComponentsInChildren<HUDController>(true))
+                    {
+                        var so = new SerializedObject(hud);
+                        var prop = so.FindProperty("timerIcon");
+                        if (prop == null) continue;
+                        prop.objectReferenceValue = timerIcon.gameObject;
+                        so.ApplyModifiedPropertiesWithoutUndo();
+                        EditorUtility.SetDirty(hud);
+                    }
+                }
+            }
+
+            // 일시정지·결과 버튼
+            AddButtonIcon2(canvas.Find("PausePanel/BtnContinue"), "icon_play", GreenColor);
+            AddButtonIcon2(canvas.Find("PausePanel/BtnRestart"), "icon_restart", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("PausePanel/BtnLobby"), "icon_home", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("PausePanel/BtnMainMenu"), "icon_home", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("ResultPanel/BtnRestart"), "icon_restart", UiIcons.Cyan);
+            AddButtonIcon2(canvas.Find("ResultPanel/BtnMainMenu"), "icon_home", UiIcons.Cyan);
+
+            AddLeftLabelIcon2(GetText(canvas, "PausePanel/VolumeRow/MusicLabel"), "icon_music", UiIcons.Cyan);
+            AddLeftLabelIcon2(GetText(canvas, "PausePanel/VolumeRow/SfxLabel"), "icon_sound", UiIcons.Cyan);
+        }
     }
 }
