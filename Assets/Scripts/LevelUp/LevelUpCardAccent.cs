@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,6 +27,37 @@ namespace SurvivalDrone.LevelUp
             if (corners == null) return;
             foreach (var corner in corners)
                 if (corner != null) corner.color = WithAlpha(color, 0.8f);
+        }
+
+        // 카드가 도착한 순간 위쪽 빛과 띠가 한 번 반짝이게 한다. (색은 SetColor로 정해 둔 것을 그대로 쓰고 밝기만 잠깐 올린다)
+        public void Flash()
+        {
+            if (!isActiveAndEnabled || gradient == null) return;
+            StopAllCoroutines();
+            StartCoroutine(FlashRoutine());
+        }
+
+        private IEnumerator FlashRoutine()
+        {
+            const float duration = 0.35f;
+            Color baseGradient = gradient.color;
+            Color baseBand = band != null ? band.color : Color.white;
+            for (float t = 0f; t < duration; t += Mathf.Min(Time.unscaledDeltaTime, 1f / 30f))
+            {
+                // 0 → 1 → 0 으로 올랐다 내려오는 값 (가운데에서 가장 밝다)
+                float pulse = Mathf.Sin(Mathf.PI * t / duration);
+                var g = baseGradient;
+                g.a = Mathf.Lerp(baseGradient.a, 0.7f, pulse);
+                gradient.color = g;
+                if (band != null)
+                {
+                    // 띠는 흰색 쪽으로 살짝 밝아진다.
+                    band.color = Color.Lerp(baseBand, Color.white, pulse * 0.5f);
+                }
+                yield return null;
+            }
+            gradient.color = baseGradient;
+            if (band != null) band.color = baseBand;
         }
 
         private static Color WithAlpha(Color color, float alpha)

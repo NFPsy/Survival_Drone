@@ -311,6 +311,13 @@ namespace SurvivalDrone.LevelUp
         {
             if (index < 0 || index >= currentOptions.Count) return;
 
+            // 카드가 아직 올라오는 중이면(등장 연출) 고를 수 없다. 거의 다 올라온 카드부터는 바로 고를 수 있다.
+            if (index < optionButtons.Length && optionButtons[index] != null)
+            {
+                var entrance = optionButtons[index].GetComponent<LevelUpCardEntrance>();
+                if (entrance != null && !entrance.CanChoose) return;
+            }
+
             var option = currentOptions[index];
 
             // 선택지 종류에 따라 실제로 적용할 내용을 분기 처리.

@@ -25,6 +25,9 @@ namespace SurvivalDrone.LevelUp
         private Vector2 _baseOutlineDistance;
         private bool _hover;
 
+        // true인 동안은 크기를 건드리지 않는다. 등장 연출(LevelUpCardEntrance)이 카드 크기를 움직이는 동안 쉬게 하려고 쓴다.
+        public bool Suspended { get; set; }
+
         private void Awake()
         {
             _outline = GetComponent<Outline>();
@@ -57,6 +60,7 @@ namespace SurvivalDrone.LevelUp
 
         private void Update()
         {
+            if (Suspended) return;
             float target = _hover ? hoverScale : 1f;
             float current = transform.localScale.x;
             float next = Mathf.MoveTowards(current, target, speed * (hoverScale - 1f) * Time.unscaledDeltaTime);

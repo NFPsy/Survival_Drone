@@ -1618,6 +1618,7 @@ GameObject:
   - component: {fileID: 230017203}
   - component: {fileID: 230017204}
   - component: {fileID: 230017205}
+  - component: {fileID: 230017206}
   m_Layer: 0
   m_Name: Option0
   m_TagString: Untagged
@@ -1788,6 +1789,23 @@ MonoBehaviour:
   - {fileID: 367204495}
   - {fileID: 12726768}
   - {fileID: 371742305}
+--- !u!114 &230017206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 230017198}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1143b95b12668a04eb3f5ec393074d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpCardEntrance
+  delay: 0.1
+  duration: 0.22
+  slideFrom: {x: 0, y: -40}
+  startScale: 0.9
+  overshoot: 1.2
 --- !u!1 &273464186
 GameObject:
   m_ObjectHideFlags: 0
@@ -9550,6 +9568,7 @@ GameObject:
   - component: {fileID: 1598426574}
   - component: {fileID: 1598426573}
   - component: {fileID: 1598426572}
+  - component: {fileID: 1598426575}
   m_Layer: 0
   m_Name: SubHeaderText
   m_TagString: Untagged
@@ -9618,6 +9637,23 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 245}
   m_SizeDelta: {x: 1000, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1598426575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1598426571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1143b95b12668a04eb3f5ec393074d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpCardEntrance
+  delay: 0.06
+  duration: 0.18
+  slideFrom: {x: 0, y: 20}
+  startScale: 1
+  overshoot: 1.2
 --- !u!1 &1609540862
 GameObject:
   m_ObjectHideFlags: 0
@@ -11296,6 +11332,7 @@ GameObject:
   - component: {fileID: 1900578754}
   - component: {fileID: 1900578755}
   - component: {fileID: 1900578756}
+  - component: {fileID: 1900578757}
   m_Layer: 0
   m_Name: HeaderText
   m_TagString: Untagged
@@ -11364,6 +11401,23 @@ MonoBehaviour:
     m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: "\uB808\uBCA8 \uC5C5!"
+--- !u!114 &1900578757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900578753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1143b95b12668a04eb3f5ec393074d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpCardEntrance
+  delay: 0
+  duration: 0.18
+  slideFrom: {x: 0, y: 30}
+  startScale: 0.95
+  overshoot: 1.2
 --- !u!1 &1903707188
 GameObject:
   m_ObjectHideFlags: 0
@@ -16921,6 +16975,7 @@ GameObject:
   - component: {fileID: 1980693728}
   - component: {fileID: 1980693729}
   - component: {fileID: 1980693730}
+  - component: {fileID: 1980693731}
   m_Layer: 0
   m_Name: Option2
   m_TagString: Untagged
@@ -17091,6 +17146,23 @@ MonoBehaviour:
   - {fileID: 1789291364}
   - {fileID: 2011697674}
   - {fileID: 171752836}
+--- !u!114 &1980693731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1980693723}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1143b95b12668a04eb3f5ec393074d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpCardEntrance
+  delay: 0.26
+  duration: 0.22
+  slideFrom: {x: 0, y: -40}
+  startScale: 0.9
+  overshoot: 1.2
 --- !u!1 &1996699166
 GameObject:
   m_ObjectHideFlags: 0
@@ -17474,6 +17546,7 @@ GameObject:
   - component: {fileID: 2029274675}
   - component: {fileID: 2029274676}
   - component: {fileID: 2029274677}
+  - component: {fileID: 2029274678}
   m_Layer: 0
   m_Name: Option1
   m_TagString: Untagged
@@ -17644,6 +17717,23 @@ MonoBehaviour:
   - {fileID: 835624866}
   - {fileID: 1676648106}
   - {fileID: 631803043}
+--- !u!114 &2029274678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2029274670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1143b95b12668a04eb3f5ec393074d8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.LevelUp.LevelUpCardEntrance
+  delay: 0.18
+  duration: 0.22
+  slideFrom: {x: 0, y: -40}
+  startScale: 0.9
+  overshoot: 1.2
 --- !u!1 &2040366543
 GameObject:
   m_ObjectHideFlags: 0

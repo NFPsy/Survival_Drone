@@ -12,7 +12,7 @@ namespace SurvivalDrone.EditorTools
     // 새 카드 구성 (카드 한 장 320x440, 위에서 아래로):
     //   Tag(종류 라벨) + KeyHint(키 안내) → BigIcon(큰 아이콘) → Title(이름) → Desc(설명) → Divider(가는 선) → Change(무엇이 바뀌는지)
     // 화면 위쪽에는 HeaderText("레벨 업!")와 SubHeaderText(안내 글자)가 생긴다.
-    // 카드에는 마우스를 올리면 밝아지는 LevelUpCardHover가 붙고, 기존 제목 옆 작은 아이콘(TextIconPrefix)은 큰 아이콘으로 대체된다.
+    // 카드에는 마우스를 올리면 밝아지는 LevelUpCardHover와 차례로 올라오는 등장 연출 LevelUpCardEntrance가 붙고, 기존 제목 옆 작은 아이콘(TextIconPrefix)은 큰 아이콘으로 대체된다.
     //
     // 메뉴: SurvivalDrone/UI/Apply Level Up Redesign
     public static class LevelUpUiApplier
@@ -50,6 +50,10 @@ namespace SurvivalDrone.EditorTools
             var header = EnsureText(panel, "HeaderText", font, 64, Cyan, TextAnchor.MiddleCenter, new Vector2(0f, 310f), new Vector2(1000f, 90f), "레벨 업!");
             var subHeader = EnsureText(panel, "SubHeaderText", font, 26, Muted, TextAnchor.MiddleCenter, new Vector2(0f, 245f), new Vector2(1000f, 40f), "하나를 골라 주세요");
 
+            // 화면 위쪽 제목과 안내 글자는 카드보다 먼저, 위에서 살짝 내려오며 나타난다.
+            SetEntrance(header.gameObject, 0f, 0.18f, new Vector2(0f, 30f), 0.95f);
+            SetEntrance(subHeader.gameObject, 0.06f, 0.18f, new Vector2(0f, 20f), 1f);
+
             var tags = new Text[3];
             var changes = new Text[3];
             var keys = new Text[3];
@@ -69,6 +73,9 @@ namespace SurvivalDrone.EditorTools
                 var button = card.GetComponent<Button>();
                 if (button != null) button.transition = Selectable.Transition.None;
                 if (card.GetComponent<LevelUpCardHover>() == null) card.gameObject.AddComponent<LevelUpCardHover>();
+
+                // 카드가 왼쪽부터 차례로 아래에서 올라오며 나타나게 한다. (제목이 먼저 나온 뒤 0.1초부터 카드, 카드 사이 0.08초 간격)
+                SetEntrance(card.gameObject, 0.1f + i * 0.08f, 0.22f, new Vector2(0f, -40f), 0.9f);
 
                 // 예전 제목 옆 작은 아이콘 방식은 큰 아이콘으로 대체한다.
                 var title = card.Find("Title");
@@ -150,6 +157,57 @@ namespace SurvivalDrone.EditorTools
             EditorSceneManager.SaveScene(scene);
             EditorSceneManager.CloseScene(scene, true);
             Debug.Log("[LevelUpUiApplier] 레벨업 선택 화면을 새 디자인으로 바꿨습니다.");
+        }
+
+        // 등장 연출만 따로 붙이고 싶을 때 쓴다. 카드 배치·장식은 건드리지 않는다. (이미 만든 화면에 연출만 더하거나 값을 다시 정할 때)
+        [MenuItem("SurvivalDrone/UI/Apply Level Up Card Entrance")]
+        public static void ApplyEntranceOnly()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("[LevelUpUiApplier] 플레이 모드 중에는 쓸 수 없습니다.");
+                return;
+            }
+
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
+            Transform panel = null;
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == "LevelUpPanel") panel = t;
+            if (panel == null)
+            {
+                Debug.LogWarning("[LevelUpUiApplier] LevelUpPanel을 찾지 못했습니다.");
+                EditorSceneManager.CloseScene(scene, true);
+                return;
+            }
+
+            var header = panel.Find("HeaderText");
+            var subHeader = panel.Find("SubHeaderText");
+            if (header != null) SetEntrance(header.gameObject, 0f, 0.18f, new Vector2(0f, 30f), 0.95f);
+            if (subHeader != null) SetEntrance(subHeader.gameObject, 0.06f, 0.18f, new Vector2(0f, 20f), 1f);
+            for (int i = 0; i < 3; i++)
+            {
+                var card = panel.Find("Option" + i);
+                if (card != null) SetEntrance(card.gameObject, 0.1f + i * 0.08f, 0.22f, new Vector2(0f, -40f), 0.9f);
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            EditorSceneManager.CloseScene(scene, true);
+            Debug.Log("[LevelUpUiApplier] 레벨업 카드 등장 연출을 붙였습니다.");
+        }
+
+        // 등장 연출(LevelUpCardEntrance)을 붙이고 값을 정한다. 이미 붙어 있으면 값만 다시 정한다.
+        private static void SetEntrance(GameObject target, float delay, float duration, Vector2 slideFrom, float startScale)
+        {
+            var entrance = target.GetComponent<LevelUpCardEntrance>();
+            if (entrance == null) entrance = target.AddComponent<LevelUpCardEntrance>();
+            var so = new SerializedObject(entrance);
+            so.FindProperty("delay").floatValue = delay;
+            so.FindProperty("duration").floatValue = duration;
+            so.FindProperty("slideFrom").vector2Value = slideFrom;
+            so.FindProperty("startScale").floatValue = startScale;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void SetRect(Transform t, Vector2 pos, Vector2 size)
