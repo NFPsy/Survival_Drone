@@ -36,6 +36,17 @@ namespace SurvivalDrone.Meta
         [SerializeField] private int[] _upgradeShardCosts = { 30, 50, 80, 120 };
         [SerializeField] private int[] _upgradeCreditCosts = { 300, 500, 800, 1200 };
 
+        // ---- 각성 단계 (OBT 2단계, 기본 꺼짐) ----
+        // 드론 강화 레벨 상한을 5에서 더 늘리는 "각성" 단계. Lv6, Lv7, Lv8처럼 위 강화 비용 배열 뒤에 이어 붙는다.
+        // 꺼져 있으면(기본) 지금 게임과 똑같이 최대 레벨이 5다. 켜면 최대 레벨 = 5 + 각성 칸 수가 된다.
+        // 레벨당 전투력 보너스(위 _levelBonusPerLevel)는 각성 레벨에도 그대로 이어진다.
+        // 값은 시험용 초안(상점 설계 10절): 조각 150/200/250 + 크레딧 1,500/2,000/2,500. CBT 로그를 본 뒤 여기서 숫자만 고친다.
+        // 두 배열의 길이는 같아야 한다.
+        [Header("각성 단계 (OBT 2단계)")]
+        [SerializeField] private bool _awakeningEnabled = false;
+        [SerializeField] private int[] _awakeningShardCosts = { 150, 200, 250 };
+        [SerializeField] private int[] _awakeningCreditCosts = { 1500, 2000, 2500 };
+
         // ---- 조각 교환 (크레딧 → 조각) ----
         // 격납고에서 크레딧을 내고 고른 드론의 조각을 살 수 있다. 조각은 원래 뽑기에서 같은 드론이 또 나올 때만 생겨서
         // 강화의 진짜 병목이었고, 크레딧은 쓸 곳이 강화 비용뿐이라 남아돌았다. 그래서 남는 크레딧을 조각으로 바꿔 준다.
@@ -58,8 +69,17 @@ namespace SurvivalDrone.Meta
         public int ShardExchangeCredit => _shardExchangeCredit;
         public int ShardExchangeDailyLimit => _shardExchangeDailyLimit;
 
-        // 최대 강화 레벨 (강화 비용 칸 수 + 1).
-        public int MaxLevel => _upgradeShardCosts.Length + 1;
+        // 각성 단계가 켜져 있는지.
+        public bool AwakeningEnabled => _awakeningEnabled;
+
+        // 각성 단계를 뺀 기본 최대 레벨 (강화 비용 칸 수 + 1). 지금 게임은 5다.
+        public int BaseMaxLevel => _upgradeShardCosts.Length + 1;
+
+        // 최대 강화 레벨. 각성이 꺼져 있으면 기본 최대 레벨, 켜져 있으면 각성 칸 수만큼 더 높다.
+        public int MaxLevel => BaseMaxLevel + (_awakeningEnabled ? _awakeningShardCosts.Length : 0);
+
+        // 이 레벨이 각성 단계(기본 최대 레벨을 넘는 레벨)인지. 각성이 꺼져 있으면 항상 false.
+        public bool IsAwakeningLevel(int level) => _awakeningEnabled && level > BaseMaxLevel && level <= MaxLevel;
 
         public float GetGradeMultiplier(GachaRarity rarity)
         {
@@ -77,14 +97,21 @@ namespace SurvivalDrone.Meta
         public int GetUpgradeShardCost(int currentLevel)
         {
             int index = currentLevel - 1;
-            return index >= 0 && index < _upgradeShardCosts.Length ? _upgradeShardCosts[index] : 0;
+            if (index >= 0 && index < _upgradeShardCosts.Length) return _upgradeShardCosts[index];
+
+            // 기본 최대 레벨을 넘으면 각성 비용 (각성이 켜져 있을 때만)
+            int awakeningIndex = index - _upgradeShardCosts.Length;
+            return _awakeningEnabled && awakeningIndex >= 0 && awakeningIndex < _awakeningShardCosts.Length ? _awakeningShardCosts[awakeningIndex] : 0;
         }
 
         // 현재 레벨에서 다음 레벨로 올리는 데 필요한 크레딧. 이미 최대 레벨이면 0.
         public int GetUpgradeCreditCost(int currentLevel)
         {
             int index = currentLevel - 1;
-            return index >= 0 && index < _upgradeCreditCosts.Length ? _upgradeCreditCosts[index] : 0;
+            if (index >= 0 && index < _upgradeCreditCosts.Length) return _upgradeCreditCosts[index];
+
+            int awakeningIndex = index - _upgradeCreditCosts.Length;
+            return _awakeningEnabled && awakeningIndex >= 0 && awakeningIndex < _awakeningCreditCosts.Length ? _awakeningCreditCosts[awakeningIndex] : 0;
         }
 
         // 인스펙터에서 값을 바꿀 때마다 호출된다. 두 비용 배열의 길이가 다르거나 슬롯이 0개면 경고를 띄운다.
@@ -92,6 +119,9 @@ namespace SurvivalDrone.Meta
         {
             if (_upgradeShardCosts.Length != _upgradeCreditCosts.Length)
                 Debug.LogWarning($"[Inventory] DroneGrowthTable 강화 조각 비용({_upgradeShardCosts.Length}칸)과 크레딧 비용({_upgradeCreditCosts.Length}칸)의 칸 수가 다릅니다.", this);
+
+            if (_awakeningShardCosts.Length != _awakeningCreditCosts.Length)
+                Debug.LogWarning($"[Inventory] DroneGrowthTable 각성 조각 비용({_awakeningShardCosts.Length}칸)과 크레딧 비용({_awakeningCreditCosts.Length}칸)의 칸 수가 다릅니다.", this);
 
             if (_equipSlotCount < 1)
                 Debug.LogWarning($"[Inventory] DroneGrowthTable 장착 슬롯은 1개 이상이어야 합니다: {_equipSlotCount}", this);

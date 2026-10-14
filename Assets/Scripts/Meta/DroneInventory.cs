@@ -38,6 +38,9 @@ namespace SurvivalDrone.Meta
         public int EquipSlotCount => _isReady ? _growthTable.EquipSlotCount : 0;
         public int MaxLevel => _isReady ? _growthTable.MaxLevel : 1;
 
+        // 이 레벨이 각성 단계(기본 최대 레벨 5를 넘는 레벨)인지. 각성이 꺼져 있으면 항상 false.
+        public bool IsAwakeningLevel(int level) => _isReady && _growthTable.IsAwakeningLevel(level);
+
         private void Awake()
         {
             if (Instance != null && Instance != this)

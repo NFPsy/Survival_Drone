@@ -256,8 +256,103 @@ namespace SurvivalDrone.EditorTools
                 UnityEngine.Object.DestroyImmediate(currencyObject);
             }
 
+            fails += VerifyAwakening(growth, gacha, currencyTable);
+
             if (fails == 0) Debug.Log($"[Inventory] 검증 완료: 모든 항목 통과 ({DateTime.Now:HH:mm:ss})");
             else Debug.LogError($"[Inventory] 검증 완료: {fails}개 항목 실패 ({DateTime.Now:HH:mm:ss})");
+        }
+
+        // 각성 단계(OBT 2단계, 기본 꺼짐) 검증. 실제 에셋을 복제해서 스위치를 끈 것/켠 것으로 나눠 검사하므로
+        // 실제 에셋의 스위치 상태와 상관없이 같은 결과가 나온다.
+        private static int VerifyAwakening(DroneGrowthTable growth, GachaTable gacha, CurrencyTable currencyTable)
+        {
+            int fails = 0;
+            Debug.Log($"[Inventory] 안내 — 각성 단계 스위치(실제 에셋): {(growth.AwakeningEnabled ? "켜짐" : "꺼짐")} (OBT 2단계 전에는 꺼짐이 정상)");
+
+            var off = UnityEngine.Object.Instantiate(growth);
+            var on = UnityEngine.Object.Instantiate(growth);
+            var currencyObject = new GameObject("AwakeningVerifier_Currency") { hideFlags = HideFlags.HideAndDontSave };
+            var inventoryObject = new GameObject("AwakeningVerifier_Inventory") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                SetAwakening(off, false);
+                SetAwakening(on, true);
+
+                fails += Check(off.MaxLevel == 5 && off.BaseMaxLevel == 5 && off.GetUpgradeShardCost(5) == 0 && off.GetUpgradeCreditCost(5) == 0 && !off.IsAwakeningLevel(6),
+                    $"각성 꺼짐: 최대 레벨 {off.MaxLevel}, Lv5에서는 더 올릴 수 없음 (지금 게임과 같음)");
+                fails += Check(on.MaxLevel == 8 && on.BaseMaxLevel == 5, $"각성 켜짐: 최대 레벨 {on.MaxLevel} (기본 {on.BaseMaxLevel} + 각성 3)");
+                fails += Check(on.GetUpgradeShardCost(1) == off.GetUpgradeShardCost(1) && on.GetUpgradeShardCost(4) == off.GetUpgradeShardCost(4)
+                               && on.GetUpgradeCreditCost(4) == off.GetUpgradeCreditCost(4),
+                    "Lv1~5 강화 비용은 각성이 켜져도 같다");
+                fails += Check(on.GetUpgradeShardCost(5) == 150 && on.GetUpgradeShardCost(6) == 200 && on.GetUpgradeShardCost(7) == 250 && on.GetUpgradeShardCost(8) == 0,
+                    $"각성 조각 비용: Lv5→6 {on.GetUpgradeShardCost(5)}, 6→7 {on.GetUpgradeShardCost(6)}, 7→8 {on.GetUpgradeShardCost(7)}, 8→ {on.GetUpgradeShardCost(8)}");
+                fails += Check(on.GetUpgradeCreditCost(5) == 1500 && on.GetUpgradeCreditCost(6) == 2000 && on.GetUpgradeCreditCost(7) == 2500 && on.GetUpgradeCreditCost(8) == 0,
+                    $"각성 크레딧 비용: {on.GetUpgradeCreditCost(5)} / {on.GetUpgradeCreditCost(6)} / {on.GetUpgradeCreditCost(7)}");
+                fails += Check(!on.IsAwakeningLevel(5) && on.IsAwakeningLevel(6) && on.IsAwakeningLevel(8) && !on.IsAwakeningLevel(9),
+                    "각성 레벨 판별: 6~8만 각성 단계");
+
+                // ---- 켜짐 상태에서 Lv5 → Lv8 강화 흐름 ----
+                var data = new SaveData();
+                var currency = currencyObject.AddComponent<CurrencyManager>();
+                currency.Initialize(data, currencyTable, false);
+                var inventory = inventoryObject.AddComponent<DroneInventory>();
+                inventory.Initialize(data, on, gacha, false);
+                var melee = data.ownedDrones.Find(o => o.droneType == DroneType.Melee);
+                melee.level = 5;
+                melee.shards = 600;
+                currency.AddCredit(6000);
+
+                var r1 = inventory.TryUpgrade(DroneType.Melee, currency);
+                var r2 = inventory.TryUpgrade(DroneType.Melee, currency);
+                var r3 = inventory.TryUpgrade(DroneType.Melee, currency);
+                var r4 = inventory.TryUpgrade(DroneType.Melee, currency);
+                DroneInfo info;
+                inventory.TryGetInfo(DroneType.Melee, out info);
+                fails += Check(r1 == UpgradeResult.Success && r2 == UpgradeResult.Success && r3 == UpgradeResult.Success && r4 == UpgradeResult.MaxLevel && info.level == 8,
+                    $"켜짐: Lv5 → 8까지 강화 3번 성공 후 4번째는 최대 레벨 (Lv{info.level})");
+                fails += Check(info.shards == 0 && currency.Credit == 0, $"각성 3번에 조각 600·크레딧 6,000이 정확히 쓰임 (남은 조각 {info.shards}, 크레딧 {currency.Credit})");
+                fails += Check(Mathf.Abs(inventory.GetLevelMultiplier(DroneType.Melee) - (1f + on.LevelBonusPerLevel * 7f)) < 0.001f,
+                    $"Lv8 강화 배율 ×{inventory.GetLevelMultiplier(DroneType.Melee):0.00} = 1 + 레벨당 보너스 × 7 (각성 레벨에도 이어짐)");
+
+                // ---- 꺼짐 상태에서는 Lv5가 끝 ----
+                var offData = new SaveData();
+                var offCurrencyObject = new GameObject("AwakeningVerifier_OffCurrency") { hideFlags = HideFlags.HideAndDontSave };
+                var offInventoryObject = new GameObject("AwakeningVerifier_OffInventory") { hideFlags = HideFlags.HideAndDontSave };
+                try
+                {
+                    var offCurrency = offCurrencyObject.AddComponent<CurrencyManager>();
+                    offCurrency.Initialize(offData, currencyTable, false);
+                    var offInventory = offInventoryObject.AddComponent<DroneInventory>();
+                    offInventory.Initialize(offData, off, gacha, false);
+                    var offMelee = offData.ownedDrones.Find(o => o.droneType == DroneType.Melee);
+                    offMelee.level = 5;
+                    offMelee.shards = 600;
+                    offCurrency.AddCredit(6000);
+                    fails += Check(offInventory.TryUpgrade(DroneType.Melee, offCurrency) == UpgradeResult.MaxLevel && offMelee.level == 5 && offMelee.shards == 600,
+                        "꺼짐: Lv5에서 강화하면 최대 레벨로 거절되고 조각·레벨이 그대로");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(offCurrencyObject);
+                    UnityEngine.Object.DestroyImmediate(offInventoryObject);
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(off);
+                UnityEngine.Object.DestroyImmediate(on);
+                UnityEngine.Object.DestroyImmediate(currencyObject);
+                UnityEngine.Object.DestroyImmediate(inventoryObject);
+            }
+            return fails;
+        }
+
+        // 복제한 성장표의 각성 스위치를 켜거나 끈다 (private 칸이라 SerializedObject로 건드린다).
+        private static void SetAwakening(DroneGrowthTable table, bool enabled)
+        {
+            var so = new SerializedObject(table);
+            so.FindProperty("_awakeningEnabled").boolValue = enabled;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static int Check(bool ok, string message)

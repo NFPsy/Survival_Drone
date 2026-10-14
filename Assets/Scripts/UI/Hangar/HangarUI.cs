@@ -254,7 +254,9 @@ namespace SurvivalDrone.UI
                 return;
             }
 
-            SetText(_rarityLevelText, $"{info.rarity}   Lv{info.level} / {inventory.MaxLevel}", RarityColors.Get(info.rarity));
+            // 각성 단계(Lv6 이상)에 들어선 드론은 레벨 글자 뒤에 "각성"을 붙인다. (각성이 꺼져 있으면 붙을 일이 없다)
+            string awakenedMark = inventory.IsAwakeningLevel(info.level) ? "  각성" : "";
+            SetText(_rarityLevelText, $"{info.rarity}   Lv{info.level} / {inventory.MaxLevel}{awakenedMark}", RarityColors.Get(info.rarity));
             SetText(_powerText, $"전투력  {Mathf.RoundToInt(inventory.GetPower(_selected))}", LightColor);
             SetText(_multiplierText,
                 $"성능 ×{inventory.GetStatMultiplier(_selected):0.00}   (등급 ×{inventory.GetGradeMultiplier(_selected):0.00} · 강화 ×{inventory.GetLevelMultiplier(_selected):0.00})",
@@ -282,7 +284,8 @@ namespace SurvivalDrone.UI
             SetText(_costText, $"크레딧  {creditCost:N0}", credit >= creditCost ? LightColor : ShortColor);
             if (_costIcon != null) _costIcon.gameObject.SetActive(true);
             if (_upgradeButton != null) _upgradeButton.interactable = true; // 모자라도 눌러서 이유를 안내받을 수 있게 켜 둔다
-            if (_upgradeLabel != null) _upgradeLabel.text = "강화";
+            // 다음 강화가 각성 단계(예: Lv5 → 6)이면 버튼 글자를 "각성"으로 보여 준다.
+            if (_upgradeLabel != null) _upgradeLabel.text = inventory.IsAwakeningLevel(info.level + 1) ? "각성" : "강화";
             RefreshExchange(inventory, true, false);
         }
 
