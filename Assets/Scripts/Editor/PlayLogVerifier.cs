@@ -202,6 +202,20 @@ namespace SurvivalDrone.EditorTools
                 DamageSourceLog.Reset();
                 fails += Check(DamageSourceLog.BuildSummary(true) == "", "Reset 하면 지난 판의 맞은 기록이 지워짐");
 
+                // ---- 최종 보유 드론 요약 (판 기록 끝에 덧붙는 문장) ----
+                var loadoutHolder = new GameObject("LoadoutVerifierHolder");
+                var emptyManager = loadoutHolder.AddComponent<SurvivalDrone.Drones.DroneManager>();
+                fails += Check(emptyManager.BuildLoadoutSummary() == "", "드론이 하나도 없으면 최종 드론 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
+                UnityEngine.Object.DestroyImmediate(loadoutHolder);
+                var withLoadout = new SaveData();
+                string loadoutText = "최종드론=Sniper(5)/Heal(3)/Melee(1)";
+                PlayLog.RecordMatch(withLoadout, 4, true, 640f, 700f, 20, 3, 129, 0, 750, picks, "받은피해=빠른18", "성능=평균144fps 30fps미만=0% 100ms넘는끊김=0회 최악=9ms 화면=1920x1080", loadoutText);
+                PlayLog.RecordAbandon(withLoadout, 2, 100f, 120f, 6, 3, 115, "로비", picks, null, loadoutText);
+                PlayLog.RecordMatch(withLoadout, 1, true, 600f, 689f, 14, 5, 100, 0, 300);
+                fails += Check(withLoadout.playLog[0].EndsWith("화면=1920x1080 " + loadoutText), "판 결과 기록 맨 끝에 최종 드론 요약이 덧붙음 (성능 요약 뒤)");
+                fails += Check(withLoadout.playLog[1].EndsWith(picks + " " + loadoutText), "이탈 기록 끝에도 최종 드론 요약이 덧붙음 (성능 요약이 없을 때)");
+                fails += Check(!withLoadout.playLog[2].Contains("최종드론"), "요약을 안 넘기는 옛 방식 호출에는 최종 드론이 안 붙음");
+
                 // ---- 화면 부드러움(프레임 시간) 요약 (판 기록 끝에 덧붙는 문장) ----
                 SurvivalDrone.Core.PerfLog.Reset();
                 fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "프레임이 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
