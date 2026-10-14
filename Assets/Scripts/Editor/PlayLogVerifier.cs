@@ -216,6 +216,29 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(withLoadout.playLog[1].EndsWith(picks + " " + loadoutText), "이탈 기록 끝에도 최종 드론 요약이 덧붙음 (성능 요약이 없을 때)");
                 fails += Check(!withLoadout.playLog[2].Contains("최종드론"), "요약을 안 넘기는 옛 방식 호출에는 최종 드론이 안 붙음");
 
+                // ---- 가상 상점 기록 (OBT 2단계) ----
+                var shopData = new SaveData();
+                fails += Check(!PlayLog.BuildSummaryText(shopData).Contains("상점(데모)"), "상점을 연 적이 없으면 요약에 상점 줄이 없음 (옛 요약 모양 그대로)");
+                PlayLog.RecordShopOpen(shopData, 2700);
+                PlayLog.RecordShopClick(shopData, "코어 대", 66000, 2700);
+                PlayLog.RecordShopClick(shopData, "조각 중", 9900, 2700);
+                PlayLog.RecordShopClick(shopData, "코어 대", 66000, 2700);
+                PlayLog.RecordShopPopupClosed(shopData, "코어 대");
+                fails += Check(shopData.playLog[0].EndsWith("| shop_open | 보유코어=2700") && shopData.playLog[1].EndsWith("| shop_click | 상품=코어 대 가격=66000 보유코어=2700")
+                               && shopData.playLog[4].EndsWith("| shop_demo_popup | 상품=코어 대"),
+                    "상점 기록 줄: shop_open(보유코어) / shop_click(상품·가격·보유코어) / shop_demo_popup(상품)");
+                fails += Check(shopData.logStats.shopOpens == 1 && shopData.logStats.shopClicks == 3 && shopData.logStats.shopPopupCloses == 1
+                               && shopData.logStats.shopClickNames.Count == 2 && shopData.logStats.shopClickCounts[0] == 2 && shopData.logStats.shopClickCounts[1] == 1,
+                    $"상점 누적: 열람 {shopData.logStats.shopOpens}, 클릭 {shopData.logStats.shopClicks}, 안내 창 {shopData.logStats.shopPopupCloses}, 상품별 클릭 코어 대 2 / 조각 중 1");
+                fails += Check(PlayLog.BuildSummaryText(shopData).Contains("- 상점(데모) 열람 1번 · 구매 버튼 클릭 3번 (코어 대 2, 조각 중 1) · 안내 창 확인 1번"),
+                    "요약에 상점 줄: 열람·클릭·상품별 클릭·안내 창 확인");
+                var shopLoaded = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(shopData));
+                fails += Check(shopLoaded.logStats.shopClickNames.Count == 2 && shopLoaded.logStats.shopClickCounts[0] == 2 && shopLoaded.logStats.shopOpens == 1,
+                    "상점 누적이 JSON 저장/불러오기 후에도 유지");
+                var shopOldSave = JsonUtility.FromJson<SaveData>("{\"saveVersion\":1,\"isCurrencyInitialized\":true,\"core\":100}");
+                fails += Check(shopOldSave.logStats.shopClickNames != null && shopOldSave.logStats.shopClickNames.Count == 0 && shopOldSave.logStats.shopOpens == 0,
+                    "상점 항목이 없는 옛 저장 파일도 안전하게 읽힘");
+
                 // ---- 화면 부드러움(프레임 시간) 요약 (판 기록 끝에 덧붙는 문장) ----
                 SurvivalDrone.Core.PerfLog.Reset();
                 fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "프레임이 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");

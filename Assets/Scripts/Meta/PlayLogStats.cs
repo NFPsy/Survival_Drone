@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SurvivalDrone.Meta
 {
@@ -46,6 +47,15 @@ namespace SurvivalDrone.Meta
         public int lockOnRerolls;
         public int lockOnCoreSpent;
         public int lockOnBlocked;
+
+        // 가상 상점(OBT 2단계): 상점 화면을 연 횟수, 상품의 구매 버튼을 누른 횟수, 데모 안내 창을 확인한 횟수.
+        // 그리고 상품별 클릭 횟수 (상품 이름 목록과 같은 순서의 횟수 목록 — JsonUtility가 사전을 저장하지 못해서 두 줄로 나눠 둔다).
+        // 옛 저장 파일에는 없지만 0·빈 목록으로 안전하게 읽힌다.
+        public int shopOpens;
+        public int shopClicks;
+        public int shopPopupCloses;
+        public List<string> shopClickNames = new List<string>();
+        public List<int> shopClickCounts = new List<int>();
 
         // 판 도중에 일시정지 메뉴에서 "재시작"/"메인메뉴"로 나간 횟수와, 나간 시점(게임 시간)의 합계(초).
         // 사망·클리어로 끝난 판(matches)과는 따로 센다. 그래야 클리어율·평균 생존 같은 "끝난 판" 통계가 섞이지 않는다.

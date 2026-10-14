@@ -146,6 +146,36 @@ namespace SurvivalDrone.Meta
             return string.IsNullOrEmpty(pickSummary) ? "" : " " + pickSummary;
         }
 
+        // ---- 가상 상점 (OBT 2단계) ----
+        // 상점 화면을 열었을 때. core = 그때 보유한 코어 (코어가 모자라 상점으로 왔는지 보려고).
+        public static void RecordShopOpen(SaveData data, int core)
+        {
+            data.logStats.shopOpens++;
+            Add(data, "shop_open", $"보유코어={core}");
+        }
+
+        // 상품의 구매 버튼을 눌렀을 때. 실제 결제는 일어나지 않는다. 상품별 클릭 횟수도 함께 센다.
+        public static void RecordShopClick(SaveData data, string productName, int priceWon, int core)
+        {
+            var s = data.logStats;
+            s.shopClicks++;
+            int i = s.shopClickNames.IndexOf(productName);
+            if (i < 0)
+            {
+                s.shopClickNames.Add(productName);
+                s.shopClickCounts.Add(1);
+            }
+            else s.shopClickCounts[i]++;
+            Add(data, "shop_click", $"상품={productName} 가격={priceWon} 보유코어={core}");
+        }
+
+        // "데모 상점입니다" 안내 창을 확인(닫음)했을 때.
+        public static void RecordShopPopupClosed(SaveData data, string productName)
+        {
+            data.logStats.shopPopupCloses++;
+            Add(data, "shop_demo_popup", $"상품={productName}");
+        }
+
         // 판이 끝나기 전에 일시정지 메뉴에서 나갔을 때. (사망·클리어로 끝난 판은 위의 RecordMatch가 남긴다)
         //  exitMethod = "재시작" 또는 "메인메뉴". 어느 시점에서 많이 나가는지가 "지루하거나 어려워서 나간 구간"을 알려준다.
         //  판 수·클리어율 같은 "끝난 판" 통계에는 넣지 않고, 이탈 횟수와 이탈 시점만 따로 쌓는다.
@@ -318,6 +348,14 @@ namespace SurvivalDrone.Meta
             // 락온 뽑기는 쓴 적이 있을 때만 한 줄 덧붙인다. (쓰지 않으면 옛 요약 모양 그대로)
             if (s.lockOnConfirms > 0 || s.lockOnBlocked > 0)
                 builder.AppendLine($"- 락온 뽑기 {s.lockOnConfirms}판 확정 (재뽑기 {s.lockOnRerolls}번, 쓴 코어 {s.lockOnCoreSpent:N0}) · 코어 부족으로 막힘 {s.lockOnBlocked}번");
+            // 가상 상점은 연 적이 있을 때만 한 줄 덧붙인다. (상점이 없으면 옛 요약 모양 그대로)
+            if (s.shopOpens > 0 || s.shopClicks > 0)
+            {
+                var clicks = new List<string>();
+                for (int i = 0; i < s.shopClickNames.Count && i < s.shopClickCounts.Count; i++) clicks.Add($"{s.shopClickNames[i]} {s.shopClickCounts[i]}");
+                string byProduct = clicks.Count > 0 ? $" ({string.Join(", ", clicks)})" : "";
+                builder.AppendLine($"- 상점(데모) 열람 {s.shopOpens}번 · 구매 버튼 클릭 {s.shopClicks}번{byProduct} · 안내 창 확인 {s.shopPopupCloses}번");
+            }
             return builder.ToString();
         }
 

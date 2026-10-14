@@ -42,6 +42,10 @@ namespace SurvivalDrone.UI
         private MilestonePopup _milestonePopup;
         private StageSelectUI _stageSelect;
 
+        // 가상 상점 (OBT 2단계, ShopSettings 스위치가 켜졌을 때만 만들어진다)
+        private Button _shopButton;
+        private ShopPopup _shopPopup;
+
         // 로비 카드에 지금 보여주는 스테이지 위치. 화살표로 넘겨 보다가 잠긴 스테이지를 볼 수도 있어서
         // "고른 스테이지(StageProgress.SelectedIndex)"와 따로 관리한다. 고른 것은 항상 해금된 스테이지뿐이다.
         private int _viewIndex;
@@ -106,6 +110,22 @@ namespace SurvivalDrone.UI
                 _stageSelect.OnLaunchRequested += Launch;
             }
             else Debug.LogWarning("[Stage] 로비에서 'StageSelectPanel'(StageSelectUI)을 찾지 못했습니다.");
+
+            BuildShopIfEnabled();
+        }
+
+        // 가상 상점 스위치(ShopSettings)가 켜져 있을 때만 "상점" 버튼과 상점 화면을 코드로 만든다.
+        // 꺼져 있으면(기본) 아무것도 만들지 않아서 로비가 예전과 똑같다. 로비 씬 파일은 건드리지 않는다.
+        private void BuildShopIfEnabled()
+        {
+            var products = ShopSettings.LoadEnabledProducts();
+            if (products == null) return;
+
+            var font = _coreText != null ? _coreText.font : null;
+            _shopPopup = ShopPopup.Create(transform, font, products, clickSound);
+            // 오른쪽 아래 버튼 줄(뽑기·일일 퀘스트·마일스톤)의 맨 위 칸에 놓는다.
+            _shopButton = ShopPopup.CreateLobbyButton(transform, font, "상점", new Vector2(-50f, 320f), new Vector2(260f, 70f));
+            _shopButton.onClick.AddListener(() => { PlayClick(); _shopPopup.Open(); });
         }
 
         private void OnEnable()
@@ -204,6 +224,7 @@ namespace SurvivalDrone.UI
             if (_logButton != null) _logButton.gameObject.SetActive(!show);
             if (_questButton != null) _questButton.gameObject.SetActive(!show);
             if (_milestoneButton != null) _milestoneButton.gameObject.SetActive(!show);
+            if (_shopButton != null) _shopButton.gameObject.SetActive(!show);
 
             // 패널을 닫고 돌아왔을 때 카드가 방금 고른 스테이지를 보여주도록 다시 그린다.
             if (!show)

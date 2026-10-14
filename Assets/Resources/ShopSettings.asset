@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40cd1bbe8ee5fd34ea4c46e0303302b7, type: 3}
+  m_Name: ShopSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.ShopSettings
+  _enabled: 0
+  _products:
+  - displayName: "\uC785\uBB38"
+    category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
+    contents: "\uCF54\uC5B4 330 (\uBF51\uAE30 1\uD68C + 30)"
+    priceWon: 3300
+  - displayName: "\uCF54\uC5B4 \uC18C"
+    category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
+    contents: "\uCF54\uC5B4 600 (\uBF51\uAE30 2\uD68C)"
+    priceWon: 6000
+  - displayName: "\uCF54\uC5B4 \uC911"
+    category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
+    contents: "\uCF54\uC5B4 3,000 (2,700 + \uBCF4\uB108\uC2A4 300)"
+    priceWon: 27000
+  - displayName: "\uCF54\uC5B4 \uB300"
+    category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
+    contents: "\uCF54\uC5B4 7,800 (6,600 + \uBCF4\uB108\uC2A4 1,200)"
+    priceWon: 66000
+  - displayName: "\uCF54\uC5B4 \uD2B9\uB300"
+    category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
+    contents: "\uCF54\uC5B4 14,000"
+    priceWon: 110000
+  - displayName: "\uC2A4\uD0C0\uD130 \uD329"
+    category: "\uC2A4\uD0C0\uD130 \uD329 (\uACC4\uC815\uB2F9 1\uD68C)"
+    contents: "\uCF54\uC5B4 1,500 + \uD06C\uB808\uB527 1,000"
+    priceWon: 9900
+  - displayName: "\uC870\uAC01 \uC18C"
+    category: "\uC870\uAC01 \uD328\uD0A4\uC9C0"
+    contents: "\uB9CC\uB2A5 \uC870\uAC01 100\uAC1C"
+    priceWon: 3300
+  - displayName: "\uC870\uAC01 \uC911"
+    category: "\uC870\uAC01 \uD328\uD0A4\uC9C0"
+    contents: "\uB9CC\uB2A5 \uC870\uAC01 300\uAC1C"
+    priceWon: 9900
+  - displayName: "\uC870\uAC01 \uB300"
+    category: "\uC870\uAC01 \uD328\uD0A4\uC9C0"
+    contents: "\uB9CC\uB2A5 \uC870\uAC01 700\uAC1C (\uAC01\uC131 \uB2E8\uACC4\uC6A9)"
+    priceWon: 22000
+  - displayName: "\uC6D4\uC815\uC561"
+    category: "\uC6D4\uC815\uC561"
+    contents: "\uC989\uC2DC \uCF54\uC5B4 300 + \uD558\uB8E8 \uCF54\uC5B4 100 (30\uC77C)
+      + \uAD50\uD658 \uD55C\uB3C4 5\uD68C"
+    priceWon: 11000

@@ -246,6 +246,21 @@ def count_events(slot, name):
     return sum(1 for _, n, _ in slot.events if n == name)
 
 
+def shop_stats(slot):
+    """가상 상점(OBT 2단계) 기록: 상점을 연 횟수, 상품별 클릭 횟수, 안내 창 확인 횟수, 클릭할 때 보유 코어."""
+    opens = count_events(slot, "shop_open")
+    closes = count_events(slot, "shop_demo_popup")
+    clicks = Counter()
+    cores = []
+    for when, name, kv in slot.events:
+        if name == "shop_click":
+            clicks[kv.get("상품", "?")] += 1
+            core = num(kv.get("보유코어"))
+            if core is not None:
+                cores.append(core)
+    return {"opens": opens, "closes": closes, "clicks": clicks, "cores": cores}
+
+
 def pct(a, b):
     return f"{100 * a / b:.0f}%" if b else "-"
 
@@ -386,6 +401,12 @@ def slot_report(t, slot):
     claims_q = [kv for _, n, kv in slot.events if n == "quest_claim"]
     out.append(f"**코어 수령** 마일스톤 {len(claims_m)}번(+{sum(num(c.get('코어'), 0) for c in claims_m):,}) · 일일 퀘스트 {len(claims_q)}번(+{sum(num(c.get('코어'), 0) for c in claims_q):,})")
     out.append(f"**성장** 드론 강화 {count_events(slot, 'upgrade')}번 · 조각 교환 {count_events(slot, 'shard_exchange')}번 · 스테이지 해금 {count_events(slot, 'unlock')}번 · 장착 변경 {count_events(slot, 'equip')}번")
+    shop = shop_stats(slot)
+    if shop["opens"] or shop["clicks"]:
+        by_product = ", ".join(f"{k} {v}" for k, v in shop["clicks"].most_common())
+        low_core = sum(1 for c in shop["cores"] if c < 300)
+        out.append(f"**상점(데모)** 열람 {shop['opens']}번 · 구매 버튼 클릭 {sum(shop['clicks'].values())}번" + (f" ({by_product})" if by_product else "")
+                   + f" · 안내 창 확인 {shop['closes']}번" + (f" · 코어가 300 미만일 때 누른 클릭 {low_core}번(코어 부족 직후 관심의 단서)" if shop["cores"] else ""))
     if ms:
         out.append(f"**레벨업 선택** {picks_summary(ms)}")
         out.append(f"**성능** {perf_summary(ms)}")
