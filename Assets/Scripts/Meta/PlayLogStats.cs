@@ -52,6 +52,10 @@ namespace SurvivalDrone.Meta
         // 그리고 상품별 클릭 횟수 (상품 이름 목록과 같은 순서의 횟수 목록 — JsonUtility가 사전을 저장하지 못해서 두 줄로 나눠 둔다).
         // 옛 저장 파일에는 없지만 0·빈 목록으로 안전하게 읽힌다.
         public int shopOpens;
+
+        // 위 열람 중에서 "코어 충전" 버튼(뽑기가 코어 부족으로 막혔을 때 나오는 버튼)으로 열린 횟수.
+        // 코어가 모자라서 상점에 관심이 생겼는지를 보는 지표다.
+        public int shopTopUpOpens;
         public int shopClicks;
         public int shopPopupCloses;
         public List<string> shopClickNames = new List<string>();

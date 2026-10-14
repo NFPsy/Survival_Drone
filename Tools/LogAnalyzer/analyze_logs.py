@@ -252,13 +252,16 @@ def shop_stats(slot):
     closes = count_events(slot, "shop_demo_popup")
     clicks = Counter()
     cores = []
+    topup = Counter()   # 코어 충전 버튼으로 연 횟수 (경로별)
     for when, name, kv in slot.events:
+        if name == "shop_open" and kv.get("경로", "").startswith("코어충전"):
+            topup[kv.get("경로")] += 1
         if name == "shop_click":
             clicks[kv.get("상품", "?")] += 1
             core = num(kv.get("보유코어"))
             if core is not None:
                 cores.append(core)
-    return {"opens": opens, "closes": closes, "clicks": clicks, "cores": cores}
+    return {"opens": opens, "closes": closes, "clicks": clicks, "cores": cores, "topup": topup}
 
 
 def pct(a, b):
@@ -405,7 +408,10 @@ def slot_report(t, slot):
     if shop["opens"] or shop["clicks"]:
         by_product = ", ".join(f"{k} {v}" for k, v in shop["clicks"].most_common())
         low_core = sum(1 for c in shop["cores"] if c < 300)
-        out.append(f"**상점(데모)** 열람 {shop['opens']}번 · 구매 버튼 클릭 {sum(shop['clicks'].values())}번" + (f" ({by_product})" if by_product else "")
+        topup_text = ""
+        if shop["topup"]:
+            topup_text = " (코어 충전 버튼으로 " + ", ".join(f"{k.replace('코어충전-', '')} {v}" for k, v in shop["topup"].most_common()) + ")"
+        out.append(f"**상점(데모)** 열람 {shop['opens']}번{topup_text} · 구매 버튼 클릭 {sum(shop['clicks'].values())}번" + (f" ({by_product})" if by_product else "")
                    + f" · 안내 창 확인 {shop['closes']}번" + (f" · 코어가 300 미만일 때 누른 클릭 {low_core}번(코어 부족 직후 관심의 단서)" if shop["cores"] else ""))
     if ms:
         out.append(f"**레벨업 선택** {picks_summary(ms)}")

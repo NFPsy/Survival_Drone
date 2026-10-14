@@ -94,9 +94,19 @@ namespace SurvivalDrone.UI
             return image.GetComponent<Button>();
         }
 
+        // 어느 화면에든 "코어 충전" 같은 상점 연결 버튼을 하나 만든다. 모양은 다른 버튼과 같은 색·테두리·글꼴이다.
+        //  primary = true면 청록색 강조 버튼(눈에 띄게), false면 어두운 일반 버튼.
+        public static Button CreateButton(Transform parent, Font font, string label, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size, bool primary)
+        {
+            var image = NewButton(parent, "BtnTopUp", label, 30, primary ? Cyan : ButtonColor, primary ? DarkText : LightText, font);
+            Place(image.rectTransform, anchor, pivot, position, size);
+            return image.GetComponent<Button>();
+        }
+
         // ---------------- 열기/닫기 ----------------
 
-        public void Open()
+        // route = 로비의 "상점" 버튼이면 비워 두고, 코어 충전 버튼에서 왔으면 그 경로 이름(ShopLauncher의 상수)을 넘긴다.
+        public void Open(string route = null)
         {
             gameObject.SetActive(true);
             _demoPopup.SetActive(false);
@@ -105,7 +115,7 @@ namespace SurvivalDrone.UI
             // 메인 메뉴를 거치지 않고 로비만 실행한 경우(저장 데이터 없음)에는 기록을 남기지 않는다.
             if (CurrencyManager.Instance != null)
             {
-                PlayLog.RecordShopOpen(SaveManager.Data, CurrencyManager.Instance.Core);
+                PlayLog.RecordShopOpen(SaveManager.Data, CurrencyManager.Instance.Core, route);
                 SaveManager.Save();
             }
         }

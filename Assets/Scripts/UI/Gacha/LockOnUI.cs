@@ -75,6 +75,10 @@ namespace SurvivalDrone.UI
         private Text _infoText;
         private Text _messageText;
 
+        // 코어 부족 안내가 떴을 때만 보이는 "코어 충전" 버튼 (가상 상점 스위치가 켜져 있을 때만 만든다)
+        private Button _topUpButton;
+        private const string InsufficientCoreMessage = "코어가 부족합니다";
+
         // 칸마다 "플레이어가 열어 봤는지". 시작·재뽑기로 새로 뽑은 칸은 false(뒷면)가 되고, 눌러서 열면 true가 된다.
         // 기본값은 true: 화면이 모르는 사이에 진행 중이던 판은 그냥 열린 채로 보여준다.
         private bool[] _opened = new bool[0];
@@ -102,6 +106,7 @@ namespace SurvivalDrone.UI
             _coreText = FindText("CoreText");
             _infoText = FindText("InfoText");
             _messageText = FindText("MessageText");
+            BuildTopUpButtonIfEnabled();
 
             var subtitle = FindText("SubtitleText");
             if (subtitle != null && _table != null) subtitle.text = LockOnRateFormatter.BuildSubtitle(_table);
@@ -215,7 +220,7 @@ namespace SurvivalDrone.UI
                 if (_simSession.Phase == LockOnPhase.Done) _simSession.Reset();
                 else _simSession.AbandonSimulation();
             }
-            _messageText?.gameObject.SetActive(false);
+            ClearMessage();
             Refresh();
         }
 
@@ -689,11 +694,27 @@ namespace SurvivalDrone.UI
             if (_messageText == null) return;
             _messageText.text = text;
             _messageText.gameObject.SetActive(true);
+
+            // 코어 부족 안내일 때만 "코어 충전" 버튼을 함께 보여 준다.
+            if (_topUpButton != null) _topUpButton.gameObject.SetActive(text == InsufficientCoreMessage);
         }
 
         private void ClearMessage()
         {
             if (_messageText != null) _messageText.gameObject.SetActive(false);
+            if (_topUpButton != null) _topUpButton.gameObject.SetActive(false);
+        }
+
+        // 가상 상점이 켜져 있을 때만 만든다. 안내 글자(MessageText)의 오른쪽 옆에 놓고, 처음에는 숨겨 둔다.
+        // (아래에 놓으면 화면이 가로로 아주 긴 창에서 아래쪽 "락온 시작" 버튼과 겹칠 수 있어서 옆으로 뺐다)
+        private void BuildTopUpButtonIfEnabled()
+        {
+            if (_messageText == null || !ShopLauncher.IsAvailable) return;
+
+            _topUpButton = ShopPopup.CreateButton(_messageText.transform.parent, _messageText.font, "코어 충전 (데모)",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(330f, -275f), new Vector2(320f, 52f), true);
+            _topUpButton.onClick.AddListener(() => { PlayClick(); ShopLauncher.GoToShop(ShopLauncher.RouteTopUpLockOn); });
+            _topUpButton.gameObject.SetActive(false);
         }
 
         private static void SetActive(Button button, bool active)

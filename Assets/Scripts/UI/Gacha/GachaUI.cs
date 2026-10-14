@@ -148,6 +148,28 @@ namespace SurvivalDrone.UI
                 _insufficientPopup.SetActive(false);
             }
             else Debug.LogWarning("[Gacha] 뽑기 화면에서 'InsufficientPopup'을 찾지 못했습니다.");
+
+            BuildTopUpButtonIfEnabled();
+        }
+
+        // 가상 상점(OBT 2단계, ShopSettings 스위치)이 켜져 있을 때만, "코어가 부족합니다" 안내 창에 "코어 충전" 버튼을 더한다.
+        // 누르면 로비로 가서 상점이 바로 열린다. (코어가 모자라 뽑기가 막힌 순간이 결제 의향을 보기 가장 좋은 순간이라서)
+        // 꺼져 있으면 아무것도 만들지 않아 예전과 똑같다. 씬 파일은 건드리지 않고 코드로 만든다.
+        private void BuildTopUpButtonIfEnabled()
+        {
+            if (_insufficientPopup == null || !ShopLauncher.IsAvailable) return;
+
+            var box = _insufficientPopup.transform.Find("Box");
+            var ok = box != null ? box.Find("BtnOk") : null;
+            if (box == null || ok == null) return;
+
+            // 확인 버튼을 왼쪽으로 조금 밀고, 그 오른쪽에 "코어 충전" 버튼을 놓는다.
+            var okRect = ok.GetComponent<RectTransform>();
+            okRect.anchoredPosition = new Vector2(-150f, okRect.anchoredPosition.y);
+            var font = _insufficientMessage != null ? _insufficientMessage.font : null;
+            var topUp = ShopPopup.CreateButton(box, font, "코어 충전 (데모)", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(150f, okRect.anchoredPosition.y), new Vector2(280f, okRect.sizeDelta.y), true);
+            topUp.onClick.AddListener(() => { PlayClick(); ShopLauncher.GoToShop(ShopLauncher.RouteTopUpGacha); });
         }
 
         private void OnEnable()

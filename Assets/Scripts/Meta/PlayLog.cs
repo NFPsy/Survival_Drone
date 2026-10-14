@@ -148,10 +148,14 @@ namespace SurvivalDrone.Meta
 
         // ---- 가상 상점 (OBT 2단계) ----
         // 상점 화면을 열었을 때. core = 그때 보유한 코어 (코어가 모자라 상점으로 왔는지 보려고).
-        public static void RecordShopOpen(SaveData data, int core)
+        // route = 어떻게 열었는지. 로비의 "상점" 버튼이면 비워 두고(기록 모양이 그대로), 뽑기 화면의 "코어 충전" 버튼이면
+        // "코어충전-일반뽑기"처럼 적는다. 그러면 "코어가 모자라서 상점에 온 횟수"를 따로 셀 수 있다.
+        public static void RecordShopOpen(SaveData data, int core, string route = null)
         {
+            bool fromTopUp = !string.IsNullOrEmpty(route) && route.StartsWith("코어충전");
             data.logStats.shopOpens++;
-            Add(data, "shop_open", $"보유코어={core}");
+            if (fromTopUp) data.logStats.shopTopUpOpens++;
+            Add(data, "shop_open", fromTopUp ? $"보유코어={core} 경로={route}" : $"보유코어={core}");
         }
 
         // 상품의 구매 버튼을 눌렀을 때. 실제 결제는 일어나지 않는다. 상품별 클릭 횟수도 함께 센다.
@@ -354,7 +358,8 @@ namespace SurvivalDrone.Meta
                 var clicks = new List<string>();
                 for (int i = 0; i < s.shopClickNames.Count && i < s.shopClickCounts.Count; i++) clicks.Add($"{s.shopClickNames[i]} {s.shopClickCounts[i]}");
                 string byProduct = clicks.Count > 0 ? $" ({string.Join(", ", clicks)})" : "";
-                builder.AppendLine($"- 상점(데모) 열람 {s.shopOpens}번 · 구매 버튼 클릭 {s.shopClicks}번{byProduct} · 안내 창 확인 {s.shopPopupCloses}번");
+                string topUp = s.shopTopUpOpens > 0 ? $" (코어 충전 버튼으로 {s.shopTopUpOpens}번)" : "";
+                builder.AppendLine($"- 상점(데모) 열람 {s.shopOpens}번{topUp} · 구매 버튼 클릭 {s.shopClicks}번{byProduct} · 안내 창 확인 {s.shopPopupCloses}번");
             }
             return builder.ToString();
         }

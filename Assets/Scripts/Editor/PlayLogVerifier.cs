@@ -235,6 +235,17 @@ namespace SurvivalDrone.EditorTools
                 var shopLoaded = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(shopData));
                 fails += Check(shopLoaded.logStats.shopClickNames.Count == 2 && shopLoaded.logStats.shopClickCounts[0] == 2 && shopLoaded.logStats.shopOpens == 1,
                     "상점 누적이 JSON 저장/불러오기 후에도 유지");
+                // 뽑기 화면의 "코어 충전" 버튼으로 연 경우: 기록에 경로가 적히고 따로 센다. 로비 버튼으로 연 기록은 모양이 그대로.
+                var topUpData = new SaveData();
+                PlayLog.RecordShopOpen(topUpData, 2700);
+                PlayLog.RecordShopOpen(topUpData, 100, SurvivalDrone.UI.ShopLauncher.RouteTopUpGacha);
+                PlayLog.RecordShopOpen(topUpData, 50, SurvivalDrone.UI.ShopLauncher.RouteTopUpLockOn);
+                fails += Check(topUpData.playLog[0].EndsWith("| shop_open | 보유코어=2700") && topUpData.playLog[1].EndsWith("| shop_open | 보유코어=100 경로=코어충전-일반뽑기")
+                               && topUpData.playLog[2].EndsWith("| shop_open | 보유코어=50 경로=코어충전-락온"),
+                    "코어 충전 버튼으로 연 상점 기록에는 경로가 붙고, 로비 버튼 기록은 그대로");
+                fails += Check(topUpData.logStats.shopOpens == 3 && topUpData.logStats.shopTopUpOpens == 2
+                               && PlayLog.BuildSummaryText(topUpData).Contains("상점(데모) 열람 3번 (코어 충전 버튼으로 2번)"),
+                    $"코어 충전 경유 열람을 따로 셈 (열람 {topUpData.logStats.shopOpens}번 중 {topUpData.logStats.shopTopUpOpens}번), 요약에 표시");
                 var shopOldSave = JsonUtility.FromJson<SaveData>("{\"saveVersion\":1,\"isCurrencyInitialized\":true,\"core\":100}");
                 fails += Check(shopOldSave.logStats.shopClickNames != null && shopOldSave.logStats.shopClickNames.Count == 0 && shopOldSave.logStats.shopOpens == 0,
                     "상점 항목이 없는 옛 저장 파일도 안전하게 읽힘");

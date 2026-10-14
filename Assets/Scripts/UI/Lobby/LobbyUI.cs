@@ -126,6 +126,9 @@ namespace SurvivalDrone.UI
             // 오른쪽 아래 버튼 줄(뽑기·일일 퀘스트·마일스톤)의 맨 위 칸에 놓는다.
             _shopButton = ShopPopup.CreateLobbyButton(transform, font, "상점", new Vector2(-50f, 320f), new Vector2(260f, 70f));
             _shopButton.onClick.AddListener(() => { PlayClick(); _shopPopup.Open(); });
+
+            // 뽑기 화면의 "코어 충전" 버튼에서 넘어왔으면 상점을 바로 열어 둔다.
+            if (ShopLauncher.ConsumePending(out var route)) _shopPopup.Open(route);
         }
 
         private void OnEnable()
