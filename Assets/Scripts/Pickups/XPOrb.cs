@@ -6,8 +6,29 @@ namespace SurvivalDrone.Pickups
 {
     // 적을 처치하면 생성되는 "경험치 구슬" 오브젝트에 붙는 스크립트.
     // 플레이어가 일정 거리 안으로 들어오면 자석처럼 끌려가고, 닿으면 XP를 지급한 뒤 사라진다.
+    // 경험치 구슬의 "값 구간별 색" 한 칸. minValue 이상인 구슬은 이 칸의 재질(코어 + 빛 번짐)로 그려진다.
+    [System.Serializable]
+    public class XPOrbTier
+    {
+        // 이 값 이상이면 이 색을 쓴다. (표는 minValue가 작은 것부터 순서대로 적는다)
+        public float minValue;
+
+        // 구슬 알맹이(Core)와 뒤의 빛 번짐(Glow)에 입힐 재질.
+        public Material coreMaterial;
+        public Material glowMaterial;
+    }
+
     public class XPOrb : MonoBehaviour
     {
+        // 값 구간별 색 표. 비워 두면 프리팹에 칠해진 기본 색(시안) 그대로 쓴다.
+        // 구슬이 후반에 수백 개 쌓이기 때문에 구슬마다 색을 따로 칠하지 않고, 미리 만든 재질로 바꿔 끼우는 방식이다.
+        // (재질을 같은 것끼리 공유해야 웹에서도 한꺼번에 묶어 그려서 가볍다)
+        [SerializeField] private XPOrbTier[] tiers;
+
+        // 재질을 바꿔 끼울 대상: 구슬 알맹이와 빛 번짐 면의 렌더러.
+        [SerializeField] private Renderer coreRenderer;
+        [SerializeField] private Renderer glowRenderer;
+
         // 주울 때 재생할 효과음.
         [SerializeField] private AudioClip pickupSound;
 
@@ -33,6 +54,32 @@ namespace SurvivalDrone.Pickups
         public void SetValue(float value)
         {
             xpValue = value;
+            ApplyTierColor();
+        }
+
+        // 값에 맞는 칸(색 표에서 minValue 이하 중 가장 큰 칸)의 번호를 돌려준다. 어느 칸에도 안 맞으면 -1.
+        // 표는 minValue가 작은 것부터 적혀 있다고 가정한다. 화면과 무관한 계산이라 따로 떼어 두어 검증 도구가 바로 부를 수 있다.
+        public static int TierIndexFor(XPOrbTier[] table, float value)
+        {
+            int found = -1;
+            if (table == null) return found;
+
+            for (int i = 0; i < table.Length; i++)
+            {
+                if (table[i] != null && value >= table[i].minValue) found = i;
+            }
+            return found;
+        }
+
+        // 지급할 XP 값에 맞는 색 재질로 바꿔 끼운다. 표가 비었거나 칸의 재질이 비었으면 프리팹의 기본 색을 그대로 둔다.
+        private void ApplyTierColor()
+        {
+            int index = TierIndexFor(tiers, xpValue);
+            if (index < 0) return;
+
+            var tier = tiers[index];
+            if (coreRenderer != null && tier.coreMaterial != null) coreRenderer.sharedMaterial = tier.coreMaterial;
+            if (glowRenderer != null && tier.glowMaterial != null) glowRenderer.sharedMaterial = tier.glowMaterial;
         }
 
         // 적이 죽을 때(EnemyAI에서) 쫓아갈 플레이어를 직접 알려준다.
