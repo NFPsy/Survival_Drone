@@ -9,7 +9,8 @@ namespace SurvivalDrone.Drones
     // 근접 드론과 달리 특정 적 하나를 노리는 게 아니라 "범위 안에 있는 모든 적"을 한꺼번에 때린다.
     //
     // 폭발 지점은 드론이 떠 있는 자리가 아니라 플레이어가 정한다 (10/14 개선):
-    //  - 이 드론을 가지고 있는 동안 방향키(↑↓←→)는 플레이어 이동이 아니라 "폭발 지점 조작"이 된다. 이동은 WASD만 한다.
+    //  - 방향키(↑↓←→)는 플레이어 이동에 쓰지 않고(이동은 WASD만, 입력 설정 파일의 Move에서 방향키를 뺐다) 이 드론의 "폭발 지점 조작" 전용이다.
+    //    폭발 드론이 없을 때는 방향키를 눌러도 아무 일도 일어나지 않는다.
     //  - 폭발 지점은 플레이어 기준으로 얼마나 떨어져 있는지(aimOffset)로 기억해서, 플레이어가 움직이면 같이 따라온다.
     //  - 방향키를 떼면 마지막 자리에 그대로 남는다. 폭발 간격(기본 3초) 동안 지점을 옮겨 두면 시간이 됐을 때 그 자리에서 터진다.
     //  - 지점에는 폭발 범위만큼의 원(ExplosionAimMarker)이 바닥에 보이고, 터지기 직전에 더 밝아진다.
@@ -18,12 +19,6 @@ namespace SurvivalDrone.Drones
     // 레벨이 오르면 범위와 피해량이 함께 커지도록 만들었다.
     public class ExplosionDrone : DroneBase
     {
-        // 이 드론이 있는 동안 방향키를 "폭발 지점 조작"에 쓰고 있는지. PlayerController가 이 값을 보고 방향키 이동을 막는다.
-        // 드론이 꺼지거나 사라지면(판 종료·씬 이동) OnDisable에서 꺼지므로 다음 판에 남지 않는다.
-        // (드론은 한 판에 하나뿐이지만, 혹시 둘이 겹쳐 켜졌다 꺼지는 순간에도 어긋나지 않도록 개수로 센다)
-        private static int reservedCount;
-        public static bool ArrowKeysReserved => reservedCount > 0;
-
         // 방향키로 폭발 지점을 움직이는 속도(초당 미터).
         [SerializeField] private float aimSpeed = 8f;
 
@@ -85,17 +80,6 @@ namespace SurvivalDrone.Drones
                 var burstMain = explosionEffect.main;
                 burstMain.simulationSpace = ParticleSystemSimulationSpace.World;
             }
-        }
-
-        // 이 드론이 켜져 있는 동안 방향키를 폭발 지점 조작용으로 예약한다.
-        private void OnEnable()
-        {
-            reservedCount++;
-        }
-
-        private void OnDisable()
-        {
-            reservedCount = Mathf.Max(0, reservedCount - 1);
         }
 
         private void Start()

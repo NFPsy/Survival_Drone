@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using SurvivalDrone.Core;
-using SurvivalDrone.Drones;
 
 namespace SurvivalDrone.Player
 {
@@ -60,13 +59,8 @@ namespace SurvivalDrone.Player
         private void Update()
         {
             // 입력값(x=좌우, y=앞뒤)을 -1~1 범위의 Vector2로 읽어온다. 입력이 없으면 (0,0).
+            // (방향키는 입력 설정 파일의 Move 액션에서 뺐다. 방향키는 이동이 아니라 폭발 드론의 폭발 지점 조작 전용이다.)
             Vector2 input = moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
-
-            // 방향키는 입력 설정 파일(Move 액션)에서 빼고 여기서 직접 읽는다.
-            // 폭발 드론을 가지고 있는 동안에는 방향키가 폭발 지점 조작에 쓰여서(ExplosionDrone) 이동에는 쓰지 않는다.
-            // (이동은 WASD·게임패드 스틱만) 폭발 드론이 없으면 예전처럼 방향키로도 이동할 수 있다.
-            if (!ExplosionDrone.ArrowKeysReserved) input += ReadArrowKeys();
-            input = Vector2.ClampMagnitude(input, 1f);
 
             // 2D 입력(x, y)을 3D 이동 방향(x, 0, z)으로 변환. 위아래(y)는 이동에 사용하지 않음.
             Vector3 move = new Vector3(input.x, 0f, input.y);
@@ -104,20 +98,6 @@ namespace SurvivalDrone.Player
                 Quaternion targetRot = Quaternion.LookRotation(move, Vector3.up);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
             }
-        }
-
-        // 방향키 4개를 (x=좌우, y=앞뒤) 값으로 읽는다. 키보드가 없으면 (0,0).
-        private static Vector2 ReadArrowKeys()
-        {
-            var keyboard = Keyboard.current;
-            if (keyboard == null) return Vector2.zero;
-
-            Vector2 arrows = Vector2.zero;
-            if (keyboard.upArrowKey.isPressed) arrows.y += 1f;
-            if (keyboard.downArrowKey.isPressed) arrows.y -= 1f;
-            if (keyboard.leftArrowKey.isPressed) arrows.x -= 1f;
-            if (keyboard.rightArrowKey.isPressed) arrows.x += 1f;
-            return arrows;
         }
 
         // 플레이어가 맵 범위(arenaLimit)를 벗어났거나 바닥 아래로 떨어졌으면 맵 안으로 되돌려 놓는다.
