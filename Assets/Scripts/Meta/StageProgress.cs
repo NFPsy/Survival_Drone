@@ -12,8 +12,13 @@ namespace SurvivalDrone.Meta
     {
         public static StageProgress Instance { get; private set; }
 
-        // 게임에 있는 스테이지 목록. 순서대로 1번, 2번, 3번 스테이지가 된다. 인스펙터에서 연결한다.
+        // 게임에 있는 (노멀) 스테이지 목록. 순서대로 1번, 2번, 3번 스테이지가 된다. 인스펙터에서 연결한다.
         [SerializeField] private StageData[] _stages;
+
+        // 노멀 + 하드(스위치가 켜졌을 때만) 스테이지를 이어 붙인 전체 목록. 하드 스테이지는 노멀 5개 뒤(6번, 7번, 8번)에 붙는다.
+        // 하드가 꺼져 있으면 _stages와 똑같아서 예전과 동작이 같다.
+        private StageData[] _all;
+        private int _normalCount;
 
         private SaveData _data;
         private bool _saveOnChange;
@@ -22,7 +27,19 @@ namespace SurvivalDrone.Meta
         // 고른 스테이지가 바뀔 때 발생 (로비 UI가 카드를 갱신하려고 구독한다).
         public event Action<int> OnSelectionChanged;
 
-        public int StageCount => _stages != null ? _stages.Length : 0;
+        public int StageCount => _all != null ? _all.Length : 0;
+
+        // 노멀 스테이지 개수 (하드를 뺀 것).
+        public int NormalStageCount => _normalCount;
+
+        // 하드 스테이지가 있는지 (스위치가 켜져 있고 하드 스테이지 데이터가 연결돼 있을 때). 스테이지 선택 화면의 "하드" 탭을 보일지 정하는 데 쓴다.
+        public bool HasHardStages => StageCount > _normalCount;
+
+        // 첫 하드 스테이지의 위치(0부터). 하드가 없으면 -1.
+        public int FirstHardIndex => HasHardStages ? _normalCount : -1;
+
+        // 이 위치의 스테이지가 하드 스테이지인지.
+        public bool IsHardStage(int index) => index >= _normalCount && index < StageCount;
 
         // 해금된 스테이지 개수 (1 ~ StageCount).
         public int UnlockedCount => _data != null ? Mathf.Clamp(_data.unlockedStageCount, 1, Mathf.Max(1, StageCount)) : 1;
@@ -36,6 +53,10 @@ namespace SurvivalDrone.Meta
         // 지금 고른 스테이지의 적 배율. 스테이지 정보가 없으면 1(원래 밸런스 그대로)을 돌려줘서 게임이 멈추지 않게 한다.
         public float CurrentEnemyMultiplier => CurrentStage != null ? CurrentStage.EnemyMultiplier : 1f;
 
+        // 지금 고른 스테이지의 체력 배율 / 접촉 피해 배율. 하드 스테이지는 두 값이 다르다. 스테이지 정보가 없으면 1배.
+        public float CurrentHealthMultiplier => CurrentStage != null ? CurrentStage.HealthMultiplier : 1f;
+        public float CurrentDamageMultiplier => CurrentStage != null ? CurrentStage.DamageMultiplier : 1f;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -47,7 +68,7 @@ namespace SurvivalDrone.Meta
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            Initialize(SaveManager.Data, _stages, true);
+            Initialize(SaveManager.Data, _stages, true, HardStageSettings.LoadEnabledStages());
             SaveManager.DataReplaced += HandleDataReplaced; // 저장 슬롯을 새로 고르면 새 데이터로 다시 연결한다
         }
 
@@ -59,14 +80,18 @@ namespace SurvivalDrone.Meta
         private void HandleDataReplaced() => Rebind(SaveManager.Data);
 
         // 저장 슬롯을 바꿨을 때 새 저장 데이터로 다시 연결한다. (고른 스테이지는 새 데이터의 해금 상태에 맞게 다시 정해진다)
-        public void Rebind(SaveData data) => Initialize(data, _stages, _saveOnChange);
+        public void Rebind(SaveData data) => Initialize(data, _stages, _saveOnChange, HardStageSettings.LoadEnabledStages());
 
         // 저장 데이터와 스테이지 목록을 받아서 준비한다. (CurrencyManager.Initialize와 같은 목적: 검증 도구에서 씬 없이 쓰기 위함)
-        public void Initialize(SaveData data, StageData[] stages, bool saveOnChange)
+        // hardStages = 노멀 5개 뒤에 이어 붙일 하드 스테이지들(없으면 null). 게임에서는 HardStageSettings의 스위치가 켜졌을 때만 넘어온다.
+        // (검증 도구는 스위치 상태와 상관없이 같은 결과가 나오도록 이 값을 직접 넘기거나 아예 안 넘긴다)
+        public void Initialize(SaveData data, StageData[] stages, bool saveOnChange, StageData[] hardStages = null)
         {
             _data = data;
             _stages = stages;
             _saveOnChange = saveOnChange;
+            _normalCount = stages != null ? stages.Length : 0;
+            _all = BuildAllStages(stages, hardStages);
 
             if (StageCount == 0)
                 Debug.LogWarning("[Stage] 스테이지 목록이 비어 있습니다. StageProgress에 StageData를 연결해주세요.");
@@ -78,10 +103,22 @@ namespace SurvivalDrone.Meta
             _selectedIndex = UnlockedCount - 1;
         }
 
+        // 노멀 목록 뒤에 하드 목록을 이어 붙인 배열을 만든다. 하드가 없거나 비었으면 노멀 목록 그대로.
+        private static StageData[] BuildAllStages(StageData[] normal, StageData[] hard)
+        {
+            normal = normal ?? new StageData[0];
+            if (hard == null || hard.Length == 0) return normal;
+
+            var all = new StageData[normal.Length + hard.Length];
+            normal.CopyTo(all, 0);
+            hard.CopyTo(all, normal.Length);
+            return all;
+        }
+
         public StageData GetStage(int index)
         {
-            if (_stages == null || index < 0 || index >= _stages.Length) return null;
-            return _stages[index];
+            if (_all == null || index < 0 || index >= _all.Length) return null;
+            return _all[index];
         }
 
         public bool IsUnlocked(int index) => index >= 0 && index < UnlockedCount;
@@ -93,7 +130,7 @@ namespace SurvivalDrone.Meta
             if (index == _selectedIndex) return true;
 
             _selectedIndex = index;
-            Debug.Log($"[Stage] 스테이지 선택: {index + 1}번 '{CurrentStage.DisplayName}' (적 배율 x{CurrentStage.EnemyMultiplier})");
+            Debug.Log($"[Stage] 스테이지 선택: {index + 1}번 '{CurrentStage.DisplayName}' (적 체력 x{CurrentStage.HealthMultiplier}, 피해 x{CurrentStage.DamageMultiplier})");
             OnSelectionChanged?.Invoke(_selectedIndex);
             return true;
         }

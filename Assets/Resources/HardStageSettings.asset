@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eee4287b1da9ba409469d18546044fa, type: 3}
+  m_Name: HardStageSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.HardStageSettings
+  _enabled: 0
+  _stages:
+  - {fileID: 11400000, guid: f490a08e84c666a4fb5cfb1f13388a84, type: 2}
+  - {fileID: 11400000, guid: 030b91cf6e3312646b0400fcd4b0c0aa, type: 2}
+  - {fileID: 11400000, guid: a473767062fb50f4aa1ba625e2d25a1a, type: 2}

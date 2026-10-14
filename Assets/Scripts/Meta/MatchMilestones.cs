@@ -31,6 +31,11 @@ namespace SurvivalDrone.Meta
             new[] { 300, 450, 600 },
         };
 
+        // 이 스테이지(0부터)에 마일스톤이 있는지. 위 표에 줄이 있는 스테이지(노멀 1~5)만 있다.
+        // 하드 스테이지(6~8번)는 일부러 마일스톤이 없다(코어 수입이 늘어나지 않게 하려는 설계). 표에 줄이 없는 스테이지가
+        // 마지막 줄 값(스테이지 5의 1,350코어)을 물려받아 코어가 새어 나가는 일을 막으려고, 마일스톤을 기록·수령하는 곳이 모두 이 값을 먼저 본다.
+        public static bool HasMilestones(int stageIndex) => stageIndex >= 0 && stageIndex < CoresByStage.Length;
+
         // 스테이지(0부터)의 마일스톤(번호 index) 코어 보상. 예) 스테이지 2의 6분 = 300.
         public static int GetCore(int stageIndex, int index)
         {
@@ -48,7 +53,8 @@ namespace SurvivalDrone.Meta
         // 마일스톤 개수 (스테이지 하나당).
         public static int Count => Titles.Length;
 
-        private static bool IsValid(int stageIndex, int index) => stageIndex >= 0 && index >= 0 && index < Count;
+        // 마일스톤이 있는 스테이지의 올바른 번호인지. 마일스톤이 없는 스테이지(하드)는 항상 false라서 달성·수령 기록이 만들어지지 않는다.
+        private static bool IsValid(int stageIndex, int index) => HasMilestones(stageIndex) && index >= 0 && index < Count;
 
         private static int GetMask(List<int> masks, int stageIndex) => stageIndex < masks.Count ? masks[stageIndex] : 0;
 

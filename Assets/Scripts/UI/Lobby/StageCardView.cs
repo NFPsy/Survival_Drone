@@ -20,6 +20,7 @@ namespace SurvivalDrone.UI
         private static readonly Color WarningColor = new Color(1f, 0.62f, 0.2f);              // 주황: 잠금 조건 문구, 전투력이 빠듯할 때
         private static readonly Color EnoughColor = new Color(0.35f, 0.90f, 0.50f);           // 초록: 전투력이 권장 이상
         private static readonly Color DangerColor = new Color(1f, 0.35f, 0.35f);              // 빨강: 전투력이 권장의 70% 미만
+        private static readonly Color HardColor = new Color(1f, 0.42f, 0.30f);                // 붉은 주황: 하드 스테이지 표시
 
         private readonly Text _numberText;
         private readonly Text _nameText;
@@ -48,11 +49,18 @@ namespace SurvivalDrone.UI
         {
             if (stage == null) return;
 
-            SetText(_numberText, $"STAGE {stage.StageNumber}", unlocked ? NormalTitleColor : LockedColor);
+            // 하드 스테이지는 번호 옆에 HARD를 붙이고 붉은 주황색으로 보여 준다. (잠겼으면 다른 글자처럼 죽은 색)
+            string numberLabel = stage.IsHard ? $"STAGE {stage.StageNumber}  HARD" : $"STAGE {stage.StageNumber}";
+            SetText(_numberText, numberLabel, !unlocked ? LockedColor : (stage.IsHard ? HardColor : NormalTitleColor));
             SetText(_nameText, stage.DisplayName, unlocked ? NormalTextColor : LockedColor);
             SetText(_powerText, $"권장 전투력  {stage.RecommendedPower:N0}", unlocked ? NormalTextColor : LockedColor);
             SetText(_myPowerText, $"내 전투력  {myPower:N0}", unlocked ? GetPowerColor(myPower, stage.RecommendedPower) : LockedColor);
-            SetText(_multiplierText, $"적 체력·피해  x{stage.EnemyMultiplier:0.0#}", unlocked ? MutedColor : LockedColor);
+            // 체력과 피해 배율이 같으면 예전처럼 한 값으로, 다르면(하드 스테이지) 둘을 따로 보여 준다.
+            bool sameMultiplier = Mathf.Approximately(stage.HealthMultiplier, stage.DamageMultiplier);
+            string multiplierLabel = sameMultiplier
+                ? $"적 체력·피해  x{stage.HealthMultiplier:0.0#}"
+                : $"적 체력 x{stage.HealthMultiplier:0.0#} · 피해 x{stage.DamageMultiplier:0.0#}";
+            SetText(_multiplierText, multiplierLabel, unlocked ? MutedColor : LockedColor);
             SetText(_bestTimeText, $"최고 생존  {FormatTime(bestSeconds)}", unlocked ? MutedColor : LockedColor);
 
             if (_lockText != null)
