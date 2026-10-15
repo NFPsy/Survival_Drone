@@ -35,8 +35,27 @@ namespace SurvivalDrone.Drones
         // 광선이 맞은 자리에서 번쩍이는 빛. 비워두면 번쩍임이 없다.
         [SerializeField] private ParticleSystem impactFlash;
 
+        // 새 레이저 이펙트의 원본(SniperBeam.prefab): 밝은 빔 + 맞은 자리의 불꽃. 지정하면 위의 옛 막대(tracerPrefab) 대신 이것을 쓴다.
+        // 드론이 0.5배로 줄어 있어서, 자식으로 두면 이펙트도 같이 작아진다. 그래서 따로(최상위에) 하나 만들어 두고 쓴다.
+        [SerializeField] private SniperBeamEffect beamPrefab;
+        private SniperBeamEffect beam;
+
+        // 맞은 적의 "몸 한가운데" 높이: 적 크기(세로 배율)의 0.7배. 발이 아니라 가슴께로 쏜다.
+        private const float ChestHeightPerScale = 0.7f;
+
         // 다음 공격까지 남은 시간.
         private float attackTimer;
+
+        private void Awake()
+        {
+            if (beamPrefab != null) beam = Instantiate(beamPrefab);
+        }
+
+        private void OnDestroy()
+        {
+            // 드론이 사라지면(씬을 나가면) 따로 만든 이펙트도 같이 지운다.
+            if (beam != null) Destroy(beam.gameObject);
+        }
 
         protected override void Update()
         {
@@ -62,12 +81,18 @@ namespace SurvivalDrone.Drones
             EnemyAI target = FindTarget();
             if (target == null) return; // 사거리 안에 적이 없으면 그냥 넘어간다.
 
+            // 맞는 지점(적의 가슴 높이)을 피해를 주기 "전에" 정해 둔다. 이 공격으로 적이 사라져도 이펙트가 그 자리를 알고 있게 한다.
+            Vector3 hitPoint = target.transform.position + Vector3.up * (Mathf.Max(Mathf.Abs(target.transform.lossyScale.y), 0.7f) * ChestHeightPerScale);
+
             // 레벨이 오를수록(scale이 커질수록) 데미지도 함께 증가.
             target.ApplyDamage(baseDamage * scale);
             SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(fireSound, 0.5f);
 
-            // 발사 이펙트가 설정되어 있으면 드론과 적 사이를 잇는 가느다란 빛줄기(광선)로 잠깐 보여준 뒤 0.1초 뒤 자동으로 제거.
-            if (tracerPrefab != null)
+            // 새 레이저 이펙트가 있으면 그것을 쓴다. (밝은 빔이 쭉 뻗고 맞은 자리에서 불꽃이 튄다)
+            if (beam != null) beam.Fire(transform, hitPoint);
+
+            // 새 이펙트가 없을 때만, 예전처럼 드론과 적 사이를 잇는 막대(광선)로 잠깐 보여준 뒤 자동으로 제거.
+            if (beam == null && tracerPrefab != null)
             {
                 Vector3 start = transform.position;
                 Vector3 end = target.transform.position;

@@ -4957,6 +4957,7 @@ MonoBehaviour:
   tracerThicknessMultiplier: 2.2
   muzzleFlash: {fileID: 8607207319880312006}
   impactFlash: {fileID: 4195188690074088675}
+  beamPrefab: {fileID: 375485786596647466, guid: f7d2dbbf05c79a9468f1c01c33c17c50, type: 3}
 --- !u!1 &6235946471811951557
 GameObject:
   m_ObjectHideFlags: 0
