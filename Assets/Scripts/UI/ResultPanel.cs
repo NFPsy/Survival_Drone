@@ -107,6 +107,34 @@ namespace SurvivalDrone.UI
 
             ShowReward(won);
             RecordMatchLog(won);
+            ApplyGachaNudge();
+        }
+
+        // 아직 뽑기를 한 번도 안 했고 코어가 있으면, "로비로" 버튼을 눈에 띄게(시안색) 바꾸고 "재도전"은 평범한 색으로 낮춘다.
+        // 그리고 버튼 아래에 한 줄 안내를 붙여서 "로비에서 뽑기를 할 수 있다"는 걸 알려 준다.
+        // 첫 뽑기를 하고 나면 조건이 깨져서 이 안내는 다시 나오지 않는다. (조건은 GachaNudge.ShouldShow)
+        private void ApplyGachaNudge()
+        {
+            if (restartButton == null || lobbyButton == null) return;
+            if (!GachaNudge.ShouldShow()) return;
+
+            // 두 버튼의 모양을 먼저 읽어 두고 서로 맞바꾼다.
+            var restartLook = GachaNudge.Capture(restartButton);
+            var lobbyLook = GachaNudge.Capture(lobbyButton);
+            GachaNudge.Apply(restartButton, lobbyLook);
+            GachaNudge.Apply(lobbyButton, restartLook);
+
+            // 안내 글자: 두 버튼 가운데, 버튼 아래에 놓는다. (두 버튼이 같은 부모 안에 있다고 가정)
+            var lobbyRect = (RectTransform)lobbyButton.transform;
+            var restartRect = (RectTransform)restartButton.transform;
+            var label = lobbyButton.GetComponentInChildren<Text>(true);
+            float centerX = (lobbyRect.anchoredPosition.x + restartRect.anchoredPosition.x) * 0.5f;
+            float y = lobbyRect.anchoredPosition.y - lobbyRect.sizeDelta.y * lobbyRect.pivot.y - 50f;
+            int core = CurrencyManager.Instance.Core;
+
+            GachaNudge.CreateText(lobbyRect.parent, label != null ? label.font : null, "GachaNudgeText",
+                $"코어가 {core:N0}개 있어요! 로비에서 드론을 뽑아 더 강해져 보세요.", 30, TextAnchor.MiddleCenter,
+                lobbyRect.anchorMin, lobbyRect.anchorMax, new Vector2(0.5f, 0.5f), new Vector2(centerX, y), new Vector2(1000f, 60f));
         }
 
         // 테스트(CBT) 기록에 이번 판 결과를 남긴다. (스테이지, 결과, 생존 시간, 도달 레벨, 내 전투력, 받은 보상)

@@ -33,6 +33,7 @@ namespace SurvivalDrone.UI
         private Button _launchButton;
         private Button _stageListButton;
         private Button _gachaButton;
+        private GameObject _gachaHint; // 첫 뽑기 전에만 만들어지는 안내 글자 (없으면 null)
         private Button _hangarButton;
         private Button _logButton;
         private TestLogPopup _testLogPopup;
@@ -112,6 +113,30 @@ namespace SurvivalDrone.UI
             else Debug.LogWarning("[Stage] 로비에서 'StageSelectPanel'(StageSelectUI)을 찾지 못했습니다.");
 
             BuildShopIfEnabled();
+            BuildGachaNudgeIfNeeded();
+        }
+
+        // 아직 뽑기를 한 번도 안 했고 코어가 있으면, "뽑기" 버튼을 눈에 띄게(시안색) 바꾸고 옆에 한 줄 안내를 붙인다.
+        // 안내 글자는 버튼 줄 위쪽의 빈 칸에 놓는다(바로 옆에는 "격납고"와 "일일 퀘스트" 버튼이 있어서). 첫 뽑기를 하면 저절로 사라진다.
+        // 로비 씬 파일은 건드리지 않고 코드로 만든다. (조건은 GachaNudge.ShouldShow)
+        private void BuildGachaNudgeIfNeeded()
+        {
+            if (_gachaButton == null || _launchButton == null) return;
+            if (!GachaNudge.ShouldShow()) return;
+
+            // "출격" 버튼과 같은 모양(시안 배경 + 어두운 글자)을 입힌다.
+            GachaNudge.Apply(_gachaButton, GachaNudge.Capture(_launchButton));
+
+            // 안내 글자는 "뽑기" 버튼의 왼쪽 위(격납고 버튼 위, 일일 퀘스트 버튼 왼쪽)에 놓고 화살표(↘)로 뽑기 버튼을 가리킨다.
+            var gachaRect = (RectTransform)_gachaButton.transform;
+            var position = new Vector2(gachaRect.anchoredPosition.x - (gachaRect.sizeDelta.x + 20f), gachaRect.anchoredPosition.y + (gachaRect.sizeDelta.y + 20f));
+            var font = _coreText != null ? _coreText.font : null;
+            int core = CurrencyManager.Instance.Core;
+            _gachaHint = GachaNudge.CreateText(transform, font, "GachaNudgeText", $"코어 {core:N0}으로\n드론을 뽑아 보세요 ↘", 26, TextAnchor.LowerRight,
+                gachaRect.anchorMin, gachaRect.anchorMax, gachaRect.pivot, position, new Vector2(300f, 80f)).gameObject;
+
+            // 팝업·스테이지 선택 창보다 아래 층에 두어서, 창이 열리면 창이 위에 덮이게 한다. ("뽑기" 버튼 바로 다음 순서)
+            _gachaHint.transform.SetSiblingIndex(_gachaButton.transform.GetSiblingIndex() + 1);
         }
 
         // 가상 상점 스위치(ShopSettings)가 켜져 있을 때만 "상점" 버튼과 상점 화면을 코드로 만든다.
@@ -223,6 +248,7 @@ namespace SurvivalDrone.UI
             if (_launchButton != null) _launchButton.gameObject.SetActive(!show);
             if (_stageListButton != null) _stageListButton.gameObject.SetActive(!show);
             if (_gachaButton != null) _gachaButton.gameObject.SetActive(!show);
+            if (_gachaHint != null) _gachaHint.SetActive(!show);
             if (_hangarButton != null) _hangarButton.gameObject.SetActive(!show);
             if (_logButton != null) _logButton.gameObject.SetActive(!show);
             if (_questButton != null) _questButton.gameObject.SetActive(!show);

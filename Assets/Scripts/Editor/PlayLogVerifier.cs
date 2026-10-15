@@ -246,6 +246,18 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(topUpData.logStats.shopOpens == 3 && topUpData.logStats.shopTopUpOpens == 2
                                && PlayLog.BuildSummaryText(topUpData).Contains("상점(데모) 열람 3번 (코어 충전 버튼으로 2번)"),
                     $"코어 충전 경유 열람을 따로 셈 (열람 {topUpData.logStats.shopOpens}번 중 {topUpData.logStats.shopTopUpOpens}번), 요약에 표시");
+                // 뽑기 안내(GachaNudge): 뽑기를 한 번도 안 했고 코어가 1회 가격(300) 이상일 때만 나온다.
+                var nudgeData = new SaveData { core = 2700 };
+                fails += Check(SurvivalDrone.UI.GachaNudge.ShouldShow(nudgeData), "뽑기 안내: 뽑기 0번 + 코어 2,700이면 보여 줌");
+                nudgeData.core = SurvivalDrone.UI.GachaNudge.MinCore - 1;
+                fails += Check(!SurvivalDrone.UI.GachaNudge.ShouldShow(nudgeData), "뽑기 안내: 코어가 1회 가격보다 모자라면 안 보여 줌");
+                nudgeData.core = 2700;
+                nudgeData.logStats.pullsTotal = 1;
+                fails += Check(!SurvivalDrone.UI.GachaNudge.ShouldShow(nudgeData), "뽑기 안내: 일반 뽑기를 한 번이라도 했으면 안 보여 줌");
+                nudgeData.logStats.pullsTotal = 0;
+                nudgeData.logStats.lockOnConfirms = 1;
+                fails += Check(!SurvivalDrone.UI.GachaNudge.ShouldShow(nudgeData), "뽑기 안내: 락온 뽑기를 한 번이라도 했으면 안 보여 줌");
+                fails += Check(!SurvivalDrone.UI.GachaNudge.ShouldShow((SaveData)null), "뽑기 안내: 저장 데이터가 없으면 안 보여 줌");
                 var shopOldSave = JsonUtility.FromJson<SaveData>("{\"saveVersion\":1,\"isCurrencyInitialized\":true,\"core\":100}");
                 fails += Check(shopOldSave.logStats.shopClickNames != null && shopOldSave.logStats.shopClickNames.Count == 0 && shopOldSave.logStats.shopOpens == 0,
                     "상점 항목이 없는 옛 저장 파일도 안전하게 읽힘");
