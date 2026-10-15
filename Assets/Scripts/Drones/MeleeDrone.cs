@@ -15,7 +15,7 @@ namespace SurvivalDrone.Drones
         [SerializeField] private float attacksPerSecond = 2f;
 
         // 공격이 닿는 범위(반지름). 레벨이 오르면 이 값이 커진다.
-        [SerializeField] private float baseAttackRadius = 1.8f;
+        [SerializeField] private float baseAttackRadius = 2.4f;
 
         // 플레이어로부터 얼마나 떨어져서 도는지(궤도 반지름).
         [SerializeField] private float baseOrbitRadius = 2f;

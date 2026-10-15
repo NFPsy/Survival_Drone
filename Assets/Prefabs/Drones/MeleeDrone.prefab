@@ -56,7 +56,7 @@ MonoBehaviour:
   followLerp: 8
   damage: 4
   attacksPerSecond: 2
-  baseAttackRadius: 1.8
+  baseAttackRadius: 2.4
   baseOrbitRadius: 2
   baseOrbitSpeed: 180
   attackEffect: {fileID: 0}
