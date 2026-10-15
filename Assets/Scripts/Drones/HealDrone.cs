@@ -29,9 +29,21 @@ namespace SurvivalDrone.Drones
         // 회복할 때마다 재생할 효과음.
         [SerializeField] private AudioClip healSound;
 
+        // 체력이 깎여 있을 때 회복하면 보여 주는 이펙트의 원본(HealEffect.prefab): 드론 → 플레이어 초록 빛줄기 + "+" 모양 + 발밑 링.
+        // 드론이 0.5배로 줄어 있어서, 자식으로 두면 이펙트도 같이 작아진다. 그래서 따로(최상위에) 하나 만들어 두고 쓴다.
+        [SerializeField] private HealBeamEffect healVisualPrefab;
+        private HealBeamEffect healVisual;
+
         private void Awake()
         {
             if (healEffect == null) healEffect = GetComponentInChildren<ParticleSystem>();
+            if (healVisualPrefab != null) healVisual = Instantiate(healVisualPrefab);
+        }
+
+        private void OnDestroy()
+        {
+            // 드론이 사라지면(씬을 나가면) 따로 만든 이펙트도 같이 지운다.
+            if (healVisual != null) Destroy(healVisual.gameObject);
         }
 
         protected override void Update()
@@ -57,11 +69,17 @@ namespace SurvivalDrone.Drones
                 // 레벨이 오를수록(scale이 커질수록) 회복 간격이 짧아져서 더 자주 회복하게 된다.
                 healTimer = baseHealInterval / scale;
 
+                // 체력이 깎여 있는지 회복하기 "전에" 확인해 둔다. (회복하고 나면 가득 찰 수 있다)
+                bool wasHurt = ownerHealth.CurrentHealth < ownerHealth.MaxHealth - 0.01f;
+
                 // 레벨이 오를수록 회복량도 함께 늘어난다.
                 ownerHealth.Heal(baseHealAmount * scale);
 
-                // 회복할 때마다 파티클을 한 번씩 재생해서 눈에 보이게 한다.
+                // 회복할 때마다 작은 파티클은 늘 재생한다. 체력이 가득일 때는 이것만 나와서 화면이 시끄럽지 않다.
                 healEffect?.Play();
+
+                // 실제로 체력이 깎여 있었을 때만 큰 이펙트(빛줄기 + "+" + 링)를 보여 준다.
+                if (wasHurt && healVisual != null && owner != null) healVisual.Play(transform, owner);
                 SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(healSound, 0.6f);
             }
         }

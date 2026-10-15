@@ -41,6 +41,10 @@ namespace SurvivalDrone.Core
         // 매개변수는 이번에 실제로 입은 피해량. 피격 이펙트(DamageFlash)가 이걸 구독해서 사용한다.
         public event Action<float> OnDamaged;
 
+        // "회복했다"는 것만 콕 집어서 알려주는 이벤트. 매개변수는 이번에 실제로 채워진 체력량.
+        // 화면에 초록 회복 숫자를 띄우는 DamageNumberDisplay가 구독한다.
+        public event Action<float> OnHealed;
+
         // 게임 오브젝트가 생성될 때 최초 1회 호출됨.
         private void Awake()
         {
@@ -89,9 +93,14 @@ namespace SurvivalDrone.Core
         public void Heal(float amount)
         {
             if (IsDead || amount <= 0f) return;
+            float before = CurrentHealth;
             // 체력이 최대치를 넘지 않도록 Mathf.Min으로 제한.
             CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
             OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+
+            // 실제로 채워진 양만 알려준다. (체력이 거의 가득이면 요청한 양보다 적게 채워질 수 있고, 가득이면 알리지 않는다)
+            float healed = CurrentHealth - before;
+            if (healed > 0.001f) OnHealed?.Invoke(healed);
         }
     }
 }

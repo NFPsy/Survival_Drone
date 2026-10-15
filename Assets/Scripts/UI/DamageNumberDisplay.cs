@@ -47,10 +47,14 @@ namespace SurvivalDrone.UI
         [SerializeField] private int killFontSize = 38;
         [SerializeField] private int playerFontSize = 32;
 
-        // 숫자 색(일반 / 마지막 일격 / 플레이어가 맞을 때).
+        // 회복 숫자 크기. 플레이어가 맞을 때 숫자와 비슷하게 읽히게 한다.
+        [SerializeField] private int healFontSize = 30;
+
+        // 숫자 색(일반 / 마지막 일격 / 플레이어가 맞을 때 / 회복).
         [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color killColor = new Color(1f, 0.88f, 0.25f, 1f);
         [SerializeField] private Color playerColor = new Color(1f, 0.3f, 0.3f, 1f);
+        [SerializeField] private Color healColor = new Color(0.4f, 1f, 0.5f, 1f);
 
         // 숫자 하나의 상태. 풀(pool) 안의 칸 하나에 대응한다.
         private class Entry
@@ -65,6 +69,7 @@ namespace SurvivalDrone.UI
             public float xJitter;        // 숫자끼리 겹치지 않게 좌우로 흩뿌리는 픽셀 값
             public bool isKill;
             public bool isPlayer;
+            public bool isHeal;          // 플레이어가 회복한 양(초록 "+숫자")
         }
 
         private Entry[] entries;
@@ -137,7 +142,11 @@ namespace SurvivalDrone.UI
         private void OnDisable()
         {
             EnemyAI.DamageDealt -= HandleEnemyDamaged;
-            if (playerHealth != null) playerHealth.OnDamaged -= HandlePlayerDamaged;
+            if (playerHealth != null)
+            {
+                playerHealth.OnDamaged -= HandlePlayerDamaged;
+                playerHealth.OnHealed -= HandlePlayerHealed;
+            }
         }
 
         private void Start()
@@ -148,7 +157,11 @@ namespace SurvivalDrone.UI
             {
                 playerTransform = playerObj.transform;
                 playerHealth = playerObj.GetComponent<Health>();
-                if (playerHealth != null) playerHealth.OnDamaged += HandlePlayerDamaged;
+                if (playerHealth != null)
+                {
+                    playerHealth.OnDamaged += HandlePlayerDamaged;
+                    playerHealth.OnHealed += HandlePlayerHealed;
+                }
             }
         }
 
@@ -182,9 +195,16 @@ namespace SurvivalDrone.UI
             Show(amount, playerTransform.position + Vector3.up * 2.2f, null, false, true);
         }
 
+        // 플레이어가 체력을 회복했을 때(회복 드론) 머리 위로 초록 "+숫자"를 띄운다. amount는 실제로 채워진 양이다.
+        private void HandlePlayerHealed(float amount)
+        {
+            if (playerTransform == null) return;
+            Show(amount, playerTransform.position + Vector3.up * 2.2f, null, false, false, true);
+        }
+
         // ── 숫자 띄우기 ──
 
-        private void Show(float amount, Vector3 anchor, EnemyAI owner, bool isKill, bool isPlayer)
+        private void Show(float amount, Vector3 anchor, EnemyAI owner, bool isKill, bool isPlayer, bool isHeal = false)
         {
             var e = GetFreeEntry();
             e.active = true;
@@ -195,6 +215,7 @@ namespace SurvivalDrone.UI
             e.xJitter = Random.Range(-28f, 28f);
             e.isKill = isKill;
             e.isPlayer = isPlayer;
+            e.isHeal = isHeal;
             e.rect.gameObject.SetActive(true);
             ApplyStyle(e);
             UpdatePosition(e); // 첫 프레임에 엉뚱한 위치(0,0)에서 깜빡이지 않도록 바로 위치를 잡는다.
@@ -215,6 +236,15 @@ namespace SurvivalDrone.UI
         // 숫자의 글자·크기·색을 현재 상태에 맞게 바꾼다.
         private void ApplyStyle(Entry e)
         {
+            if (e.isHeal)
+            {
+                // 회복량은 1~3처럼 작아서 정수로 반올림하면 "+1"만 계속 보인다. 10 미만은 소수 첫째 자리까지 보여 준다(1.2 → "+1.2", 2.0 → "+2").
+                e.text.text = "+" + (e.value < 10f ? e.value.ToString("0.#") : Mathf.RoundToInt(e.value).ToString());
+                e.text.fontSize = healFontSize;
+                e.text.color = healColor;
+                return;
+            }
+
             e.text.text = Mathf.Max(1, Mathf.RoundToInt(e.value)).ToString();
 
             if (e.isPlayer)
