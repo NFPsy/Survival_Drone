@@ -70,6 +70,7 @@ MonoBehaviour:
   explosionSound: {fileID: 8300000, guid: dda1db3db0be9cf459a6366590331452, type: 3}
   shockwaveRing: {fileID: 3556968502561234901}
   coreFlash: {fileID: 1967951435460982164}
+  afterEffectPrefab: {fileID: 6652707442777605770, guid: 12bdb41ab0a29dd4987b87c0ff5b29c5, type: 3}
 --- !u!1 &7082664854445932867
 GameObject:
   m_ObjectHideFlags: 0

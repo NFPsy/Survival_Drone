@@ -69,8 +69,14 @@ namespace SurvivalDrone.Drones
         // 터지는 순간 드론 위치에서 한 번 크게 번쩍이는 빛. 비워두면 번쩍임이 없다.
         [SerializeField] private ParticleSystem coreFlash;
 
+        // 불꽃·링·섬광 위에 연기·검은 파편·불씨를 더해 묵직하게 보이게 하는 이펙트의 원본(ExplosionAfter.prefab). 비워두면 예전처럼 동작한다.
+        // 드론이 0.5배로 줄어 있어서, 자식으로 두면 이펙트도 같이 작아진다. 그래서 따로(최상위에) 하나 만들어 두고 쓴다.
+        [SerializeField] private ExplosionAfterEffect afterEffectPrefab;
+        private ExplosionAfterEffect afterEffect;
+
         private void Awake()
         {
+            if (afterEffectPrefab != null) afterEffect = Instantiate(afterEffectPrefab);
             if (explosionEffect == null) explosionEffect = GetComponentInChildren<ParticleSystem>();
 
             // 불꽃 파티클은 원래 "드론 기준"으로 시뮬레이션돼서, 터진 뒤 드론이 움직이면 불꽃도 같이 끌려갔다.
@@ -102,6 +108,7 @@ namespace SurvivalDrone.Drones
         private void OnDestroy()
         {
             if (markerTransform != null) Destroy(markerTransform.gameObject);
+            if (afterEffect != null) Destroy(afterEffect.gameObject);
         }
 
         protected override void Update()
@@ -211,6 +218,7 @@ namespace SurvivalDrone.Drones
                 explosionEffect.Play();
             }
             PlayShockwave(center, radius);
+            afterEffect?.Play(center, radius); // 연기·검은 파편·불씨
             SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(explosionSound);
         }
 
