@@ -191,16 +191,10 @@ MonoBehaviour:
   - minValue: 0
     coreMaterial: {fileID: 2100000, guid: c932b11a9eeb73247ba39fa05c5aa09a, type: 2}
     glowMaterial: {fileID: 2100000, guid: 13400dd9ddf3d93469581103169c57af, type: 2}
-  - minValue: 2
-    coreMaterial: {fileID: 2100000, guid: 99122893357bca24796e28eb4a5f1bfe, type: 2}
-    glowMaterial: {fileID: 2100000, guid: 67d7ef5efa25b054799c322b694df571, type: 2}
-  - minValue: 4
+  - minValue: 5
     coreMaterial: {fileID: 2100000, guid: 3fabb3187482c9541a9a735594ae891e, type: 2}
     glowMaterial: {fileID: 2100000, guid: 2af3177f99b72724e9c667ed112de972, type: 2}
-  - minValue: 7
-    coreMaterial: {fileID: 2100000, guid: 5b7123a1cace7864981e3b347d768eda, type: 2}
-    glowMaterial: {fileID: 2100000, guid: bd01ea3bec39d004da8cc3f888b45c91, type: 2}
-  - minValue: 50
+  - minValue: 12
     coreMaterial: {fileID: 2100000, guid: 8e35a1b5e8e39cc43b6276befa900f7a, type: 2}
     glowMaterial: {fileID: 2100000, guid: 6dca283c68133af449ca8b52462fc912, type: 2}
   coreRenderer: {fileID: 4498857697743504727}
