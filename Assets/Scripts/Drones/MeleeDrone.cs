@@ -40,6 +40,13 @@ namespace SurvivalDrone.Drones
         // 비워두면 링 없이 예전처럼 작은 불꽃만 나온다.
         [SerializeField] private ParticleSystem hitRing;
 
+        // 베기 링과 함께 재생되는 붉은 소용돌이(회전하는 호 3개). 링과 똑같이 맞혔을 때만, 같은 자리·같은 크기로 재생한다.
+        // 비워두면 링만 나온다. (MeleeEffectBuilder 메뉴가 만들어 연결해 준다)
+        [SerializeField] private ParticleSystem hitSwirl;
+
+        // 소용돌이 그림이 링보다 살짝 작게 보이도록 공격 범위(지름)에 곱하는 배율.
+        private const float SwirlSizeRatio = 0.9f;
+
         private void Awake()
         {
             if (attackEffect == null) attackEffect = GetComponentInChildren<ParticleSystem>();
@@ -108,12 +115,22 @@ namespace SurvivalDrone.Drones
         // 드론이 계속 돌아도 친 자리에서 퍼져 나간다. 링은 바닥 바로 위에 눕혀 놓고, 크기는 지름(반지름 x 2)으로 맞춘다.
         private void PlayHitRing(float radius)
         {
-            if (hitRing == null) return;
+            if (hitRing != null)
+            {
+                hitRing.transform.position = new Vector3(transform.position.x, 0.1f, transform.position.z);
+                var ringMain = hitRing.main;
+                ringMain.startSize = radius * 2f;
+                hitRing.Play();
+            }
 
-            hitRing.transform.position = new Vector3(transform.position.x, 0.1f, transform.position.z);
-            var ringMain = hitRing.main;
-            ringMain.startSize = radius * 2f;
-            hitRing.Play();
+            // 소용돌이는 링보다 아주 조금 위에 눕혀서(0.12) 링과 겹쳐도 깜빡이지 않게 한다.
+            if (hitSwirl != null)
+            {
+                hitSwirl.transform.position = new Vector3(transform.position.x, 0.12f, transform.position.z);
+                var swirlMain = hitSwirl.main;
+                swirlMain.startSize = radius * 2f * SwirlSizeRatio;
+                hitSwirl.Play();
+            }
         }
     }
 }
