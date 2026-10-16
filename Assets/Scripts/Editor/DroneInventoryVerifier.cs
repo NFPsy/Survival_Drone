@@ -104,14 +104,32 @@ namespace SurvivalDrone.EditorTools
                 inventory.TryGetInfo(DroneType.Melee, out info);
                 fails += Check(info.rarity == GachaRarity.R && info.level == 2, "승급(N→R)해도 강화 레벨 2 유지");
 
-                // 최대 레벨까지: 필요한 조각·크레딧을 넉넉히 넣고 끝까지 올린다
+                // 기본 최대 레벨(Lv5)까지: 필요한 조각·크레딧을 넉넉히 넣고 Lv5가 될 때까지 올린다.
+                // (실제 에셋의 각성 스위치가 켜져 있으면 Lv5 다음에도 각성 강화가 가능하다. 그래서 스위치와 상관없이 같은 기준으로
+                //  검사하려고 "전체 최대 레벨"이 아니라 "기본 최대 레벨"에서 멈춘다. 각성 쪽은 아래 각성 검사 구역에서 따로 확인한다.)
                 data.ownedDrones.Find(o => o.droneType == DroneType.Melee).shards = 999;
                 currency.AddCredit(99999);
                 UpgradeResult last = UpgradeResult.Success;
-                while (last == UpgradeResult.Success) last = inventory.TryUpgrade(DroneType.Melee, currency);
                 inventory.TryGetInfo(DroneType.Melee, out info);
-                fails += Check(last == UpgradeResult.MaxLevel && info.level == growth.MaxLevel && growth.MaxLevel == 5, $"최대 레벨 {info.level}에서 더 강화 불가(MaxLevel)");
-                fails += Check(inventory.GetUpgradeShardCost(DroneType.Melee) == 0, "최대 레벨의 다음 강화 비용은 0");
+                while (info.level < growth.BaseMaxLevel && last == UpgradeResult.Success)
+                {
+                    last = inventory.TryUpgrade(DroneType.Melee, currency);
+                    inventory.TryGetInfo(DroneType.Melee, out info);
+                }
+                fails += Check(last == UpgradeResult.Success && info.level == growth.BaseMaxLevel && growth.BaseMaxLevel == 5, $"기본 최대 레벨 Lv{info.level}까지 강화");
+                if (!growth.AwakeningEnabled)
+                {
+                    // 각성이 꺼져 있으면 Lv5가 끝이다(지금 CBT 빌드와 같은 동작).
+                    last = inventory.TryUpgrade(DroneType.Melee, currency);
+                    fails += Check(last == UpgradeResult.MaxLevel && growth.MaxLevel == 5, $"최대 레벨 {info.level}에서 더 강화 불가(MaxLevel)");
+                    fails += Check(inventory.GetUpgradeShardCost(DroneType.Melee) == 0, "최대 레벨의 다음 강화 비용은 0");
+                }
+                else
+                {
+                    // 각성이 켜져 있으면 Lv5의 다음 강화(Lv6)는 각성 단계이고 비용이 0이 아니다.
+                    fails += Check(growth.IsAwakeningLevel(info.level + 1) && inventory.GetUpgradeShardCost(DroneType.Melee) > 0,
+                        $"각성 켜짐: Lv{info.level}의 다음 강화는 각성 단계(조각 {inventory.GetUpgradeShardCost(DroneType.Melee)})");
+                }
 
                 // ---- 전투력 ----
                 // 근접 R Lv5: 50 × 1.10 × (1 + 0.06×4) = 68.2, 저격 SR Lv1: 50 × 1.25 = 62.5 → 합 130.7 → 131
