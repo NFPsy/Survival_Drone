@@ -162,11 +162,15 @@ namespace SurvivalDrone.Meta
             if (rewardCredit > 0) AddCredit(rewardCredit);
         }
 
-        // 달성한 마일스톤 보상(스테이지 번호 stageIndex, MatchMilestones 번호 index)의 코어를 받는다. 지급한 양을 돌려준다.
+        // 달성한 마일스톤 보상(스테이지 번호 stageIndex, MatchMilestones 번호 index)을 받는다. 지급한 양을 돌려준다.
+        // 노멀 스테이지는 코어를, 하드 스테이지는 만능 조각을 준다. (하드는 받을 드론이 없으면 0을 돌려주지만 받은 것으로 기록한다)
         // 아직 달성하지 못했거나, 이미 받았거나, 번호가 잘못됐으면 아무것도 하지 않고 0을 돌려준다. (스테이지마다 번호마다 한 번만)
-        public int TryClaimMilestone(int stageIndex, int index)
+        // inventory는 검증 도구용(비우면 게임 속 DroneInventory.Instance). 하드 스테이지 조각을 넣을 드론 보관함을 직접 넘길 수 있다.
+        public int TryClaimMilestone(int stageIndex, int index, DroneInventory inventory = null)
         {
             if (_data == null || !MatchMilestones.IsDone(_data, stageIndex, index) || MatchMilestones.IsClaimed(_data, stageIndex, index)) return 0;
+
+            if (MatchMilestones.IsHardStage(stageIndex)) return ClaimHardMilestone(stageIndex, index, inventory ?? DroneInventory.Instance);
 
             MatchMilestones.MarkClaimed(_data, stageIndex, index);
             int core = MatchMilestones.GetCore(stageIndex, index);
@@ -175,6 +179,25 @@ namespace SurvivalDrone.Meta
             PlayLog.RecordMilestoneClaim(_data, stageIndex + 1, MatchMilestones.Titles[index], core, _data.core + core);
             AddCore(core);
             return core;
+        }
+
+        // 하드 스테이지 마일스톤의 만능 조각을 받는다. 조각은 다음 강화에 가장 가까운 드론 한 마리에 들어간다(DroneInventory.AddUniversalShards).
+        // 드론 보관함이 없으면(메인 메뉴 씬을 거치지 않았을 때) 받은 것으로 기록하지 않고 0을 돌려준다.
+        private int ClaimHardMilestone(int stageIndex, int index, DroneInventory inventory)
+        {
+            if (inventory == null)
+            {
+                Debug.LogWarning("[Currency] 드론 보관함(DroneInventory)이 없어 하드 마일스톤 조각을 지급하지 못했습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");
+                return 0;
+            }
+
+            MatchMilestones.MarkClaimed(_data, stageIndex, index);
+            int shards = MatchMilestones.GetShards(stageIndex, index);
+            int applied = inventory.AddUniversalShards(shards, out SurvivalDrone.Drones.DroneType? target);
+            Debug.Log($"[Currency] {MatchMilestones.StageLabel(stageIndex)} 마일스톤 {index} 달성: 조각 +{applied}{(target.HasValue ? $" ({target.Value})" : " (받을 드론 없음)")}");
+            PlayLog.RecordHardMilestoneClaim(_data, stageIndex + 1, stageIndex - MatchMilestones.NormalCount + 1, MatchMilestones.Titles[index], applied, target.HasValue ? target.Value.ToString() : null);
+            SaveManager.Save();
+            return applied;
         }
 
         // 오늘 달성한 일일 퀘스트(DailyQuests 번호)의 코어를 받는다. 달성하지 않았거나 이미 받았으면 0을 돌려준다.

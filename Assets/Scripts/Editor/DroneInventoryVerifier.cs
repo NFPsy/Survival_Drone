@@ -151,6 +151,70 @@ namespace SurvivalDrone.EditorTools
                 foreach (var owned in ssrData.ownedDrones) { owned.rarity = GachaRarity.SSR; owned.level = 5; }
                 fails += Check(ssrInventory.TotalCombatPower == 180, $"SSR Lv5 두 개의 전투력 = 180 (실제 {ssrInventory.TotalCombatPower})");
 
+                // ---- 만능 조각 (하드 스테이지 마일스톤 보상): 다음 강화에 가장 가까운 드론에 들어간다 ----
+                var shardData = new SaveData();
+                var shardInventory = new GameObject("DroneInventoryVerifier_Universal") { hideFlags = HideFlags.HideAndDontSave }.AddComponent<DroneInventory>();
+                try
+                {
+                    shardInventory.Initialize(shardData, growth, gacha, false);
+                    // 근접은 조각 20(다음 강화까지 10 남음), 저격은 0(30 남음) → 가장 조금 모자란 근접에 전부 들어간다
+                    shardData.ownedDrones.Find(o => o.droneType == DroneType.Melee).shards = 20;
+                    int given = shardInventory.AddUniversalShards(60, out DroneType? usedTarget);
+                    shardInventory.TryGetInfo(DroneType.Melee, out DroneInfo meleeInfo);
+                    shardInventory.TryGetInfo(DroneType.Sniper, out DroneInfo sniperInfo);
+                    fails += Check(given == 60 && usedTarget == DroneType.Melee && meleeInfo.shards == 80 && sniperInfo.shards == 0,
+                        $"만능 조각 +60 → 다음 강화에 가장 가까운 드론(근접)에 들어감 (근접 {meleeInfo.shards}, 저격 {sniperInfo.shards})");
+                    fails += Check(shardInventory.AddUniversalShards(0, out usedTarget) == 0 && usedTarget == null && shardInventory.AddUniversalShards(-5, out usedTarget) == 0,
+                        "만능 조각 0 이하는 아무 일도 없음");
+                    foreach (var owned in shardData.ownedDrones) owned.level = growth.MaxLevel;
+                    given = shardInventory.AddUniversalShards(100, out usedTarget);
+                    fails += Check(given == 0 && usedTarget == null, "받을 드론이 없으면(전부 최대 레벨) 만능 조각은 들어가지 않고 0을 돌려줌");
+
+                    // ---- 하드 마일스톤 수령: 로비 마일스톤 창의 "획득"이 부르는 CurrencyManager.TryClaimMilestone ----
+                    foreach (var owned in shardData.ownedDrones) owned.level = 1;
+                    var claimData = shardData;
+                    claimData.ownedDrones.Find(o => o.droneType == DroneType.Melee).shards = 20;
+                    claimData.ownedDrones.Find(o => o.droneType == DroneType.Sniper).shards = 0;
+                    var claimCurrency = new GameObject("DroneInventoryVerifier_Claim") { hideFlags = HideFlags.HideAndDontSave }.AddComponent<CurrencyManager>();
+                    try
+                    {
+                        claimCurrency.Initialize(claimData, currencyTable, false);
+                        int coreBeforeClaim = claimCurrency.Core;
+                        fails += Check(claimCurrency.TryClaimMilestone(5, 0, shardInventory) == 0 && !MatchMilestones.IsClaimed(claimData, 5, 0),
+                            "하드 마일스톤: 달성하지 않았으면 받을 수 없음");
+                        MatchMilestones.MarkDone(claimData, 5, 0);
+                        int claimed = claimCurrency.TryClaimMilestone(5, 0, shardInventory);
+                        shardInventory.TryGetInfo(DroneType.Melee, out DroneInfo claimInfo);
+                        fails += Check(claimed == 5 && claimInfo.shards == 25 && MatchMilestones.IsClaimed(claimData, 5, 0) && claimCurrency.Core == coreBeforeClaim,
+                            $"하드 1 3분 마일스톤 → 만능 조각 +5가 다음 강화에 가장 가까운 근접에 들어감 (근접 {claimInfo.shards}), 코어는 그대로");
+                        fails += Check(claimCurrency.TryClaimMilestone(5, 0, shardInventory) == 0, "같은 하드 마일스톤은 한 번만 받음");
+                        MatchMilestones.MarkDone(claimData, 5, MatchMilestones.ClearIndex);
+                        fails += Check(claimCurrency.TryClaimMilestone(5, MatchMilestones.ClearIndex, shardInventory) == 15, "하드 1 클리어 마일스톤 = 조각 +15");
+                        fails += Check(claimData.playLog.FindAll(l => l.Contains("| hard_milestone_claim |") && l.Contains("스테이지=6") && l.Contains("하드=1") && l.Contains("대상=Melee")).Count == 2,
+                            "하드 마일스톤 수령은 플레이 기록에 항목마다 한 줄씩 남음");
+                        fails += Check(claimData.logStats.milestoneClaims == 0 && claimData.logStats.milestoneCoreTotal == 0, "하드 조각 수령은 코어 마일스톤 통계에 섞이지 않음");
+
+                        // 드론 보관함이 없으면(메인 메뉴를 거치지 않음) 받은 것으로 기록하지 않는다
+                        MatchMilestones.MarkDone(claimData, 6, 0);
+                        fails += Check(claimCurrency.TryClaimMilestone(6, 0) == 0 && !MatchMilestones.IsClaimed(claimData, 6, 0),
+                            "드론 보관함이 없으면 하드 마일스톤을 받지 못하고, 받은 것으로 기록되지 않음");
+
+                        // 받을 드론이 없으면(전부 최대 레벨) 조각은 0이지만 받은 것으로 기록한다
+                        foreach (var owned in claimData.ownedDrones) owned.level = growth.MaxLevel;
+                        fails += Check(claimCurrency.TryClaimMilestone(6, 0, shardInventory) == 0 && MatchMilestones.IsClaimed(claimData, 6, 0)
+                                       && claimData.playLog.Exists(l => l.Contains("| hard_milestone_claim |") && l.Contains("하드=2") && l.Contains("조각=+0") && l.Contains("대상=없음")),
+                            "전부 최대 레벨이면 하드 마일스톤은 조각 0으로 받은 것 처리 (기록에 대상=없음)");
+                    }
+                    finally
+                    {
+                        UnityEngine.Object.DestroyImmediate(claimCurrency.gameObject);
+                    }
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(shardInventory.gameObject);
+                }
+
                 // ---- 장착 ----
                 int before = changedCount;
                 fails += Check(!inventory.TryEquip(0, DroneType.Collector), "미보유 드론은 장착 불가");

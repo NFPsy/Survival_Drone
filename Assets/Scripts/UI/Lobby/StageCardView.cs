@@ -45,11 +45,13 @@ namespace SurvivalDrone.UI
         //  - bestSeconds: 최고 생존 시간(초), 기록이 없으면 0
         //  - unlocked: 해금 여부. 잠겼으면 흐리게 표시하고 "STAGE n 클리어 필요" 문구를 주황으로 보여준다.
         //  - myPower: 내 전투력(장착한 드론 합계). 권장 전투력과 비교해서 색이 달라진다.
-        public void Show(StageData stage, float bestSeconds, bool unlocked, int myPower)
+        //  - milestoneShards: (하드 스테이지만) 마일스톤으로 받을 수 있는 만능 조각 합계. 0이면 안내를 보이지 않는다.
+        //  - milestonesDone: (하드 스테이지만) 마일스톤을 전부 받았는지. 받기 전에는 "마일스톤 조각 최대 +N"을 알려 준다.
+        public void Show(StageData stage, float bestSeconds, bool unlocked, int myPower, int milestoneShards = 0, bool milestonesDone = false)
         {
             if (stage == null) return;
 
-            // 하드 스테이지는 번호 옆에 HARD를 붙이고 붉은 주황색으로 보여 준다. (잠겼으면 다른 글자처럼 죽은 색)
+            // 하드 스테이지는 "STAGE 2  HARD"처럼 짝이 되는 노멀의 번호 옆에 HARD를 붙이고 붉은 주황색으로 보여 준다. (잠겼으면 다른 글자처럼 죽은 색)
             string numberLabel = stage.IsHard ? $"STAGE {stage.StageNumber}  HARD" : $"STAGE {stage.StageNumber}";
             SetText(_numberText, numberLabel, !unlocked ? LockedColor : (stage.IsHard ? HardColor : NormalTitleColor));
             SetText(_nameText, stage.DisplayName, unlocked ? NormalTextColor : LockedColor);
@@ -65,9 +67,26 @@ namespace SurvivalDrone.UI
 
             if (_lockText != null)
             {
-                _lockText.gameObject.SetActive(!unlocked);
-                _lockText.text = $"STAGE {stage.StageNumber - 1} 클리어 필요";
-                _lockText.color = WarningColor;
+                // 잠겼으면 해금 조건을, 열린 하드 스테이지는 마일스톤 조각 안내를 이 칸에 보여 준다. (노멀 스테이지가 열려 있으면 숨김)
+                //  - 노멀 n: 앞 스테이지(n-1) 클리어 필요 / 하드 n: 짝이 되는 노멀 n 클리어 필요
+                bool showBonus = unlocked && stage.IsHard && milestoneShards > 0;
+                _lockText.gameObject.SetActive(!unlocked || showBonus);
+                if (!unlocked)
+                {
+                    Transform lockedIcon = _lockText.transform.Find("Icon");
+                    if (lockedIcon != null) lockedIcon.gameObject.SetActive(true);
+                    int needStage = stage.IsHard ? stage.StageNumber : stage.StageNumber - 1;
+                    _lockText.text = $"STAGE {needStage} 클리어 필요";
+                    _lockText.color = WarningColor;
+                }
+                else if (showBonus)
+                {
+                    // LockText 아래의 자물쇠 아이콘은 잠겼을 때만 보인다. (열린 카드에 자물쇠가 있으면 잠긴 것처럼 보이기 때문)
+                    Transform lockIcon = _lockText.transform.Find("Icon");
+                    if (lockIcon != null) lockIcon.gameObject.SetActive(false);
+                    _lockText.text = milestonesDone ? "마일스톤 조각 모두 받음" : $"마일스톤 조각 최대 +{milestoneShards}";
+                    _lockText.color = milestonesDone ? MutedColor : EnoughColor;
+                }
             }
         }
 

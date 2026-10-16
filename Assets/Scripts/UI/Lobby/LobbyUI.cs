@@ -230,7 +230,7 @@ namespace SurvivalDrone.UI
 
             bool unlocked = progress.IsUnlocked(_viewIndex);
             int myPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;
-            _cardView.Show(progress.GetStage(_viewIndex), progress.GetBestSurvivalSeconds(_viewIndex), unlocked, myPower);
+            _cardView.Show(progress.GetStage(_viewIndex), progress.GetBestSurvivalSeconds(_viewIndex), unlocked, myPower, MatchMilestones.GetTotalShards(_viewIndex), MatchMilestones.AllClaimed(SaveManager.Data, _viewIndex));
 
             if (_prevButton != null) _prevButton.interactable = _viewIndex > 0;
             if (_nextButton != null) _nextButton.interactable = _viewIndex < progress.StageCount - 1;

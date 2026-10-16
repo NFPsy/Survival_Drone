@@ -118,14 +118,14 @@ namespace SurvivalDrone.EditorTools
             else Debug.LogError($"[Stage] 검증 완료: {fails}개 항목 실패 ({System.DateTime.Now:HH:mm:ss})");
         }
 
-        // 하드 스테이지(OBT 2단계, 기본 꺼짐) 검증. 하드 스테이지 에셋을 직접 넘겨서 쓰므로 실제 스위치 상태와 상관없이 같은 결과가 나온다.
+        // 하드 스테이지(스테이지마다 하드 버전, 기본 꺼짐) 검증. 하드 스테이지 에셋을 직접 넘겨서 쓰므로 실제 스위치 상태와 상관없이 같은 결과가 나온다.
         private static int VerifyHardStages(StageData[] normal)
         {
             int fails = 0;
-            var hard = new StageData[3];
-            for (int i = 0; i < 3; i++)
+            var hard = new StageData[5];
+            for (int i = 0; i < 5; i++)
             {
-                string path = $"Assets/Data/Meta/StageData_0{6 + i}.asset";
+                string path = $"Assets/Data/Meta/StageData_{6 + i:00}.asset";
                 hard[i] = AssetDatabase.LoadAssetAtPath<StageData>(path);
                 if (hard[i] == null)
                 {
@@ -135,7 +135,7 @@ namespace SurvivalDrone.EditorTools
             }
 
             var settings = Resources.Load<HardStageSettings>("HardStageSettings");
-            Debug.Log($"[Stage] 안내 — 하드 스테이지 스위치(실제 에셋): {(settings != null && settings.Enabled ? "켜짐" : "꺼짐")} (OBT 2단계 전에는 꺼짐이 정상)");
+            Debug.Log($"[Stage] 안내 — 하드 스테이지 스위치(실제 에셋): {(settings != null && settings.Enabled ? "켜짐" : "꺼짐")} (OBT 전에는 꺼짐이 정상)");
 
             var go = new GameObject("StageProgressVerifier_HardTemp") { hideFlags = HideFlags.HideAndDontSave };
             try
@@ -146,34 +146,64 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(off.StageCount == 5 && off.NormalStageCount == 5 && !off.HasHardStages && off.FirstHardIndex == -1 && !off.IsHardStage(4),
                     $"하드 꺼짐: 스테이지 {off.StageCount}개, 하드 없음 (예전과 같음)");
 
-                // ---- 하드 목록을 넘기면(= 켜짐) 노멀 5개 뒤에 6~8번이 붙는다 ----
+                // ---- 하드 목록을 넘기면(= 켜짐) 노멀 5개 뒤에 6~10번(하드 1~5)이 붙는다 ----
                 var onObject = new GameObject("StageProgressVerifier_HardOn") { hideFlags = HideFlags.HideAndDontSave };
                 try
                 {
                     var on = onObject.AddComponent<StageProgress>();
                     var data = new SaveData();
                     on.Initialize(data, normal, false, hard);
-                    fails += Check(on.StageCount == 8 && on.NormalStageCount == 5 && on.HasHardStages && on.FirstHardIndex == 5 && !on.IsHardStage(4) && on.IsHardStage(5) && on.IsHardStage(7) && !on.IsHardStage(8),
-                        $"하드 켜짐: 스테이지 {on.StageCount}개 (노멀 {on.NormalStageCount} + 하드 3), 하드 시작 위치 {on.FirstHardIndex}");
-                    fails += Check(on.GetStage(5) == hard[0] && on.GetStage(7) == hard[2] && on.GetStage(5).StageNumber == 6 && on.GetStage(7).StageNumber == 8,
-                        "하드 스테이지는 6번·7번·8번으로 노멀 뒤에 붙음");
+                    fails += Check(on.StageCount == 10 && on.NormalStageCount == 5 && on.HasHardStages && on.FirstHardIndex == 5 && !on.IsHardStage(4) && on.IsHardStage(5) && on.IsHardStage(9) && !on.IsHardStage(10),
+                        $"하드 켜짐: 스테이지 {on.StageCount}개 (노멀 {on.NormalStageCount} + 하드 5), 하드 시작 위치 {on.FirstHardIndex}");
+                    fails += Check(on.GetStage(5) == hard[0] && on.GetStage(9) == hard[4] && on.GetStage(5).StageNumber == 1 && on.GetStage(9).StageNumber == 5,
+                        "하드 스테이지는 노멀 뒤에 붙고, 번호는 짝이 되는 노멀의 번호(1~5)를 씀");
 
-                    // 처음엔 하드가 잠겨 있고, 스테이지 5를 처음 클리어해야 스테이지 6이 열린다
-                    fails += Check(!on.IsUnlocked(5) && on.UnlockedCount == 1, "처음에는 하드(6번)가 잠겨 있음");
-                    for (int s = 0; s < 4; s++) { on.TrySelect(s); on.RecordMatchResult(true, 600f); }
-                    fails += Check(on.UnlockedCount == 5 && !on.IsUnlocked(5), $"스테이지 1~4 클리어 후에도 하드는 잠김 (해금 {on.UnlockedCount}개)");
-                    on.TrySelect(4);
-                    on.RecordMatchResult(true, 600f);
-                    fails += Check(on.UnlockedCount == 6 && on.IsUnlocked(5), $"스테이지 5 클리어 → 하드 6번 해금 (해금 {on.UnlockedCount}개)");
+                    // 처음엔 하드가 전부 잠겨 있고, 노멀 n을 클리어하면 하드 n만 열린다 (순서대로 열릴 필요 없음)
+                    fails += Check(!on.IsUnlocked(5) && !on.IsUnlocked(9) && on.UnlockedCount == 1, "처음에는 하드가 전부 잠겨 있음");
+                    on.TrySelect(0); on.RecordMatchResult(true, 600f);
+                    fails += Check(on.IsUnlocked(5) && !on.IsUnlocked(6) && on.UnlockedCount == 2, "노멀 1 클리어 → 하드 1만 열림 (하드 2는 아직 잠김)");
+                    fails += Check(on.IsNormalCleared(0) && !on.IsNormalCleared(1), "노멀 클리어 기록: 스테이지 1만 클리어");
+                    on.TrySelect(1); on.RecordMatchResult(true, 600f);
+                    on.TrySelect(2); on.RecordMatchResult(true, 600f);
+                    fails += Check(on.IsUnlocked(5) && on.IsUnlocked(6) && on.IsUnlocked(7) && !on.IsUnlocked(8) && !on.IsUnlocked(9) && on.UnlockedCount == 4,
+                        $"노멀 1~3 클리어 → 하드 1~3 열림, 하드 4·5는 잠김 (노멀 해금 {on.UnlockedCount}개)");
+
+                    // 노멀을 클리어하지 않고 하드를 고를 수 없다
+                    fails += Check(!on.TrySelect(9) && on.SelectedIndex == 2, "잠긴 하드(5)는 고를 수 없음");
+
+                    // 마지막 노멀(5)을 클리어해도 노멀 해금 개수는 5를 넘지 않고, 하드 5가 열린다
+                    on.TrySelect(3); on.RecordMatchResult(true, 600f);
+                    on.TrySelect(4); on.RecordMatchResult(true, 600f);
+                    fails += Check(on.UnlockedCount == 5 && on.IsUnlocked(9) && data.unlockedStageCount == 5,
+                        $"노멀 5 클리어 → 하드 5 열림, 노멀 해금 개수는 최대 5 (저장값 {data.unlockedStageCount})");
+
+                    // 하드를 클리어해도 노멀 해금 개수나 노멀 클리어 기록은 바뀌지 않는다
+                    int maskBefore = data.normalClearedMask;
                     on.TrySelect(5); on.RecordMatchResult(true, 600f);
-                    on.TrySelect(6); on.RecordMatchResult(true, 600f);
-                    on.TrySelect(7); on.RecordMatchResult(true, 600f);
-                    fails += Check(on.UnlockedCount == 8, $"마지막 하드 클리어 후에도 해금 최대 8개 (해금 {on.UnlockedCount}개)");
+                    fails += Check(on.UnlockedCount == 5 && data.normalClearedMask == maskBefore, "하드 클리어는 노멀 해금·클리어 기록을 바꾸지 않음");
+
+                    // ---- 옛 저장(클리어 기록 비트 없음)에서 하드 해금 짐작 ----
+                    var oldObject = new GameObject("StageProgressVerifier_OldSave") { hideFlags = HideFlags.HideAndDontSave };
+                    try
+                    {
+                        var oldData = new SaveData { unlockedStageCount = 3 };   // 예전에 스테이지 2까지 깬 저장
+                        var o = oldObject.AddComponent<StageProgress>();
+                        o.Initialize(oldData, normal, false, hard);
+                        fails += Check(o.IsUnlocked(5) && o.IsUnlocked(6) && !o.IsUnlocked(7) && oldData.normalClearedMask == 0,
+                            "옛 저장(해금 3개): 노멀 1·2를 깬 것으로 보고 하드 1·2가 열림");
+                        var oldAll = new SaveData { unlockedStageCount = 5 };    // 스테이지 5까지 열린 옛 저장 (5를 깼는지는 알 수 없음)
+                        o.Initialize(oldAll, normal, false, hard);
+                        fails += Check(o.IsUnlocked(8) && !o.IsUnlocked(9), "옛 저장(해금 5개): 하드 1~4는 열리고 하드 5는 노멀 5를 한 번 더 깨야 열림");
+                    }
+                    finally
+                    {
+                        Object.DestroyImmediate(oldObject);
+                    }
 
                     // 체력·피해 배율이 따로 적용된다 (노멀은 둘이 같은 값)
                     on.TrySelect(5);
-                    fails += Check(Mathf.Approximately(on.CurrentHealthMultiplier, 3.0f) && Mathf.Approximately(on.CurrentDamageMultiplier, 2.4f),
-                        $"하드 6번: 체력 x{on.CurrentHealthMultiplier}, 피해 x{on.CurrentDamageMultiplier} (따로 적용)");
+                    fails += Check(Mathf.Approximately(on.CurrentHealthMultiplier, 1.5f) && Mathf.Approximately(on.CurrentDamageMultiplier, 1.6f),
+                        $"하드 1: 체력 x{on.CurrentHealthMultiplier}, 피해 x{on.CurrentDamageMultiplier} (따로 적용)");
                     on.TrySelect(4);
                     fails += Check(Mathf.Approximately(on.CurrentHealthMultiplier, 2.2f) && Mathf.Approximately(on.CurrentDamageMultiplier, 2.2f),
                         $"노멀 5번: 체력·피해 모두 x{on.CurrentHealthMultiplier} (따로 정하지 않으면 기존 한 값)");
@@ -183,27 +213,51 @@ namespace SurvivalDrone.EditorTools
                     Object.DestroyImmediate(onObject);
                 }
 
-                // ---- 하드 스테이지 값이 설계 문서와 같은지 ----
-                int[] power = { 185, 195, 205 };
-                float[] hp = { 3.0f, 3.5f, 4.0f };
-                float[] dmg = { 2.4f, 2.6f, 2.8f };
+                // ---- 하드 스테이지 값이 설계 문서와 같은지 (시작값, OBT 로그로 보정) ----
+                int[] power = { 120, 135, 155, 185, 205 };
+                float[] hp = { 1.5f, 1.9f, 2.4f, 3.0f, 4.0f };
+                float[] dmg = { 1.6f, 1.9f, 2.2f, 2.4f, 2.8f };
                 bool ok = true;
-                for (int i = 0; i < 3; i++)
-                    ok &= hard[i].IsHard && hard[i].RecommendedPower == power[i] && Mathf.Approximately(hard[i].HealthMultiplier, hp[i]) && Mathf.Approximately(hard[i].DamageMultiplier, dmg[i]);
-                fails += Check(ok, "하드 스테이지 값이 설계 문서와 일치 (권장 185/195/205, 체력 x3.0/3.5/4.0, 피해 x2.4/2.6/2.8)");
+                for (int i = 0; i < 5; i++)
+                    ok &= hard[i].IsHard && hard[i].StageNumber == i + 1 && hard[i].RecommendedPower == power[i]
+                          && Mathf.Approximately(hard[i].HealthMultiplier, hp[i]) && Mathf.Approximately(hard[i].DamageMultiplier, dmg[i])
+                          && hard[i].DisplayName == normal[i].DisplayName;
+                fails += Check(ok, "하드 1~5 값이 설계 문서와 일치 (권장 120/135/155/185/205, 체력 x1.5~4.0, 피해 x1.6~2.8, 이름은 노멀과 같음)");
                 fails += Check(!normal[0].IsHard && !normal[4].IsHard, "노멀 스테이지는 하드가 아님");
 
-                // ---- 보상: 크레딧 표 확장, 마일스톤 코어 없음 ----
+                // ---- 보상: 하드 n의 크레딧은 짝이 되는 노멀 n과 같음, 마일스톤은 코어 대신 만능 조각 ----
                 var currencyTable = AssetDatabase.LoadAssetAtPath<CurrencyTable>("Assets/Data/Meta/CurrencyTable.asset");
-                fails += Check(currencyTable != null && currencyTable.GetClearCredit(5) == 900 && currencyTable.GetClearCredit(6) == 1200
-                               && currencyTable.GetClearCredit(7) == 1500 && currencyTable.GetClearCredit(8) == 1800,
-                    "클리어 크레딧: 스테이지 5 = 900, 하드 6/7/8 = 1,200/1,500/1,800");
+                bool credits = currencyTable != null;
+                int[] expectedCredits = { 300, 450, 600, 750, 900 };
+                for (int i = 0; credits && i < 5; i++)
+                    credits &= currencyTable.GetClearCredit(i + 1) == expectedCredits[i] && currencyTable.GetClearCredit(6 + i) == expectedCredits[i];
+                fails += Check(credits, "클리어 크레딧: 하드 1~5(스테이지 6~10)는 짝이 되는 노멀 1~5와 같음 (300/450/600/750/900)");
                 var mdata = new SaveData();
-                fails += Check(MatchMilestones.HasMilestones(4) && !MatchMilestones.HasMilestones(5) && !MatchMilestones.HasMilestones(7),
-                    "마일스톤은 노멀 1~5에만 있고 하드(6~8)에는 없음");
-                fails += Check(!MatchMilestones.MarkDone(mdata, 5, 0) && !MatchMilestones.IsDone(mdata, 5, 0) && !MatchMilestones.MarkDone(mdata, 7, MatchMilestones.ClearIndex),
-                    "하드 스테이지에서는 마일스톤이 달성으로 기록되지 않음 (코어 수입 불변)");
+                fails += Check(MatchMilestones.HasMilestones(0) && MatchMilestones.HasMilestones(4) && MatchMilestones.HasMilestones(5) && MatchMilestones.HasMilestones(9)
+                               && !MatchMilestones.HasMilestones(10) && !MatchMilestones.HasMilestones(-1),
+                    "마일스톤은 노멀 1~5와 하드 1~5(스테이지 6~10)에 있고 그 밖의 번호에는 없음");
+                fails += Check(!MatchMilestones.IsHardStage(4) && MatchMilestones.IsHardStage(5) && MatchMilestones.IsHardStage(9) && !MatchMilestones.IsHardStage(10),
+                    "하드 스테이지 판정: 6~10번째만 하드");
+                // 하드 조각 보상: 3분 / 6분 / 클리어. 합계 30 / 40 / 60 / 80 / 100 = 310
+                int[][] expectedShards = { new[] { 5, 10, 15 }, new[] { 10, 10, 20 }, new[] { 15, 15, 30 }, new[] { 20, 20, 40 }, new[] { 25, 25, 50 } };
+                bool shardTable = true;
+                int shardSum = 0;
+                for (int h = 0; h < 5; h++)
+                    for (int k = 0; k < MatchMilestones.Count; k++)
+                    {
+                        shardTable &= MatchMilestones.GetShards(5 + h, k) == expectedShards[h][k] && MatchMilestones.GetCore(5 + h, k) == 0;
+                        shardSum += MatchMilestones.GetShards(5 + h, k);
+                    }
+                fails += Check(shardTable && shardSum == 310 && MatchMilestones.GetTotalShards(5) == 30 && MatchMilestones.GetTotalShards(9) == 100,
+                    $"하드 마일스톤 조각 표가 설계와 같음 (합계 {shardSum}, 하드 1 = {MatchMilestones.GetTotalShards(5)}, 하드 5 = {MatchMilestones.GetTotalShards(9)}), 코어 보상은 0");
+                fails += Check(MatchMilestones.GetShards(0, 0) == 0 && MatchMilestones.GetCore(4, 2) == 600 && MatchMilestones.GetTotalShards(0) == 0,
+                    "노멀 스테이지는 조각 보상이 없고 코어 보상은 예전 그대로");
+                fails += Check(MatchMilestones.MarkDone(mdata, 5, 0) && MatchMilestones.IsDone(mdata, 5, 0) && MatchMilestones.MarkDone(mdata, 9, MatchMilestones.ClearIndex),
+                    "하드 스테이지의 마일스톤도 달성으로 기록됨");
+                fails += Check(!MatchMilestones.MarkDone(mdata, 10, 0) && !MatchMilestones.IsDone(mdata, 10, 0), "범위 밖 스테이지(11번째)는 기록되지 않음");
                 fails += Check(MatchMilestones.MarkDone(mdata, 4, 0) && MatchMilestones.IsDone(mdata, 4, 0), "노멀 스테이지 5의 마일스톤은 예전처럼 기록됨");
+                fails += Check(MatchMilestones.StageLabel(2) == "스테이지 3" && MatchMilestones.StageLabel(5) == "하드 1" && MatchMilestones.StageLabel(9) == "하드 5",
+                    "화면 이름: 노멀은 '스테이지 N', 하드는 '하드 N'");
             }
             finally
             {

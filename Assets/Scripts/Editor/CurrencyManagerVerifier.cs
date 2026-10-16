@@ -93,17 +93,18 @@ namespace SurvivalDrone.EditorTools
                 bool clear3 = c == 0 && cr == 600;
                 table.CalculateMatchReward(true, 5, 400f, 360f, out c, out cr);
                 bool clear5 = c == 0 && cr == 900;
-                // 하드 스테이지(6~8번, OBT 2단계)용 칸: 1,200 / 1,500 / 1,800. 표가 8칸이 된 뒤로 범위 밖 번호는 마지막 칸(1,800)을 쓴다.
+                // 하드 스테이지 1~5(표의 6~10번째 칸)는 짝이 되는 노멀 스테이지와 같은 크레딧: 300 / 450 / 600 / 750 / 900.
+                // 표가 10칸이라 범위 밖 번호는 마지막 칸(900)을 쓴다.
                 table.CalculateMatchReward(true, 6, 400f, 360f, out c, out cr);
-                bool clear6 = c == 0 && cr == 1200;
-                table.CalculateMatchReward(true, 7, 400f, 360f, out c, out cr);
-                bool clear7 = c == 0 && cr == 1500;
+                bool clear6 = c == 0 && cr == 300;
                 table.CalculateMatchReward(true, 8, 400f, 360f, out c, out cr);
-                bool clear8 = c == 0 && cr == 1800;
+                bool clear8 = c == 0 && cr == 600;
+                table.CalculateMatchReward(true, 10, 400f, 360f, out c, out cr);
+                bool clear10 = c == 0 && cr == 900;
                 table.CalculateMatchReward(true, 99, 400f, 360f, out c, out cr);
-                bool clear99 = c == 0 && cr == 1800;
-                fails += Check(clear1 && clear2 && clear3 && clear5 && clear6 && clear7 && clear8 && clear99,
-                    "클리어 보상: 스테이지 1 = 코어 0 / 크레딧 300, 2 = 0/450, 3 = 0/600, 5 = 0/900, 하드 6/7/8 = 0/1,200/1,500/1,800 (범위 밖 스테이지는 마지막 칸 0/1,800)");
+                bool clear99 = c == 0 && cr == 900;
+                fails += Check(clear1 && clear2 && clear3 && clear5 && clear6 && clear8 && clear10 && clear99,
+                    "클리어 보상: 스테이지 1 = 코어 0 / 크레딧 300, 2 = 0/450, 3 = 0/600, 5 = 0/900, 하드 1/3/5(6/8/10번째 칸) = 0/300/600/900 (범위 밖 스테이지는 마지막 칸 0/900)");
 
                 // 9) 보상 계산: 실패는 코어 항상 0, 크레딧은 60초 미만이면 0 · 60초 이후부터 (생존-60) ÷ (판 길이-60) 비율
                 table.CalculateMatchReward(false, 1, 10f, 360f, out c, out cr);

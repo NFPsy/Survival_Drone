@@ -28,8 +28,8 @@ import sys
 from collections import Counter, defaultdict
 
 # ----- 게임 규칙 값 (손으로 옮겨 적은 것: 게임 값이 바뀌면 같이 고친다) -----
-# 스테이지 번호 -> 권장 전투력. 1~5는 지금 게임, 6~8은 설계 중인 하드 스테이지(아직 게임에 없음).
-RECOMMENDED_POWER = {1: 100, 2: 115, 3: 130, 4: 150, 5: 170, 6: 185, 7: 195, 8: 205}
+# 스테이지 번호 -> 권장 전투력. 1~5는 노멀, 6~10은 하드 1~5(노멀 N의 어려운 버전). 하드 값은 시작값이라 로그로 튜닝한다.
+RECOMMENDED_POWER = {1: 100, 2: 115, 3: 130, 4: 150, 5: 170, 6: 120, 7: 135, 8: 155, 9: 185, 10: 205}
 SSR_RATE = 0.025            # 일반 뽑기 SSR 확률(천장 제외)
 LOG_MAX_ENTRIES = 500       # 게임이 슬롯마다 남기는 최대 기록 줄 수 (PlayLog.MaxEntries)
 SOFTWARE_RENDERERS = ("Basic Render Driver", "SwiftShader", "llvmpipe")   # 그래픽 가속이 꺼진 환경의 이름들
@@ -403,6 +403,9 @@ def slot_report(t, slot):
     claims_m = [kv for _, n, kv in slot.events if n == "milestone_claim"]
     claims_q = [kv for _, n, kv in slot.events if n == "quest_claim"]
     out.append(f"**코어 수령** 마일스톤 {len(claims_m)}번(+{sum(num(c.get('코어'), 0) for c in claims_m):,}) · 일일 퀘스트 {len(claims_q)}번(+{sum(num(c.get('코어'), 0) for c in claims_q):,})")
+    claims_h = [kv for _, n, kv in slot.events if n == "hard_milestone_claim"]
+    if claims_h:
+        out.append(f"**하드 마일스톤** 수령 {len(claims_h)}번(조각 +{sum(num(c.get('조각'), 0) for c in claims_h):,}) — 하드 1~5는 스테이지 6~10으로 기록된다")
     out.append(f"**성장** 드론 강화 {count_events(slot, 'upgrade')}번 · 조각 교환 {count_events(slot, 'shard_exchange')}번 · 스테이지 해금 {count_events(slot, 'unlock')}번 · 장착 변경 {count_events(slot, 'equip')}번")
     shop = shop_stats(slot)
     if shop["opens"] or shop["clicks"]:

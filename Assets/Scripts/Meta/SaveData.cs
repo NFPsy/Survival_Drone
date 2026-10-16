@@ -81,5 +81,11 @@ namespace SurvivalDrone.Meta
 
         // 스테이지별 최고 생존 시간(초). 0번 칸이 스테이지 1이다. 아직 플레이 안 한 스테이지는 칸이 없거나 0이다.
         public List<float> bestSurvivalSeconds = new List<float>();
+
+        // ---- 하드 스테이지(스테이지마다 하드 버전) ----
+        // 노멀 스테이지를 클리어한 적이 있는지를 비트로 기록한다. 비트 0 = 스테이지 1, 비트 1 = 스테이지 2 ...
+        // "노멀 N을 클리어하면 하드 N이 열린다"를 알아내는 데 쓴다. 옛 저장에는 이 칸이 없어서 0으로 읽히고,
+        // 스테이지 1~4는 옛 해금 개수(unlockedStageCount)로 짐작할 수 있다(StageProgress.IsNormalCleared).
+        public int normalClearedMask;
     }
 }

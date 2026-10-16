@@ -51,9 +51,12 @@ namespace SurvivalDrone.EditorTools
         [MenuItem("SurvivalDrone/Meta/Debug/Unlock All Stages (Play mode)")]
         private static void UnlockAllStages()
         {
-            SaveManager.Data.unlockedStageCount = StageProgress.Instance.StageCount;
+            // 노멀은 해금 개수로, 하드는 "노멀 클리어 기록"으로 열리므로 둘 다 채운다. (하드 첫 클리어 보너스 기록은 건드리지 않는다)
+            int normalCount = StageProgress.Instance.NormalStageCount;
+            SaveManager.Data.unlockedStageCount = normalCount;
+            SaveManager.Data.normalClearedMask = (1 << normalCount) - 1;
             SaveManager.Save();
-            Debug.Log($"[Debug] 모든 스테이지({SaveManager.Data.unlockedStageCount}개)를 열었습니다. 스테이지 목록을 다시 열어서 확인하세요.");
+            Debug.Log($"[Debug] 모든 스테이지(노멀 {normalCount}개 + 하드 {StageProgress.Instance.StageCount - normalCount}개)를 열었습니다. 스테이지 목록을 다시 열어서 확인하세요.");
         }
 
         [MenuItem("SurvivalDrone/Meta/Debug/Unlock All Stages (Play mode)", true)]

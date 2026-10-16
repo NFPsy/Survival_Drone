@@ -15,7 +15,8 @@ namespace SurvivalDrone.Meta
         // 게임에 있는 (노멀) 스테이지 목록. 순서대로 1번, 2번, 3번 스테이지가 된다. 인스펙터에서 연결한다.
         [SerializeField] private StageData[] _stages;
 
-        // 노멀 + 하드(스위치가 켜졌을 때만) 스테이지를 이어 붙인 전체 목록. 하드 스테이지는 노멀 5개 뒤(6번, 7번, 8번)에 붙는다.
+        // 노멀 + 하드(스위치가 켜졌을 때만) 스테이지를 이어 붙인 전체 목록. 하드 스테이지는 노멀 5개 뒤(6~10번)에 붙고,
+        // 하드 n번은 "노멀 n번의 어려운 버전"이다 (노멀 n을 클리어하면 하드 n이 열린다).
         // 하드가 꺼져 있으면 _stages와 똑같아서 예전과 동작이 같다.
         private StageData[] _all;
         private int _normalCount;
@@ -41,8 +42,9 @@ namespace SurvivalDrone.Meta
         // 이 위치의 스테이지가 하드 스테이지인지.
         public bool IsHardStage(int index) => index >= _normalCount && index < StageCount;
 
-        // 해금된 스테이지 개수 (1 ~ StageCount).
-        public int UnlockedCount => _data != null ? Mathf.Clamp(_data.unlockedStageCount, 1, Mathf.Max(1, StageCount)) : 1;
+        // 해금된 "노멀" 스테이지 개수 (1 ~ 노멀 개수). 이전 노멀을 클리어하면 하나씩 늘어난다.
+        // 하드 스테이지의 해금은 이 숫자와 별개다(IsUnlocked 참고: 하드 n은 노멀 n을 클리어하면 열린다).
+        public int UnlockedCount => _data != null ? Mathf.Clamp(_data.unlockedStageCount, 1, Mathf.Max(1, _normalCount)) : 1;
 
         // 지금 고른 스테이지의 위치 (0부터 시작).
         public int SelectedIndex => _selectedIndex;
@@ -121,7 +123,26 @@ namespace SurvivalDrone.Meta
             return _all[index];
         }
 
-        public bool IsUnlocked(int index) => index >= 0 && index < UnlockedCount;
+        // 이 스테이지가 열려 있는지.
+        //  - 노멀: 앞 노멀을 클리어해서 해금 개수(UnlockedCount) 안에 들어와 있으면 열림.
+        //  - 하드 n: 짝이 되는 노멀 n을 클리어한 적이 있으면 열림. (하드는 순서대로 열릴 필요가 없다)
+        public bool IsUnlocked(int index)
+        {
+            if (index < 0 || index >= StageCount) return false;
+            if (IsHardStage(index)) return IsNormalCleared(index - _normalCount);
+            return index < UnlockedCount;
+        }
+
+        // 노멀 스테이지(0부터)를 클리어한 적이 있는지.
+        //  - 클리어하면 기록 비트(normalClearedMask)가 켜진다.
+        //  - 옛 저장(비트가 없음)을 위해, 스테이지 1~4는 "다음 스테이지가 열려 있다"는 사실로도 클리어를 짐작한다.
+        //    (마지막 노멀은 해금 개수로 알 수 없어서, 이 업데이트 뒤에 한 번 더 클리어해야 하드 5가 열린다)
+        public bool IsNormalCleared(int normalIndex)
+        {
+            if (_data == null || normalIndex < 0 || normalIndex >= _normalCount) return false;
+            if ((_data.normalClearedMask & (1 << normalIndex)) != 0) return true;
+            return normalIndex < _normalCount - 1 && _data.unlockedStageCount >= normalIndex + 2;
+        }
 
         // 스테이지를 고른다. 해금되지 않았거나 범위 밖이면 무시하고 false를 돌려준다.
         public bool TrySelect(int index)
@@ -142,7 +163,9 @@ namespace SurvivalDrone.Meta
             return _data.bestSurvivalSeconds[index];
         }
 
-        // 한 판이 끝났을 때 부른다. 최고 생존 시간을 갱신하고, 클리어했다면 다음 스테이지를 해금한다.
+        // 한 판이 끝났을 때 부른다. 최고 생존 시간을 갱신하고, 클리어했다면
+        //  - 노멀: 클리어 기록을 남기고 다음 노멀을 해금한다. (하드가 있으면 짝이 되는 하드도 이때 열린다)
+        //  - 하드: 최고 기록만 남긴다. (하드의 보상은 마일스톤: 3분·6분·클리어에서 만능 조각, 로비 마일스톤 창에서 받는다)
         public void RecordMatchResult(bool cleared, float survivalSeconds)
         {
             if (_data == null) return;
@@ -155,16 +178,30 @@ namespace SurvivalDrone.Meta
             bool isNewBest = survivalSeconds > _data.bestSurvivalSeconds[index];
             if (isNewBest) _data.bestSurvivalSeconds[index] = survivalSeconds;
 
-            bool unlockedNext = false;
-            if (cleared && index + 1 >= UnlockedCount && index + 1 < StageCount)
+            string extra = "";
+            if (cleared && !IsHardStage(index))
             {
-                _data.unlockedStageCount = index + 2;
-                unlockedNext = true;
-                PlayLog.RecordUnlock(_data, index + 2);
+                bool firstTime = !IsNormalCleared(index);
+                _data.normalClearedMask |= 1 << index;
+
+                if (index + 1 >= UnlockedCount && index + 1 < _normalCount)
+                {
+                    _data.unlockedStageCount = index + 2;
+                    extra += $" → 스테이지 {index + 2} 해금";
+                    PlayLog.RecordUnlock(_data, index + 2);
+                }
+
+                // 노멀 n을 처음 클리어하면 짝이 되는 하드 n이 열린다.
+                if (firstTime && HasHardStages)
+                {
+                    int hardStageNumber = _normalCount + index + 1;
+                    extra += $" → 하드 {index + 1}(스테이지 {hardStageNumber}) 해금";
+                    PlayLog.RecordUnlock(_data, hardStageNumber);
+                }
             }
 
             Debug.Log($"[Stage] 스테이지 {index + 1} {(cleared ? "클리어" : "실패")}: 생존 {survivalSeconds:F1}초" +
-                      $"{(isNewBest ? " (최고 기록 갱신)" : "")}{(unlockedNext ? $" → 스테이지 {index + 2} 해금" : "")}");
+                      $"{(isNewBest ? " (최고 기록 갱신)" : "")}{extra}");
 
             if (_saveOnChange) SaveManager.Save();
         }

@@ -14,7 +14,7 @@ namespace SurvivalDrone.UI
     // 가 있어야 한다. StageProgress의 스테이지 개수만큼 견본을 복제해서 카드를 만든다.
     //
     // 하드 스테이지(OBT 2단계, HardStageSettings 스위치가 켜졌을 때만 있음)가 있으면 오른쪽 위에 "노멀 / 하드" 탭이 생기고,
-    // 선택한 탭의 스테이지 카드만 보인다. 하드 탭은 스테이지 5를 클리어하기 전에는 잠겨 있다.
+    // 선택한 탭의 스테이지 카드만 보인다. 하드 n은 노멀 n을 클리어하면 열리고, 첫 하드가 잠겨 있는 동안(노멀 1 클리어 전)은 하드 탭이 잠겨 있다.
     // (스위치가 꺼져 있으면 탭을 만들지 않아서 예전과 똑같이 카드 5장이 보인다)
     public class StageSelectUI : MonoBehaviour
     {
@@ -227,7 +227,7 @@ namespace SurvivalDrone.UI
                 if (card.button != null && card.button.gameObject.activeSelf != visible) card.button.gameObject.SetActive(visible);
 
                 bool unlocked = progress.IsUnlocked(card.index);
-                card.view.Show(progress.GetStage(card.index), progress.GetBestSurvivalSeconds(card.index), unlocked, myPower);
+                card.view.Show(progress.GetStage(card.index), progress.GetBestSurvivalSeconds(card.index), unlocked, myPower, MatchMilestones.GetTotalShards(card.index), MatchMilestones.AllClaimed(SaveManager.Data, card.index));
 
                 if (card.outline != null)
                 {

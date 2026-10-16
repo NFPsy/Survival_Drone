@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84e21dd7c40491a4488765d665161eb2, type: 3}
   m_Name: StageData_08
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.StageData
-  _stageNumber: 8
-  _displayName: "\uBD09\uC1C4\uB41C \uAD00\uC81C \uCF54\uC5B4"
-  _recommendedPower: 205
-  _enemyMultiplier: 4
-  _healthMultiplier: 4
-  _damageMultiplier: 2.8
+  _stageNumber: 3
+  _displayName: "\uD3D0\uACF5\uC7A5 \uC9C0\uB300"
+  _recommendedPower: 155
+  _enemyMultiplier: 2.4
+  _healthMultiplier: 2.4
+  _damageMultiplier: 2.2
   _isHard: 1

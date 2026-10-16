@@ -185,7 +185,9 @@ namespace SurvivalDrone.Core
             if (!MatchMilestones.MarkDone(data, stageIndex, index)) return;
 
             SaveManager.Save();
-            SurvivalDrone.UI.HUDNotice.Instance?.Show($"스테이지 {stageIndex + 1} 마일스톤 {title}!  로비에서 코어 +{MatchMilestones.GetCore(stageIndex, index)}를 받을 수 있어요");
+            // 노멀은 코어, 하드는 만능 조각을 받는다.
+            string reward = MatchMilestones.IsHardStage(stageIndex) ? $"조각 +{MatchMilestones.GetShards(stageIndex, index)}" : $"코어 +{MatchMilestones.GetCore(stageIndex, index)}";
+            SurvivalDrone.UI.HUDNotice.Instance?.Show($"{MatchMilestones.StageLabel(stageIndex)} 마일스톤 {title}!  로비에서 {reward}를 받을 수 있어요");
         }
 
         // 플레이어 사망 신호를 받았을 때 실행되는 함수.

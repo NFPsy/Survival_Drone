@@ -224,6 +224,13 @@ namespace SurvivalDrone.Meta
             Add(data, "unlock", $"스테이지={stageNumber}");
         }
 
+        // 하드 스테이지 마일스톤 조각을 로비에서 받았을 때. stageNumber = 로그의 스테이지 번호(노멀 5개 뒤의 하드는 6~10),
+        // hardNumber = 하드 몇 번째인지(1~5), milestoneLabel = "3분"/"6분"/"클리어", shards = 실제로 들어간 조각, target = 조각이 들어간 드론(받을 드론이 없으면 "없음").
+        public static void RecordHardMilestoneClaim(SaveData data, int stageNumber, int hardNumber, string milestoneLabel, int shards, string target)
+        {
+            Add(data, "hard_milestone_claim", $"스테이지={stageNumber} 하드={hardNumber} 항목={milestoneLabel} 조각=+{shards} 대상={(string.IsNullOrEmpty(target) ? "없음" : target)}");
+        }
+
         // ---- 락온 뽑기 (시작 → 재뽑기 → 확정, 코어 부족으로 막힘) ----
 
         // 락온 뽑기를 시작(첫 공개)했을 때. slots = 공개된 칸 요약 (예: "SR:Melee/N:Sniper/R:Heal").

@@ -30,6 +30,7 @@ namespace SurvivalDrone.Meta
         [SerializeField] private float _damageMultiplier = 0f;
 
         // 하드 스테이지인지. 스테이지 선택 화면의 "하드" 탭과 카드의 HARD 표시에 쓴다.
+        // 하드 스테이지는 "같은 번호의 노멀 스테이지의 어려운 버전"이다. 그래서 _stageNumber도 짝이 되는 노멀의 번호(1~5)를 쓴다.
         [SerializeField] private bool _isHard = false;
 
         public int StageNumber => _stageNumber;

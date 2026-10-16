@@ -186,6 +186,27 @@ namespace SurvivalDrone.Meta
             return shards;
         }
 
+        // ---------------- 만능 조각 (하드 스테이지 첫 클리어 보너스 등) ----------------
+
+        // 특정 드론이 아니라 "아무 드론에나 쓰는" 조각을 받는다.
+        //  - 다음 강화까지 조각이 가장 조금 모자란 보유 드론(최대 레벨 제외)에 전부 넣는다. (락온 뽑기 조각 환산·시뮬레이터와 같은 규칙)
+        //  - 받을 드론이 없으면(전부 최대 레벨이거나 드론이 하나도 없음) 조각은 사라지고 0을 돌려준다.
+        // 돌려주는 값 = 실제로 들어간 조각 수, target = 조각이 들어간 드론(못 넣었으면 null).
+        public int AddUniversalShards(int amount, out DroneType? target)
+        {
+            target = null;
+            if (!_isReady || amount <= 0) return 0;
+
+            var destination = FindConversionTarget();
+            if (destination == null) return 0;
+
+            destination.shards += amount;
+            target = destination.droneType;
+            Debug.Log($"[Inventory] 만능 조각: {destination.droneType} 조각 +{amount} (누적 {destination.shards})");
+            Changed();
+            return amount;
+        }
+
         // 다음 강화까지 필요한 조각이 가장 적게 남은(이미 넘치면 가장 많이 넘치는) 보유 드론. 최대 레벨 드론은 제외. 없으면 null.
         private OwnedDroneData FindConversionTarget()
         {
