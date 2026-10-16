@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7eee4287b1da9ba409469d18546044fa, type: 3}
   m_Name: HardStageSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.HardStageSettings
-  _enabled: 0
+  _enabled: 1
   _stages:
   - {fileID: 11400000, guid: f490a08e84c666a4fb5cfb1f13388a84, type: 2}
   - {fileID: 11400000, guid: 030b91cf6e3312646b0400fcd4b0c0aa, type: 2}

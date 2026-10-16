@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40cd1bbe8ee5fd34ea4c46e0303302b7, type: 3}
   m_Name: ShopSettings
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.ShopSettings
-  _enabled: 0
+  _enabled: 1
   _products:
   - displayName: "\uC785\uBB38"
     category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
