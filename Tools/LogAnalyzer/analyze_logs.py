@@ -9,6 +9,7 @@
 【사용법】
   python analyze_logs.py 로그1.txt 로그2.txt ...            결과를 화면에 출력
   python analyze_logs.py 로그*.txt --out 보고서.md           결과를 마크다운 파일로 저장
+  python analyze_logs.py tester_logs/cbt                         폴더를 주면 그 안의 .txt를 전부 읽는다 (보관 폴더 통째 분석)
   python analyze_logs.py 로그*.txt --matches-csv 판목록.csv   모든 판을 엑셀에서 열 수 있는 CSV로도 저장
 
   (같은 테스터가 여러 번 내보낸 파일을 한꺼번에 넣어도 된다. 슬롯마다 기록이 겹칠 수 있으니 가장 늦게 내보낸 파일 하나만 넣는 걸 권장.)
@@ -22,6 +23,7 @@
 """
 import argparse
 import csv
+import os
 import re
 import statistics
 import sys
@@ -515,12 +517,22 @@ def write_matches_csv(path, testers):
 
 def main():
     ap = argparse.ArgumentParser(description="테스트 로그 파일을 읽어 마크다운 보고서로 정리한다.")
-    ap.add_argument("files", nargs="+", help="내려받은 로그 파일(.txt)")
+    ap.add_argument("files", nargs="+", help="내려받은 로그 파일(.txt) 또는 로그가 들어 있는 폴더(폴더 안의 .txt를 전부 읽는다)")
     ap.add_argument("--out", help="보고서를 저장할 파일(마크다운). 없으면 화면에 출력")
     ap.add_argument("--matches-csv", help="모든 판을 한 줄씩 담은 CSV 저장 경로")
     args = ap.parse_args()
 
-    testers = [read_file(p) for p in args.files]
+    paths = []
+    for p in args.files:
+        if os.path.isdir(p):
+            # 폴더를 주면 그 안(하위 폴더 포함)의 .txt를 이름 순으로 전부 읽는다. (tester_logs/cbt 같은 보관 폴더를 통째로 분석할 때)
+            for root, _, names in sorted(os.walk(p)):
+                paths += [os.path.join(root, n) for n in sorted(names) if n.lower().endswith(".txt")]
+        else:
+            paths.append(p)
+    if not paths:
+        sys.exit("읽을 로그 파일이 없다.")
+    testers = [read_file(p) for p in paths]
     report = build_report(testers)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

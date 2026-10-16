@@ -20,6 +20,18 @@ python analyze_logs.py 로그1.txt 로그2.txt 로그3.txt --out 보고서.md --
 게임 로비의 **"테스트 로그"** 창에서 "파일로 저장"(또는 복사)을 누르면 `drone-commander-log-테스터번호-날짜-시각.txt` 같은 파일이 만들어집니다.
 테스터가 이 파일을 개인 메시지로 보내면 됩니다.
 
+
+## 로그 보관 폴더와 폴더 통째 분석 (2026-10-16 추가)
+
+받은 로그 원본은 `tester_logs/` 폴더에 모아 둡니다. 새 로그가 올 때마다 파일을 다시 하나씩 넣지 않고, **폴더를 통째로** 분석합니다.
+
+```bash
+python analyze_logs.py tester_logs/cbt
+```
+
+- `tester_logs/cbt/` = CBT·OBT 테스터 로그, `tester_logs/dev/` = 개발자 본인 로그.
+- 저장소가 공개라서 로그 원본은 깃허브에 올라가지 않습니다(`.gitignore`). 자세한 규칙은 `tester_logs/README.md`.
+
 ## 보고서에서 볼 수 있는 것
 
 | 구역 | 내용 |
