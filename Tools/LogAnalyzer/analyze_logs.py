@@ -181,6 +181,8 @@ def make_match(when, kv):
         "picks": parse_picks(kv.get("레벨업선택")), "first_speed": num(kv.get("이동속도첫선택")),
         "fps": num(perf), "low_fps_pct": num(kv.get("30fps미만")), "hitches": num(kv.get("100ms넘는끊김")),
         "worst_ms": num(kv.get("최악")), "screen": kv.get("화면"),
+        # 보스전(10/17 이후 빌드): "보스전=진입|없음", 진입했을 때만 "보스체력=NN%"(판이 끝났을 때 남은 비율, 처치하면 0), "보스전시간=NN.N초". 옛 기록에는 없다.
+        "boss": kv.get("보스전"), "boss_hp": num(kv.get("보스체력")), "boss_seconds": num(kv.get("보스전시간")),
     }
 
 
@@ -421,6 +423,9 @@ def slot_report(t, slot):
     if ms:
         out.append(f"**레벨업 선택** {picks_summary(ms)}")
         out.append(f"**성능** {perf_summary(ms)}")
+        boss_line = boss_summary(ms)
+        if boss_line:
+            out.append(f"**보스전** {boss_line}")
     bad = ledger_mismatches(slot)
     out.append(f"**코어 수지 점검** " + ("모든 줄 일치 ✅" if not bad else f"⚠️ 어긋난 줄 {len(bad)}개: " + "; ".join(bad[:3])))
     return out
@@ -496,9 +501,35 @@ def build_report(testers):
     return "\n".join(out) + "\n"
 
 
+def boss_summary(matches):
+    """보스전(540초에 시작하는 1대1 보스전) 집계. 보스전 항목이 있는 판이 하나도 없으면(옛 빌드) None."""
+    ms = [m for m in matches if m["boss"] is not None]
+    if not ms:
+        return None
+    entered = [m for m in ms if m["boss"] == "진입"]
+    text = f"판 {len(ms)}개 중 보스전에 들어간 판 {len(entered)}개"
+    if entered:
+        cleared = [m for m in entered if m["cleared"]]
+        text += f" · 보스 처치(클리어) {len(cleared)}개({pct(len(cleared), len(entered))})"
+        lost = [m for m in entered if not m["cleared"] and m["boss_hp"] is not None]
+        if lost:
+            text += f" · 패배한 판의 보스 남은 체력 평균 {mean([m['boss_hp'] for m in lost], 0)}%"
+        secs = [m["boss_seconds"] for m in entered if m["boss_seconds"] is not None]
+        if secs:
+            text += f" · 보스전 평균 {mean(secs, 1)}초(최단 {min(secs):.0f}, 최장 {max(secs):.0f})"
+        pattern = Counter()
+        for m in entered:
+            for kind, value in m["damage"].items():
+                if kind.startswith("보스"):
+                    pattern[kind] += value
+        if pattern:
+            text += " · 보스에게 받은 피해 합계 " + ", ".join(f"{k} {v:.0f}" for k, v in pattern.most_common())
+    return text
+
+
 def write_matches_csv(path, testers):
     fields = ["tester", "build", "slot", "when", "stage", "cleared", "survive", "real", "level", "power", "recommended", "ratio",
-              "death", "fps", "hitches", "worst_ms"]
+              "death", "fps", "hitches", "worst_ms", "boss", "boss_hp", "boss_seconds"]
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         w.writerow(fields)
@@ -512,7 +543,7 @@ def write_matches_csv(path, testers):
                     seen.add(key)
                     w.writerow([t.tester, t.build, s.number, m["when"], m["stage"], int(m["cleared"]), m["survive"], m["real"], m["level"],
                                 m["power"], m["rec"], f"{m['ratio']:.3f}" if m["ratio"] is not None else "", m["death"] or "",
-                                m["fps"], m["hitches"], m["worst_ms"]])
+                                m["fps"], m["hitches"], m["worst_ms"], m["boss"] or "", m["boss_hp"], m["boss_seconds"]])
 
 
 def main():

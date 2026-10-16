@@ -69,6 +69,22 @@ namespace SurvivalDrone.Core
             Win();
         }
 
+        // 보스전에서 보스를 쓰러뜨렸을 때 BossFight가 부른다. 보스전에서는 "남은 적을 모두 처치"가 아니라
+        // "보스 처치"가 승리 조건이다. 이미 판이 끝났으면(플레이어가 먼저 죽은 경우 등) Win()이 알아서 무시한다.
+        public void ReportBossDefeated()
+        {
+            Win();
+        }
+
+#if UNITY_EDITOR
+        // 개발용(에디터 전용): 판 시간을 원하는 초로 건너뛴다. 9분 보스전을 9분 기다리지 않고 바로 확인하려고 만들었다.
+        // 게임 빌드에는 포함되지 않는다.
+        public void DebugJumpTo(float seconds)
+        {
+            ElapsedTime = seconds;
+        }
+#endif
+
         // 현재 매치 상태. 기본값은 진행 중(Playing).
         public MatchState State { get; private set; } = MatchState.Playing;
 

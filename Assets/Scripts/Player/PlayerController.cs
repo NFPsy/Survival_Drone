@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using SurvivalDrone.Core;
+using SurvivalDrone.Enemies;
 
 namespace SurvivalDrone.Player
 {
@@ -92,12 +93,31 @@ namespace SurvivalDrone.Player
             // 큰 적에게 밀려 맵 밖으로 벗어났다면 맵 안으로 되돌린다. (평소에는 아무 일도 하지 않는다)
             KeepInsideArena();
 
+            // 보스전 중이면 제한 테두리(원) 밖으로 나가지 못하게 원 안으로 되돌린다. (보스전이 아닐 때는 아무 일도 하지 않는다)
+            KeepInsideBossArena();
+
             // 입력이 있을 때만 이동 방향을 바라보도록 부드럽게 회전시킨다.
             if (move.sqrMagnitude > 0.0001f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(move, Vector3.up);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
             }
+        }
+
+        // 보스전의 제한 테두리(원) 밖으로 나갔다면 원 안쪽 가장자리로 되돌린다. 몸 반지름(0.5)에 여유를 더해 0.6만큼 안쪽에서 멈춘다.
+        // 원 안에 있으면 BossArena.Clamp가 받은 위치를 그대로 돌려주므로 아무 일도 하지 않는다.
+        private void KeepInsideBossArena()
+        {
+            if (!BossArena.Active) return;
+
+            Vector3 position = transform.position;
+            Vector3 clamped = BossArena.Clamp(position, 0.6f);
+            if (clamped == position) return;
+
+            // 위치를 직접 옮길 때는 CharacterController를 잠깐 꺼야 한다(KeepInsideArena와 같은 이유).
+            controller.enabled = false;
+            transform.position = clamped;
+            controller.enabled = true;
         }
 
         // 플레이어가 맵 범위(arenaLimit)를 벗어났거나 바닥 아래로 떨어졌으면 맵 안으로 되돌려 놓는다.

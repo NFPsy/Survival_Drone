@@ -61,6 +61,11 @@ namespace SurvivalDrone.Enemies
         // 보스가 등장하는 시점(초). 540초 = 9분.
         [SerializeField] private float bossSpawnTime = 540f;
 
+        // 보스전 스위치. 켜면(기본) 보스가 나올 때 일반 몹이 모두 사라지고 제한 테두리 안에서 보스와만 싸우는 "보스전"이 되고,
+        // 보스를 쓰러뜨리면 승리한다. 끄면 예전 방식(보스가 나와도 몹이 600초까지 계속 나오고, 남은 적을 모두 잡으면 승리)이다.
+        // 주의: 이 값은 씬 파일에 저장돼 있지 않아서 코드의 기본값(true)이 쓰인다. 끄려면 이 줄의 기본값을 false로 바꾼다.
+        [SerializeField] private bool useBossFight = true;
+
         [Header("미니 보스 (3분·6분)")]
 
         // 미니 보스가 나오는 시간은 마일스톤과 같다(MatchMilestones.Seconds: 3분, 6분). 잡으면 드론 선택지(3지선다)를 한 번 준다.
@@ -90,6 +95,10 @@ namespace SurvivalDrone.Enemies
         // 보스를 이미 스폰했는지 여부 (한 판에 한 번만 나오게 하기 위한 플래그).
         private bool bossSpawned;
 
+        // 보스전이 시작됐는지. true가 되면 스포너는 더 이상 일반 몹을 만들지 않고 "남은 적 처치 승리" 검사도 하지 않는다
+        // (승리는 BossFight가 보스를 쓰러뜨렸을 때 판단한다).
+        private bool bossFightStarted;
+
         // 미니 보스를 이미 스폰했는지 (3분, 6분 순서). 한 판에 각각 한 번만 나오게 한다.
         private readonly bool[] miniBossSpawned = new bool[MatchMilestones.Seconds.Length];
 
@@ -107,6 +116,9 @@ namespace SurvivalDrone.Enemies
             // 죽어서 파괴된(null이 된) 적들을 목록에서 정리하고, 남은 적 수를 화면 표시용으로 알려준다.
             alive.RemoveAll(e => e == null);
             GameManager.Instance.SetRemainingEnemies(alive.Count);
+
+            // 보스전 중에는 일반 몹을 만들지 않고, "남은 적이 0이면 승리"도 따지지 않는다. (BossFight가 승리를 판단한다)
+            if (bossFightStarted) return;
 
             // 적이 나오는 시간이 끝났다: 더 이상 스폰하지 않고, 남은 적을 모두 처치했으면 승리 처리.
             if (GameManager.Instance.SpawningEnded)
@@ -133,6 +145,10 @@ namespace SurvivalDrone.Enemies
                 bossSpawned = true;
                 Debug.Log($"[Spawner] 보스 등장 - 경과 시간 {elapsed:F0}초");
                 AudioManager.Instance?.PlaySfx(bossWarningSound);
+
+                // 보스전: 몹을 모두 없애고 제한 테두리를 친 뒤 그 안에서 보스를 만든다. (스위치가 꺼져 있으면 아래 예전 방식)
+                if (useBossFight && StartBossFight()) return;
+
                 // 보스는 이미 충분히 강하므로 엘리트 승격 대상에서 제외한다.
                 SpawnEnemy(bossEntry, false);
                 return;
@@ -231,6 +247,31 @@ namespace SurvivalDrone.Enemies
             if (Mathf.Abs(spawnPos.x) > arenaHalfSize) spawnPos.x = player.position.x - dir2.x * radius;
             if (Mathf.Abs(spawnPos.z) > arenaHalfSize) spawnPos.z = player.position.z - dir2.y * radius;
 
+            CreateEnemy(entry, spawnPos, allowElite, miniBossHealthMultiplier, 0f);
+        }
+
+        // 보스전의 최종 보스를 정해진 위치에 만든다. BossFight가 부른다.
+        // healthMultiplier: 보스전 전용 체력 배율(스테이지 배율과는 따로 곱해진다).
+        public EnemyAI SpawnFinalBoss(Vector3 position, float healthMultiplier)
+        {
+            return CreateEnemy(bossEntry, position, false, 0f, healthMultiplier);
+        }
+
+        // 보스전을 시작한다. 시작했으면 true. (보스 데이터나 플레이어가 없어서 못 하면 false를 돌려줘서 예전 방식으로 보스를 낸다)
+        private bool StartBossFight()
+        {
+            if (bossEntry == null || bossEntry.prefab == null || player == null) return false;
+
+            bossFightStarted = true;
+            var fightObject = new GameObject("BossFight");
+            fightObject.AddComponent<BossFight>().Begin(this, player);
+            return true;
+        }
+
+        // 정해진 위치에 적 하나를 만들고 필요한 정보를 넘겨 초기화한다. (SpawnEnemy와 보스전 보스 스폰이 같이 쓴다)
+        // finalBossHealthMultiplier: 0보다 크면 이 적을 보스전의 최종 보스로 만들고 체력에 이 배율을 곱한다.
+        private EnemyAI CreateEnemy(EnemyEntry entry, Vector3 spawnPos, bool allowElite, float miniBossHealthMultiplier, float finalBossHealthMultiplier)
+        {
             // 프리팹으로 실제 게임오브젝트를 생성.
             var obj = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
 
@@ -249,9 +290,13 @@ namespace SurvivalDrone.Enemies
                 // 미니 보스 표시도 Initialize()보다 먼저 해야 체력 배율이 반영된다.
                 if (miniBossHealthMultiplier > 0f) ai.MakeMiniBoss(miniBossHealthMultiplier, miniBossScale);
 
+                // 보스전 최종 보스도 마찬가지로 Initialize()보다 먼저.
+                if (finalBossHealthMultiplier > 0f) ai.MakeFinalBoss(finalBossHealthMultiplier);
+
                 ai.Initialize(entry.definition, player, xpOrbPrefab, HandleEnemyDeath);
                 alive.Add(ai);
             }
+            return ai;
         }
 
 #if UNITY_EDITOR
@@ -271,6 +316,15 @@ namespace SurvivalDrone.Enemies
         public void DebugSpawnFinalBoss()
         {
             SpawnEnemy(bossEntry, false, 0f, DebugSpawnRadius);
+        }
+
+        // 9분을 기다리지 않고 "진짜 보스전"을 바로 시작하게 한다. 판 시간을 보스 등장 직전(0.5초 전)으로 건너뛰면
+        // 다음 프레임에 평소와 똑같이 잡몹 소멸 → 경기장 → 보스 등장 → 보스 처치 시 승리 흐름이 이어진다.
+        // (위의 DebugSpawnFinalBoss는 보스 한 마리만 불러내는 것이라 보스전 규칙은 적용되지 않는다.)
+        public void DebugStartBossFight()
+        {
+            if (GameManager.Instance == null || bossSpawned) return;
+            GameManager.Instance.DebugJumpTo(Mathf.Max(0f, bossSpawnTime - 0.5f));
         }
 #endif
 

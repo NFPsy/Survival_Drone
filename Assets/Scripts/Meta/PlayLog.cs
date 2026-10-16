@@ -106,7 +106,8 @@ namespace SurvivalDrone.Meta
         //  pickSummary = 이번 판에서 레벨업 선택지를 뭘 골랐는지 요약한 문장. 비어 있으면(옛 방식 호출) 기록에 덧붙이지 않는다.
         //  damageSummary = 이번 판에서 어떤 적에게 얼마나 맞았는지(패배한 판은 사망원인 포함) 요약한 문장. 비어 있으면 덧붙이지 않는다.
         //  loadoutSummary = 판이 끝났을 때 가진 드론 종류·레벨을 요약한 문장 ("최종드론=Sniper(5)/Heal(3)"). 비어 있으면 덧붙이지 않는다.
-        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null, string perfSummary = null, string loadoutSummary = null)
+        //  bossSummary = 보스전 요약 문장 ("보스전=진입 보스체력=35% 보스전시간=62.4초" 또는 "보스전=없음"). 비어 있으면(옛 방식 호출) 덧붙이지 않는다.
+        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null, string perfSummary = null, string loadoutSummary = null, string bossSummary = null)
         {
             var s = data.logStats;
             s.matches++;
@@ -130,7 +131,7 @@ namespace SurvivalDrone.Meta
 
             Add(data, "match",
                 $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
-                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}");
+                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{PickSuffix(bossSummary)}");
         }
 
         // 그래픽카드 이름이 있으면 " 그래픽=이름"을, 없으면 빈 글자를 돌려준다. 이름 안의 줄바꿈은 기록이 깨지지 않게 공백으로 바꾼다.

@@ -128,6 +128,29 @@ namespace SurvivalDrone.Enemies
         // 적의 크기(보스·엘리트·미니 보스)에 맞춰 크기·속도·개수를 키워 터뜨린다. 비워두면 연출 없이 예전처럼 사라진다.
         [SerializeField] private GameObject deathEffectPrefab;
 
+        // ── 보스전(9분 보스전) 관련 ──
+        // 9분에 시작되는 보스전에서는 보스가 "추격 + 특수 패턴"으로 움직인다. 패턴을 담당하는 BossBrain이 보스의 걸음을
+        // 직접 조종할 수 있도록, 아래 두 값을 밖에서 바꿀 수 있게 열어 둔다. 일반 적은 기본값 그대로라 달라지는 것이 없다.
+
+        // true이면 이 적은 플레이어를 향한 걸음을 멈춘다. (예: 내려찍기를 준비하는 동안, 돌진 중에는 BossBrain이 직접 움직인다)
+        // 접촉 피해는 걸음과 상관없이 그대로 계산된다.
+        public bool MovementLocked { get; set; }
+
+        // 이동속도에 곱하는 배율. 기본 1배. (분노 상태에서 보스를 빠르게 만들 때 쓴다)
+        public float MoveSpeedMultiplier { get; set; } = 1f;
+
+        // 몸이 닿았을 때의 접촉 피해에 곱하는 배율. 기본 1배. 0이면 닿아도 피해를 주지 않는다.
+        // (보스가 돌진하는 동안은 돌진 피해가 따로 들어가므로 접촉 피해가 겹치지 않게 0으로 만들고, 분노 상태에서는 1.2배로 올린다)
+        public float ContactDamageScale { get; set; } = 1f;
+
+        // 이 적이 보스전의 최종 보스인지. BossFight가 스폰할 때 MakeFinalBoss()로 정해 준다.
+        private bool isFinalBoss;
+        public bool IsFinalBoss => isFinalBoss;
+
+        // 이 적의 체력 컴포넌트와 몸 반지름을 밖에서 읽을 수 있게 열어 둔다. (보스 체력바, 패턴의 벽·건물 처리에 필요)
+        public Health Health => health;
+        public float BodyRadius => bodyRadius;
+
         // 외부에서 이 적이 엘리트인지 확인할 수 있게 해주는 프로퍼티.
         public bool IsElite => isElite;
 
@@ -235,6 +258,14 @@ namespace SurvivalDrone.Enemies
             AttachAura(miniBossAuraPrefab);
         }
 
+        // 이 적을 보스전의 "최종 보스"로 만든다. MakeMiniBoss()처럼 Initialize()보다 먼저 불러야 체력 배율이 반영된다.
+        // healthMultiplierValue: 보스전 전용 체력 배율. 혼자 싸우는 보스가 너무 빨리 쓰러지지 않도록 크게 곱한다.
+        public void MakeFinalBoss(float healthMultiplierValue)
+        {
+            isFinalBoss = true;
+            healthMultiplier = Mathf.Max(0.01f, healthMultiplierValue);
+        }
+
         // 발밑에 오라 효과를 붙인다.
         // 오라는 적의 자식으로 붙여서 따라다니고 적이 사라질 때 같이 사라진다.
         // 단, 적의 크기(보스 모델이 크게 만들어져 있음)에 휘둘리지 않도록 부모의 크기를 상쇄해서
@@ -303,7 +334,7 @@ namespace SurvivalDrone.Enemies
             float distance = toTarget.magnitude;
 
             // 아주 가깝지 않다면 플레이어 방향으로 이동하고, 그 방향을 바라보도록 회전.
-            if (distance > 0.05f && !knockedBack)
+            if (distance > 0.05f && !knockedBack && !MovementLocked)
             {
                 // 걸어갈 목표 지점. 평소에는 플레이어이고, 건물(EnemyObstacle)이 사이를 가로막고 있으면
                 // 그 건물의 모서리 지점이 된다. (플레이어처럼 적도 건물을 통과하지 못하게 하기 위함)
@@ -326,7 +357,7 @@ namespace SurvivalDrone.Enemies
                 float goalDistance = toGoal.magnitude;
                 Vector3 dir = goalDistance > 0.0001f ? toGoal / goalDistance : toTarget / distance;
 
-                float step = definition.moveSpeed * Time.deltaTime;
+                float step = definition.moveSpeed * MoveSpeedMultiplier * Time.deltaTime;
                 // 모서리를 향해 갈 때는 모서리를 지나쳐 버리지 않도록 남은 거리까지만 걷는다.
                 if (detouring) step = Mathf.Min(step, goalDistance);
                 Vector3 newPosition = transform.position + dir * step;
@@ -334,6 +365,9 @@ namespace SurvivalDrone.Enemies
                 // 안전장치: 그래도 건물 안으로 들어갔다면(예: 건물 안에서 스폰) 가장 가까운 면 바깥으로 밀어낸다.
                 for (int i = 0; i < obstacles.Count; i++)
                     obstacles[i].PushOut(ref newPosition, bodyRadius);
+
+                // 보스전 중에는 제한 테두리(원) 밖으로 나가지 못한다. (보스전이 아닐 때는 아무 일도 하지 않는다)
+                if (BossArena.Active) newPosition = BossArena.Clamp(newPosition, bodyRadius);
 
                 transform.position = newPosition;
                 transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
@@ -346,14 +380,15 @@ namespace SurvivalDrone.Enemies
             if (distance <= contactReach && contactTimer <= 0f)
             {
                 var playerHealth = target.GetComponent<Health>();
-                if (playerHealth != null && !playerHealth.IsDead)
+                if (playerHealth != null && !playerHealth.IsDead && ContactDamageScale > 0f)
                 {
+                    float contactDamage = scaledContactDamage * ContactDamageScale;
                     // 테스트(CBT) 기록용: 어떤 종류의 적에게 얼마나 맞았는지 남긴다.
                     // 반드시 TakeDamage "앞"에서 불러야 한다. 이 한 방으로 죽으면 TakeDamage 안에서 곧바로
                     // 결과 화면이 판 기록을 남기기 때문에, 뒤에 부르면 마지막 일격(사망 원인)이 기록에서 빠진다.
                     // 오버드라이브 중에는 받는 피해가 배로 늘어나므로, 실제로 들어가는 양(배율 포함)을 적는다.
-                    DamageSourceLog.Record(DamageSourceLog.LabelOf(definition.kind, isMiniBoss), scaledContactDamage * playerHealth.DamageTakenMultiplier);
-                    playerHealth.TakeDamage(scaledContactDamage);
+                    DamageSourceLog.Record(DamageSourceLog.LabelOf(definition.kind, isMiniBoss), contactDamage * playerHealth.DamageTakenMultiplier);
+                    playerHealth.TakeDamage(contactDamage);
                 }
                 contactTimer = contactDamageInterval;
             }
@@ -440,23 +475,7 @@ namespace SurvivalDrone.Enemies
             if (isMiniBoss) GameEvents.RaiseMiniBossKilled();
 
             // 죽은 위치에 XP 오브를 하나 만들고, 이 적의 xpReward 값을 지급하도록 설정.
-            if (xpOrbPrefab != null)
-            {
-                // 구슬은 적의 몸 중심이 아니라 플레이어 발 높이에 둔다. (몸 중심 높이에서 만들면 보스 구슬이 2.5m 공중에 떠서
-                // 자석·획득 판정(3D 거리)이 닿지 않고 화면에서도 떠 보인다)
-                Vector3 orbPosition = transform.position;
-                if (target != null) orbPosition.y = target.position.y;
-                var orbObj = Instantiate(xpOrbPrefab, orbPosition, Quaternion.identity);
-                var orb = orbObj.GetComponent<XPOrb>();
-                // 구슬이 플레이어를 직접 찾지 않아도 되도록, 이 적이 쫓던 플레이어를 넘겨준다.
-                if (orb != null) orb.SetTarget(target);
-                if (orb != null && definition != null)
-                {
-                    // 엘리트는 XP도 몇 배로 준다 (잡는 데 오래 걸린 만큼 보상).
-                    float reward = definition.xpReward * (isElite ? eliteXpMultiplier : 1f);
-                    orb.SetValue(reward);
-                }
-            }
+            SpawnXpOrb();
 
             // 스포너에게 "나 죽었어, 살아있는 목록에서 빼줘"라고 알림.
             onDeathCallback?.Invoke(this);
@@ -466,6 +485,42 @@ namespace SurvivalDrone.Enemies
 
             // 이 적 오브젝트를 씬에서 완전히 제거.
             Destroy(gameObject);
+        }
+
+        // 보스전이 시작될 때 남아 있는 몹을 "폭발하며 사라지게" 하는 함수. 죽는 것과 다른 점:
+        //  - 경험치 구슬은 그대로 남긴다. (몹을 잡아서 얻을 구슬을 잃지 않게 하려는 것)
+        //  - "적이 죽었다" 신호와 "미니 보스 처치" 신호는 보내지 않는다. 오버드라이브 게이지가 한꺼번에 차거나
+        //    미니 보스 보상 선택지가 뜨는 일을 막기 위해서다.
+        public void Vanish()
+        {
+            // 이미 죽는 중이면(체력 0) 평소처럼 HandleDeath가 처리하므로 건드리지 않는다.
+            if (health != null && health.IsDead) return;
+
+            SpawnXpOrb();
+            onDeathCallback?.Invoke(this);
+            SpawnDeathEffect();
+            Destroy(gameObject);
+        }
+
+        // 이 적이 있던 자리에 경험치 구슬을 하나 만든다. (죽을 때와 보스전에서 사라질 때 같이 쓴다)
+        private void SpawnXpOrb()
+        {
+            if (xpOrbPrefab == null) return;
+
+            // 구슬은 적의 몸 중심이 아니라 플레이어 발 높이에 둔다. (몸 중심 높이에서 만들면 보스 구슬이 2.5m 공중에 떠서
+            // 자석·획득 판정(3D 거리)이 닿지 않고 화면에서도 떠 보인다)
+            Vector3 orbPosition = transform.position;
+            if (target != null) orbPosition.y = target.position.y;
+            var orbObj = Instantiate(xpOrbPrefab, orbPosition, Quaternion.identity);
+            var orb = orbObj.GetComponent<XPOrb>();
+            // 구슬이 플레이어를 직접 찾지 않아도 되도록, 이 적이 쫓던 플레이어를 넘겨준다.
+            if (orb != null) orb.SetTarget(target);
+            if (orb != null && definition != null)
+            {
+                // 엘리트는 XP도 몇 배로 준다 (잡는 데 오래 걸린 만큼 보상).
+                float reward = definition.xpReward * (isElite ? eliteXpMultiplier : 1f);
+                orb.SetValue(reward);
+            }
         }
 
         // 죽은 자리(몸 중심)에 사망 연출을 만든다. 효과는 스스로 재생을 마치면 사라진다(프리팹의 Stop Action = Destroy).

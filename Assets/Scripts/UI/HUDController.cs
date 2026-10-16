@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using SurvivalDrone.Core;
+using SurvivalDrone.Enemies;
 using SurvivalDrone.Player;
 
 namespace SurvivalDrone.UI
@@ -98,12 +99,30 @@ namespace SurvivalDrone.UI
         private int shownSeconds = -1;
         private int shownEnemies = -1;
 
+        // 타이머 자리에 "보스전"을 이미 적어 뒀는지.
+        private bool shownBossFight;
+
         private void Update()
         {
             // 타이머는 매 프레임 계속 줄어들기 때문에, 이벤트 방식이 아니라 여기서 직접 갱신한다.
             // 다만 화면에 보이는 값이 바뀐 프레임에만 글자를 새로 적는다.
             if (timerText != null && GameManager.Instance != null)
             {
+                // 보스전 중에는 시간 대신 "보스전"을 보여 준다. (남은 시간·남은 적 수는 의미가 없어서)
+                if (BossFight.Active)
+                {
+                    if (!shownBossFight)
+                    {
+                        shownBossFight = true;
+                        shownSeconds = -1;
+                        shownEnemies = -1;
+                        timerText.text = "보스전";
+                        SetTimerIcon(false);
+                    }
+                    return;
+                }
+                shownBossFight = false;
+
                 // 적이 나오는 시간이 끝나면 시간 대신 "남은 적 수"를 보여준다(다 잡으면 승리).
                 if (GameManager.Instance.SpawningEnded)
                 {
