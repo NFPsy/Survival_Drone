@@ -27,7 +27,7 @@ namespace SurvivalDrone.EditorTools
             // ---- 상단 바: 게임 이름 + 재화 ----
             var topBar = NewRect("TopBar", root);
             Stretch(topBar);
-            var gameName = NewText("GameNameText", topBar, "드론 지휘관", 40, Cyan, MonoFont, TextAnchor.MiddleLeft);
+            var gameName = NewText("GameNameText", topBar, "Survival : D", 40, Cyan, MonoFont, TextAnchor.MiddleLeft);
             Place(gameName.rectTransform, TopLeft, TopLeft, TopLeft, new Vector2(50f, -30f), new Vector2(500f, 60f));
             var creditText = NewText("CreditText", topBar, "크레딧  0", 34, LightText, SansFont, TextAnchor.MiddleRight);
             Place(creditText.rectTransform, TopRight, TopRight, TopRight, new Vector2(-380f, -30f), new Vector2(320f, 60f));

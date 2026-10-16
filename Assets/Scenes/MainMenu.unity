@@ -2879,7 +2879,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\uB4DC\uB860 \uC9C0\uD718\uAD00"
+  m_Text: 'Survival : D  <size=36><color=#7fb8c0>Drone Commander</color></size>'
 --- !u!222 &617130393
 CanvasRenderer:
   m_ObjectHideFlags: 0

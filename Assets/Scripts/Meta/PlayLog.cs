@@ -265,7 +265,7 @@ namespace SurvivalDrone.Meta
         public static string BuildExportText(SaveData data, string version, string platform)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("=== 드론 지휘관 테스트 기록 ===");
+            builder.AppendLine("=== Survival : D 테스트 기록 ===");
             builder.AppendLine($"테스터: {data.testerId}   빌드: {version}   플랫폼: {platform}   내보낸 시각: {Clock():yyyy-MM-dd HH:mm:ss}");
             builder.AppendLine();
             builder.AppendLine("[요약]");
@@ -285,7 +285,7 @@ namespace SurvivalDrone.Meta
             foreach (var slot in slots)
                 if (!string.IsNullOrEmpty(slot.Value.testerId)) { testerId = slot.Value.testerId; break; }
 
-            builder.AppendLine("=== 드론 지휘관 테스트 기록 ===");
+            builder.AppendLine("=== Survival : D 테스트 기록 ===");
             builder.AppendLine($"테스터: {testerId}   빌드: {version}   플랫폼: {platform}   내보낸 시각: {Clock():yyyy-MM-dd HH:mm:ss}   슬롯 {slots.Count}개");
             foreach (var slot in slots)
             {

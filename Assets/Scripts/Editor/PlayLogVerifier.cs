@@ -87,7 +87,7 @@ namespace SurvivalDrone.EditorTools
 
                 // ---- 내보내기 글 ----
                 string export = PlayLog.BuildExportText(data, "0.1.0", "WebGLPlayer");
-                fails += Check(export.Contains("=== 드론 지휘관 테스트 기록 ===") && export.Contains($"테스터: {firstId}") && export.Contains("내보낸 시각: 2026-10-09 13:05:07"),
+                fails += Check(export.Contains("=== Survival : D 테스트 기록 ===") && export.Contains($"테스터: {firstId}") && export.Contains("내보낸 시각: 2026-10-09 13:05:07"),
                     "내보내기 머리말: 제목, 테스터 번호, 내보낸 시각");
                 fails += Check(export.Contains("| match | 스테이지=1 결과=클리어 생존=600.0초 실제소요=689.0초 도달레벨=14 드론수=5 내전투력=100 보상코어=40 보상크레딧=200") &&
                                export.Contains("| pull | 종류=10연 사용코어=2700 N=6 R=3 SR=1 SSR=0 신규=3 승급=2 조각=60 남은코어=0 천장=10/70") &&
