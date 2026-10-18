@@ -53,6 +53,10 @@ namespace SurvivalDrone.UI
 
         private void Awake()
         {
+            // 판이 끝나고 로비로 돌아왔을 때, 판 안에서 틀던 여러 곡 순서대로 재생을 끝내고 메인 메뉴 곡 한 곡 반복으로 되돌린다.
+            // (메인 메뉴에서 넘어온 평소에는 순서대로 틀던 중이 아니라서 아무 일도 하지 않고 곡이 끊기지 않는다)
+            AudioManager.Instance?.ReturnToDefaultMusic();
+
             _creditText = FindText("TopBar/CreditText");
             _coreText = FindText("TopBar/CoreText");
 

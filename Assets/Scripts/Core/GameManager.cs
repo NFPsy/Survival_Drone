@@ -126,9 +126,31 @@ namespace SurvivalDrone.Core
             // 어느 오브젝트의 Awake()가 먼저 실행될지는 보장되지 않는다(실행 순서 미지정 시).
             // 반면 Start()는 씬의 모든 Awake()가 다 끝난 뒤에만 호출되므로,
             // 여기서 불러야 AudioManager.Instance가 확실히 준비되어 있다.
-            AudioManager.Instance?.PlayMusic(inGameMusic);
+            StartInGameMusic();
 
             RecordMatchStartLog();
+        }
+
+        // 판 안 배경음악. 한 곡을 10분 내내 반복하면 지루해서, 판이 시작되면 Resources/Music의 새 곡(Survival Protocol)부터 틀고
+        // 끝나면 원래 곡(inGameMusic)을 이어서 튼다. 원래 곡이 끝나면 다시 새 곡으로 돌아간다.
+        // 새 곡 파일이 없으면 예전처럼 원래 곡만 반복한다.
+        // 두 곡은 녹음된 크기가 달라서(원래 곡이 더 크다) 원래 곡의 음량을 낮춰 곡이 바뀔 때 갑자기 크게 들리지 않게 맞춘다.
+        // (유니티 소리 크기는 1을 넘길 수 없어서 작은 곡을 키울 수는 없다. 이 낮춤은 판 안에서만이고, 메인 메뉴는 원래 크기 그대로다)
+        private const string NewInGameMusicPath = "Music/BGM_SurvivalProtocol";
+        private const float MainMusicVolumeScaleInMatch = 0.7f;
+
+        private void StartInGameMusic()
+        {
+            if (AudioManager.Instance == null) return;
+
+            var newTrack = inGameMusic != null ? Resources.Load<AudioClip>(NewInGameMusicPath) : null;
+            if (newTrack == null)
+            {
+                AudioManager.Instance.PlayMusic(inGameMusic);
+                return;
+            }
+
+            AudioManager.Instance.PlayMusicSequence(new[] { newTrack, inGameMusic }, new[] { 1f, MainMusicVolumeScaleInMatch });
         }
 
         // 테스트(CBT) 기록에 "판 시작"을 남긴다. 끝난 줄 없이 이 줄만 있으면 탭을 닫고 나간 판이다.
