@@ -14,6 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivalDrone.Meta.ShopSettings
   _enabled: 1
   _products:
+  - displayName: "\uC2A4\uD0C0\uD130 \uD329"
+    category: "\uC2A4\uD0C0\uD130 \uD329 (\uACC4\uC815\uB2F9 1\uD68C)"
+    contents: "\uCF54\uC5B4 1,500 + \uD06C\uB808\uB527 1,000"
+    priceWon: 2900
   - displayName: "\uC785\uBB38"
     category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
     contents: "\uCF54\uC5B4 330 (\uBF51\uAE30 1\uD68C + 30)"
@@ -30,10 +34,6 @@ MonoBehaviour:
     category: "\uCF54\uC5B4 \uD328\uD0A4\uC9C0"
     contents: "\uCF54\uC5B4 14,000"
     priceWon: 29900
-  - displayName: "\uC2A4\uD0C0\uD130 \uD329"
-    category: "\uC2A4\uD0C0\uD130 \uD329 (\uACC4\uC815\uB2F9 1\uD68C)"
-    contents: "\uCF54\uC5B4 1,500 + \uD06C\uB808\uB527 1,000"
-    priceWon: 2900
   - displayName: "\uC870\uAC01 \uC18C"
     category: "\uC870\uAC01 \uD328\uD0A4\uC9C0"
     contents: "\uB9CC\uB2A5 \uC870\uAC01 100\uAC1C"
