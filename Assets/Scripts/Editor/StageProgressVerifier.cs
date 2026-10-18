@@ -98,14 +98,14 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(oldSave.unlockedStageCount == 1 && oldSave.bestSurvivalSeconds != null && oldSave.bestSurvivalSeconds.Count == 0,
                     "스테이지 항목이 없는 옛 저장 파일도 안전하게 읽힘");
 
-                // 11) 스테이지 수치가 기획(노션 결정 기록)과 같은지: 권장 전투력 100/115/130/150/170, 배율 1.0/1.25/1.5/1.85/2.2
+                // 11) 스테이지 수치가 기획(노션 결정 기록)과 같은지: 권장 전투력 100/115/130/150/170, 배율 1.0/1.25/1.5/1.85/2.2 (스테이지 1만 10/18에 0.85로 낮춤)
                 //     (스테이지 1·3·5가 예전 3스테이지 때의 1·2·3번 값이고, 2·4번이 그 사이)
                 int[] expectedPower = { 100, 115, 130, 150, 170 };
-                float[] expectedMultiplier = { 1f, 1.25f, 1.5f, 1.85f, 2.2f };
+                float[] expectedMultiplier = { 0.85f, 1.25f, 1.5f, 1.85f, 2.2f };
                 bool valuesOk = true;
                 for (int i = 0; i < stages.Length; i++)
                     valuesOk &= stages[i].RecommendedPower == expectedPower[i] && Mathf.Approximately(stages[i].EnemyMultiplier, expectedMultiplier[i]) && stages[i].StageNumber == i + 1;
-                fails += Check(valuesOk, "스테이지 데이터가 결정 기록과 일치 (권장 전투력 100/115/130/150/170, 적 배율 x1.0/x1.25/x1.5/x1.85/x2.2)");
+                fails += Check(valuesOk, "스테이지 데이터가 결정 기록과 일치 (권장 전투력 100/115/130/150/170, 적 배율 x0.85/x1.25/x1.5/x1.85/x2.2)");
             }
             finally
             {

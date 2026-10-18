@@ -15,4 +15,7 @@ MonoBehaviour:
   _stageNumber: 1
   _displayName: "\uC678\uACFD \uC21C\uCC30\uB85C"
   _recommendedPower: 100
-  _enemyMultiplier: 1
+  _enemyMultiplier: 0.85
+  _healthMultiplier: 0
+  _damageMultiplier: 0
+  _isHard: 0
