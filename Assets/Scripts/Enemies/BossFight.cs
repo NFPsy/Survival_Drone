@@ -36,7 +36,7 @@ namespace SurvivalDrone.Enemies
 
         // 보스전 전용 체력 배율. 보스 한 마리와 일대일로 싸우므로 체력을 크게 키운다.
         // (원래 보스 체력 500은 혼자 싸우면 10초 안에 끝날 수 있다. 목표는 일반적인 전투력으로 60-90초에 끝나는 것)
-        [SerializeField] private float bossHealthMultiplier = 5f;
+        [SerializeField] private float bossHealthMultiplier = 4f;   // 10/18 난이도 조정: 옛 5 (강한 빌드로 89.6초 걸려 목표 60~90초의 끝이었다)
 
         // 보스전이 시작될 때 화면에 띄우는 안내 문구.
         [SerializeField] private string entryNotice = "보스 출현!  체력을 모두 깎아 쓰러뜨리세요";

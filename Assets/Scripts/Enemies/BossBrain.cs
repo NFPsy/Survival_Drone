@@ -28,11 +28,13 @@ namespace SurvivalDrone.Enemies
         [SerializeField] private float rageCooldown = 2.1f;
 
         // ── 내려찍기 ──
-        [SerializeField] private float slamRadius = 4.5f;              // 터지는 범위(반지름, m)
-        [SerializeField] private float slamTelegraphSeconds = 1.3f;    // 예고(원이 차오르는) 시간
-        [SerializeField] private float rageSlamTelegraphSeconds = 0.9f; // 분노 때 예고 시간(3연속이라 더 빠르게)
-        [SerializeField] private int rageSlamCount = 3;                // 분노 때 연속으로 내려찍는 횟수
-        [SerializeField] private float slamDamage = 20f;               // 기본 피해(스테이지 피해 배율이 곱해진다)
+        // 10/18 난이도 조정: 플레이해 보니 분노 때 3연속(예고 0.9초, 반지름 4.5m)은 기본 이동속도로는 피할 수 없었다.
+        // 반응 시간(약 0.4초)을 빼고도 원 밖으로 나갈 수 있게 예고를 늘리고, 범위·연속 횟수·피해를 줄였다.
+        [SerializeField] private float slamRadius = 4.0f;              // 터지는 범위(반지름, m) (옛 4.5)
+        [SerializeField] private float slamTelegraphSeconds = 1.6f;    // 예고(원이 차오르는) 시간 (옛 1.3)
+        [SerializeField] private float rageSlamTelegraphSeconds = 1.3f; // 분노 때 예고 시간 (옛 0.9)
+        [SerializeField] private int rageSlamCount = 2;                // 분노 때 연속으로 내려찍는 횟수 (옛 3)
+        [SerializeField] private float slamDamage = 16f;               // 기본 피해(스테이지 피해 배율이 곱해진다) (옛 20)
         [SerializeField] private float slamRecoverSeconds = 0.5f;      // 터진 뒤 멈춰 있는 시간
 
         // ── 돌진 ──
