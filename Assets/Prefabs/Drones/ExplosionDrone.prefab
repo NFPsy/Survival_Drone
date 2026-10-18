@@ -59,7 +59,8 @@ MonoBehaviour:
   aimMarkerPrefab: {fileID: 7629889043515015436, guid: e4c1b26e828badb4dadbb0a975685f09, type: 3}
   markerWarnSeconds: 0.6
   acquireNotice: "\uD3ED\uBC1C \uB4DC\uB860 \uD68D\uB4DD! \uB9C8\uC6B0\uC2A4\uB85C
-    \uAC00\uB9AC\uD0A8 \uACF3\uC5D0\uC11C \uD3ED\uBC1C\uD569\uB2C8\uB2E4."
+    \uD3ED\uBC1C \uC704\uCE58\uB97C \uC815\uD558\uC138\uC694. \uBC14\uB2E5\uC758
+    \uC6D0\uC774 \uCEE4\uC11C\uC608\uC694."
   acquireNoticeSeconds: 5
   baseDamage: 10
   baseInterval: 3

@@ -35,7 +35,7 @@ namespace SurvivalDrone.Drones
         [SerializeField] private float markerWarnSeconds = 0.6f;
 
         // 폭발 드론을 얻었을 때 화면 위 알림 칸에 띄울 안내 문구와 표시 시간.
-        [SerializeField] private string acquireNotice = "폭발 드론 획득! 마우스로 가리킨 곳에서 폭발합니다.";
+        [SerializeField] private string acquireNotice = "폭발 드론 획득! 마우스로 폭발 위치를 정하세요. 바닥의 원이 커서예요.";
         [SerializeField] private float acquireNoticeSeconds = 5f;
 
         // 플레이어 기준 폭발 지점 위치(x, z만 사용). 처음에는 플레이어 바로 위(0, 0)다.
