@@ -261,6 +261,11 @@ namespace SurvivalDrone.Meta
             }
 
             if (_data != null && _data.playLog != null) data.playLog = _data.playLog;
+
+            // 불러온 횟수: 코드 안에 이미 불러온 적이 있는 저장이면 그 횟수를, 지금 슬롯의 횟수와 비교해 큰 쪽에서 하나 올린다.
+            // (코드로 한 번 옮겨 온 저장은 다음 코드에도 "옮겨 온 적 있음"이 이어진다)
+            int previous = _data != null ? _data.importCount : 0;
+            data.importCount = Mathf.Max(data.importCount, previous) + 1;
             _data = data;
             Save();
             DataReplaced?.Invoke();

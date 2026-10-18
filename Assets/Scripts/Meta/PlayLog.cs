@@ -84,7 +84,7 @@ namespace SurvivalDrone.Meta
         //  loadout = 출격한 드론 구성 요약("Melee SR Lv3 / Sniper N Lv1"). 판 끝 기록에는 드론 수와 전투력만 있어서 따로 남긴다.
         public static void RecordMatchStart(SaveData data, int stageNumber, int combatPower, string loadout)
         {
-            Add(data, "match_start", $"스테이지={stageNumber} 내전투력={combatPower} 장착={loadout}");
+            Add(data, "match_start", $"스테이지={stageNumber} 내전투력={combatPower} 장착={loadout}{ImportSuffix(data)}");
         }
 
         // 마일스톤 코어를 로비에서 받았을 때. milestoneLabel = "3분"/"6분"/"클리어", coreAfter = 받은 뒤 보유 코어.
@@ -148,7 +148,7 @@ namespace SurvivalDrone.Meta
 
             Add(data, "match",
                 $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
-                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{PickSuffix(bossSummary)}{PickSuffix(timeBreakdown)}{PickSuffix(aimSummary)}");
+                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{PickSuffix(bossSummary)}{PickSuffix(timeBreakdown)}{PickSuffix(aimSummary)}{ImportSuffix(data)}");
         }
 
         // 그래픽카드 이름이 있으면 " 그래픽=이름"을, 없으면 빈 글자를 돌려준다. 이름 안의 줄바꿈은 기록이 깨지지 않게 공백으로 바꾼다.
@@ -224,7 +224,14 @@ namespace SurvivalDrone.Meta
             s.abandonSurviveSeconds += surviveSeconds;
 
             Add(data, "match_abandon",
-                $"스테이지={stageNumber} 나간방법={exitMethod} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount} 내전투력={combatPower}{PickSuffix(pickSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}");
+                $"스테이지={stageNumber} 나간방법={exitMethod} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount} 내전투력={combatPower}{PickSuffix(pickSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{ImportSuffix(data)}");
+        }
+
+        // 이 슬롯이 저장 코드를 불러온 적이 있으면 " 불러옴=횟수"를 돌려준다. 판 기록 줄 끝에 붙어서, 코드로 옮겨 온 저장(값을 고쳤을 수도 있는 저장)의
+        // 판을 분석할 때 따로 볼 수 있다. 직접 플레이만 한 슬롯이면 빈 글자라서 기록 모양이 그대로다.
+        private static string ImportSuffix(SaveData data)
+        {
+            return data != null && data.importCount > 0 ? $" 불러옴={data.importCount}" : "";
         }
 
         // 드론 강화에 성공했을 때.

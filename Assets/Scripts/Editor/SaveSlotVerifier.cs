@@ -145,6 +145,76 @@ namespace SurvivalDrone.EditorTools
             int n = SaveManager.Data.playLog.Count;
             fails += Check(SaveManager.Data.playLog[n - 2].EndsWith("| save_export | 코어=1234") && SaveManager.Data.playLog[n - 1].EndsWith("| save_import | 코어=7→1234"), "기록에 save_export / save_import 줄이 남음");
 
+            // ---- 불러온 횟수 (importCount)와 판 기록의 "불러옴=N" 표시 ----
+            fails += Check(SaveManager.Data.importCount == 1, $"저장 코드를 한 번 불러오면 이 슬롯의 불러온 횟수가 1 ({SaveManager.Data.importCount})");
+            SaveManager.ReplaceCurrentData(SaveTransfer.TryDecode(code, out SaveData again) == SaveTransfer.DecodeResult.Ok ? again : null);
+            fails += Check(SaveManager.Data.importCount == 2, $"한 번 더 불러오면 2 ({SaveManager.Data.importCount})");
+            var codeFromImported = SaveTransfer.Encode(SaveManager.Data);
+            SaveTransfer.TryDecode(codeFromImported, out SaveData reDecoded);
+            fails += Check(reDecoded != null && reDecoded.importCount == 2, "불러온 저장에서 다시 만든 코드에도 불러온 횟수가 이어짐");
+
+            var imported = SaveManager.Data;
+            PlayLog.RecordMatchStart(imported, 1, 100, "Melee N Lv1");
+            PlayLog.RecordMatch(imported, 1, true, 600f, 700f, 20, 5, 100, 0, 300);
+            PlayLog.RecordAbandon(imported, 1, 50f, 60f, 3, 2, 100, "로비");
+            int logCount = imported.playLog.Count;
+            fails += Check(imported.playLog[logCount - 3].EndsWith("장착=Melee N Lv1 불러옴=2") && imported.playLog[logCount - 2].EndsWith("보상크레딧=300 불러옴=2") && imported.playLog[logCount - 1].EndsWith("내전투력=100 불러옴=2"),
+                "불러온 슬롯의 판 시작·결과·이탈 기록 끝에 \"불러옴=2\"가 붙음");
+            var plain = new SaveData();
+            PlayLog.RecordMatch(plain, 1, true, 600f, 700f, 20, 5, 100, 0, 300);
+            fails += Check(!plain.playLog[0].Contains("불러옴"), "직접 플레이만 한 슬롯의 기록 모양은 그대로 (불러옴 표시 없음)");
+
+            // ---- 값 범위 조정 (Sanitize) ----
+            var limits = new SaveTransfer.Limits();
+            var normalCopy = JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(source));
+            fails += Check(SaveTransfer.Sanitize(normalCopy, limits, out _) == 0, "정상 저장은 한 항목도 조정되지 않음");
+            fails += Check(normalCopy.core == 1234 && normalCopy.ownedDrones.Count == 1 && normalCopy.ownedDrones[0].level == 4 && normalCopy.equippedDrones.Count == 1, "정상 저장의 값이 그대로");
+
+            var wild = new SaveData { core = int.MaxValue, credit = -9, unlockedStageCount = 99, normalClearedMask = 1 << 20, testerId = "ABCDEFGHIJKLMNOP", gachaPityCount = 5000 };
+            wild.ownedDrones.Add(new OwnedDroneData { droneType = DroneType.Sniper, rarity = GachaRarity.SR, level = 99, shards = int.MaxValue });
+            wild.ownedDrones.Add(new OwnedDroneData { droneType = DroneType.Sniper, level = 2 });               // 같은 종류가 또 있음
+            wild.ownedDrones.Add(new OwnedDroneData { droneType = (DroneType)42, level = 1 });                  // 없는 종류
+            wild.ownedDrones.Add(null);
+            wild.equippedDrones.AddRange(new[] { (int)DroneType.Sniper, (int)DroneType.Heal, (int)DroneType.Sniper, 77 });
+            wild.bestSurvivalSeconds.Add(float.NaN);
+            wild.bestSurvivalSeconds.Add(999999f);
+            int adjusted = SaveTransfer.Sanitize(wild, limits, out List<string> notes);
+            fails += Check(adjusted >= 8 && notes.Count == adjusted, $"터무니없는 값은 여러 항목이 조정됨 ({adjusted}개, 설명 {notes.Count}개)");
+            fails += Check(wild.core == 99999999 && wild.credit == 0 && wild.unlockedStageCount == limits.normalStageCount && wild.normalClearedMask < (1 << limits.normalStageCount) && wild.gachaPityCount == 1000,
+                "코어·크레딧·해금 스테이지·클리어 기록·천장이 범위 안으로 맞춰짐");
+            fails += Check(wild.testerId.Length == 12, "너무 긴 테스터 번호는 잘림");
+            fails += Check(wild.ownedDrones.Count == 1 && wild.ownedDrones[0].level == limits.maxDroneLevel && wild.ownedDrones[0].shards == 999999,
+                "보유 드론: 중복·없는 종류·빈 항목은 빠지고 레벨은 최대 레벨(각성 포함)로, 조각은 상한으로");
+            fails += Check(wild.equippedDrones.Count == limits.equipSlots && wild.equippedDrones[0] == (int)DroneType.Sniper && wild.equippedDrones[1] == -1,
+                "장착: 칸 수를 넘는 것은 잘리고, 가지고 있지 않은 드론은 빈 칸(-1)으로");
+            fails += Check(wild.bestSurvivalSeconds[0] == 0f && wild.bestSurvivalSeconds[1] == 7200f, "최고 기록: NaN은 0으로, 너무 큰 값은 상한으로");
+            fails += Check(SaveTransfer.Sanitize(wild, limits, out _) == 0, "한 번 조정한 저장을 다시 조정하면 바뀌는 것이 없음");
+
+            // 한도는 게임 설정(드론 성장표·스테이지 목록)을 따른다. 에디터에서는 매니저가 없어서 기본값이 쓰인다.
+            var gameLimits = SaveTransfer.Limits.FromGame();
+            fails += Check(gameLimits.maxDroneLevel >= 5 && gameLimits.equipSlots >= 1 && gameLimits.stageCount >= gameLimits.normalStageCount && gameLimits.normalStageCount >= 5, "게임에서 가져온 한도가 상식적인 값");
+
+            // 가장 중요한 확인: 진짜 저장 파일은 한 항목도 조정되지 않아야 한다. (정상 저장이 잘못 고쳐지면 안 되므로. 읽기만 한다)
+            int realFiles = 0;
+            int realAdjusted = 0;
+            foreach (string file in Directory.GetFiles(Application.persistentDataPath, "save*.json"))
+            {
+                try
+                {
+                    var real = JsonUtility.FromJson<SaveData>(File.ReadAllText(file));
+                    if (real == null) continue;
+                    realFiles++;
+                    int changed = SaveTransfer.Sanitize(real, limits, out List<string> realNotes);
+                    realAdjusted += changed;
+                    if (changed > 0) Debug.LogError($"[Save] 진짜 저장 파일 {Path.GetFileName(file)}에서 조정된 항목: {string.Join(", ", realNotes)}");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Save] {Path.GetFileName(file)} 읽기 건너뜀: {e.Message}");
+                }
+            }
+            fails += Check(realAdjusted == 0, $"이 PC의 진짜 저장 파일 {realFiles}개에 범위 조정을 돌려도 조정되는 항목이 없음");
+
             SaveManager.ClearTestOverrides();
             return fails;
         }

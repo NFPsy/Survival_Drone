@@ -188,11 +188,15 @@ namespace SurvivalDrone.UI
                 return;
             }
 
+            // 코드의 값이 게임이 만들 수 있는 범위를 벗어났으면 범위 안으로 맞춘다. (정상 저장은 조정되지 않는다)
+            int adjusted = SaveTransfer.Sanitize(data, SaveTransfer.Limits.FromGame(), out _);
+
             _pendingImport = data;
             _confirmText.text = "이 저장을 불러올까요?\n\n" +
                                 $"불러올 저장:  {SaveTransfer.Summarize(data)}\n" +
                                 $"지금 저장:  {SaveTransfer.Summarize(SaveManager.Data)}\n\n" +
-                                "지금 슬롯의 저장은 사라지고 불러온 저장으로 바뀝니다.";
+                                "지금 슬롯의 저장은 사라지고 불러온 저장으로 바뀝니다." +
+                                (adjusted > 0 ? $"\n(코드의 값 {adjusted}개가 게임에서 가능한 범위를 벗어나 조정되었습니다.)" : "");
             _confirmPanel.SetActive(true);
             SetStatus("", Cyan);
         }

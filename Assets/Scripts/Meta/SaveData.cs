@@ -87,5 +87,10 @@ namespace SurvivalDrone.Meta
         // "노멀 N을 클리어하면 하드 N이 열린다"를 알아내는 데 쓴다. 옛 저장에는 이 칸이 없어서 0으로 읽히고,
         // 스테이지 1~4는 옛 해금 개수(unlockedStageCount)로 짐작할 수 있다(StageProgress.IsNormalCleared).
         public int normalClearedMask;
+
+        // ---- 저장 코드 ----
+        // 이 슬롯이 저장 코드를 불러온 횟수. 0이면 직접 플레이만 한 슬롯이다. 판 기록에 "불러옴=N"으로 붙어서,
+        // 분석할 때 코드로 옮겨 온 저장(값을 고쳤을 수도 있는 저장)이 섞인 판을 따로 볼 수 있다. (옛 저장에는 없지만 0으로 읽힌다)
+        public int importCount;
     }
 }

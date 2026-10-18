@@ -245,6 +245,8 @@ def make_match(when, kv):
         # 10/18 로그 2·3단계 이후: 1분씩 끊은 받은 피해, 레벨업 선택 순서(M 이동속도·H 체력·N:드론 신규·U:드론 강화), 판이 끝날 때 보유 드론, 드론별 기여
         "minute_damage": parse_minutes(kv.get("분별피해")), "pick_order": parse_order(kv.get("선택순서")),
         "final_drones": parse_final_drones(kv.get("최종드론")), "contrib": parse_contrib(kv.get("드론기여")),
+        # 저장 코드를 불러온 슬롯의 판에는 "불러옴=N"이 붙는다(N = 그 슬롯이 불러온 횟수). 코드로 옮겨 온 저장은 값을 고쳤을 수도 있어서 따로 본다.
+        "imported": num(kv.get("불러옴"), 0),
     }
 
 
@@ -464,6 +466,34 @@ def pick_order_summary(matches):
     return text
 
 
+def import_summary(testers, matches):
+    """저장 코드 사용 현황. 불러온 저장이 섞인 판은 경제·난이도 분석에서 따로 봐야 하므로 판 수와 코어 변화를 보여 준다. 사용 흔적이 없으면 None."""
+    imports = []   # (테스터, 슬롯, 시각, 바뀌기 전 코어, 바뀐 뒤 코어)
+    exports = 0
+    for tester in testers:
+        for slot in tester.slots:
+            for when, name, kv in slot.events:
+                if name == "save_export":
+                    exports += 1
+                elif name == "save_import":
+                    m = re.match(r"\s*(\d+)\s*→\s*(\d+)", kv.get("코어", ""))
+                    before, after = (int(m.group(1)), int(m.group(2))) if m else (None, None)
+                    imports.append((tester.tester, slot.number, when, before, after))
+    imported_matches = [m for m in matches if (m.get("imported") or 0) > 0]
+    if not imports and not exports and not imported_matches:
+        return None
+    lines = [f"- 저장 코드를 복사한 횟수 {exports}번 · 불러온 횟수 {len(imports)}번",
+             f"- 불러온 저장이 섞인 판: 전체 {len(matches)}판 중 {len(imported_matches)}판({pct(len(imported_matches), len(matches))}) — 코드는 값을 고쳤을 수도 있으니 클리어율·코어 경제는 이 판을 빼고도 한 번 더 본다"]
+    for tester, slot, when, before, after in imports:
+        note = ""
+        if before is not None and after is not None:
+            note = f" 코어 {before:,}→{after:,}"
+            if after - before > 3000:
+                note += " ⚠️ 코어가 크게 늘어남"
+        lines.append(f"- 테스터 {tester} 슬롯 {slot} {when}에 불러옴{note}")
+    return lines
+
+
 def picks_summary(matches):
     ms = [m for m in matches if m["picks"]]
     if not ms:
@@ -535,6 +565,10 @@ def slot_report(t, slot):
     claims_h = [kv for _, n, kv in slot.events if n == "hard_milestone_claim"]
     if claims_h:
         out.append(f"**하드 마일스톤** 수령 {len(claims_h)}번(조각 +{sum(num(c.get('조각'), 0) for c in claims_h):,}) — 하드 1~5는 스테이지 6~10으로 기록된다")
+    imp_in = count_events(slot, "save_import")
+    imp_out = count_events(slot, "save_export")
+    if imp_in or imp_out:
+        out.append(f"**저장 코드** 복사 {imp_out}번 · 불러옴 {imp_in}번 (불러온 뒤의 판은 코드로 옮겨 온 저장일 수 있다)")
     out.append(f"**성장** 드론 강화 {count_events(slot, 'upgrade')}번 · 조각 교환 {count_events(slot, 'shard_exchange')}번 · 스테이지 해금 {count_events(slot, 'unlock')}번 · 장착 변경 {count_events(slot, 'equip')}번")
     shop = shop_stats(slot)
     if shop["opens"] or shop["clicks"]:
@@ -628,6 +662,9 @@ def build_report(testers):
         contrib_rows = drone_contrib_table(all_matches)
         if contrib_rows:
             out += ["", "## 드론별 기여 (판이 끝날 때 가진 드론 기준, 10/18 이후 빌드 기록만)"] + contrib_rows
+        import_lines = import_summary(testers, all_matches)
+        if import_lines:
+            out += ["", "## 저장 코드 사용 (불러온 저장이 섞인 판은 따로 볼 것)"] + import_lines
         order_lines = pick_order_summary(all_matches)
         if order_lines:
             out += ["", "## 레벨업 선택 순서 (M 이동속도 · H 체력 · N 새 드론 · U 드론 강화, 10/18 이후 빌드 기록만)"] + order_lines
