@@ -24,6 +24,8 @@ Blender가 설치되어 있으면 화면 없이 명령어로 실행한다. (Blen
 ```bash
 "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --python Tools/Blender/export_for_unity.py -- 입력.fbx 출력.fbx
 "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --python Tools/Blender/export_rotated.py -- 입력.fbx 출력.fbx 80
+# 동작 일부만 내보내기: 각도 뒤에 시작·끝 프레임(Blender 프레임 번호)을 붙인다. (보스 내려찍기: -12도, 60~135프레임)
+"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --python Tools/Blender/export_rotated.py -- 입력.fbx 출력.fbx -12 60 135
 ```
 
 `--` 뒤의 값이 입력 파일, 출력 파일(그리고 돌릴 각도)이다.
@@ -41,4 +43,5 @@ Blender가 설치되어 있으면 화면 없이 명령어로 실행한다. (Blen
   몸 전체를 80도 돌려 해결했다. 각도는 Unity에서 어깨선으로 "앞쪽"을 구해 yaw로 재서 정했다(평균이 0에 가까워질 때까지).
 - **맨 위 뼈(Root)에 고정 회전만 주면 효과가 없다.** 맨 위 뼈에도 프레임마다 값이 있어서 덮어써진다.
   모든 프레임의 값을 먼저 계산하고 프레임마다 새 값을 키로 다시 넣어야 한다.
+- **긴 동작은 필요한 구간만 잘라 쓴다.** 보스 내려찍기 원본은 228프레임인데 뒤쪽은 엎드린 채 굳은 자세라, "준비 → 바닥을 치는 순간"인 60~135프레임만 내보냈다. 바닥을 치는 프레임은 손·엉덩이 높이를 프레임마다 뽑아서 찾았다. 내보낸 파일을 Blender로 다시 열면 구간이 1프레임씩 밀려(60~135 → 61~136) 보이는데, Unity의 클립 구간(First/Last Frame)은 거기서 1을 뺀 값, 즉 처음에 준 60~135를 그대로 쓰면 맞다.
 - **원본 FBX는 저장소에 넣지 않는다.** 텍스처가 들어 있어 24MB씩이다. 변환한 FBX(0.4~1MB)만 저장소에 둔다.

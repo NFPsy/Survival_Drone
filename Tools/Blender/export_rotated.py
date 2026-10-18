@@ -9,6 +9,8 @@
 사용법 (Blender를 화면 없이 실행):
   "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe" -b --python export_rotated.py -- <입력.fbx> <출력.fbx> <각도>
   예) ... -- Run.fbx Player_Run.fbx 80      (달리기: 몸 방향 평균이 앞(+Z)이 되도록 80도)
+  동작의 일부분만 내보내려면 뒤에 시작·끝 프레임(Blender 프레임 번호)을 붙인다.
+  예) ... -- Slam.fbx Boss_Slam.fbx -12 60 135   (내려찍기 동작 중 60~135 프레임만, -12도 돌려서)
 
 각도 정하는 법:
   먼저 Unity에서 동작의 몸 방향을 잰다(어깨선으로 "앞쪽"을 구해 yaw 각도를 계산).
@@ -46,6 +48,8 @@ offset = ml.inverted() @ R @ ml
 
 act = bpy.data.actions[0]
 start, end = int(act.frame_range[0]), int(act.frame_range[1])
+if len(args) >= 5:   # 시작·끝 프레임이 주어지면 그 구간만 내보낸다.
+    start, end = int(args[3]), int(args[4])
 scene.frame_start = start
 scene.frame_end = end
 

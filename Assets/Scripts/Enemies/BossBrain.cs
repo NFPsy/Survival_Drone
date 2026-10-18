@@ -53,6 +53,16 @@ namespace SurvivalDrone.Enemies
         [SerializeField] private float rageMoveSpeedMultiplier = 1.3f; // 분노 때 이동속도 배율
         [SerializeField] private float rageDamageMultiplier = 1.2f;    // 분노 때 피해 배율(패턴·접촉)
 
+        // ── 애니메이션 ──
+        // 보스 모델(Model 자식)의 Animator에 내려찍기·돌진 동작을 시킨다. (Animator 파라미터: Slam 트리거, SlamSpeed, Dash 불)
+        // 내려찍기 동작(Boss_Slam)은 길이 2.5초이고 맨 끝이 "바닥을 때리는 순간"이다.
+        // 그래서 재생 속도를 (2.5초 / 예고 시간)으로 맞춰서, 예고 원이 다 차오르는 순간에 내려치게 한다.
+        private const float SlamClipSeconds = 2.5f;
+        private static readonly int SlamTrigger = Animator.StringToHash("Slam");
+        private static readonly int SlamSpeedParam = Animator.StringToHash("SlamSpeed");
+        private static readonly int DashParam = Animator.StringToHash("Dash");
+        private Animator animator;
+
         private EnemyAI boss;
         private Transform player;
         private Health playerHealth;
@@ -86,6 +96,7 @@ namespace SurvivalDrone.Enemies
             player = playerTransform;
             playerHealth = playerTransform != null ? playerTransform.GetComponent<Health>() : null;
             fightStartTime = startTime;
+            animator = bossAi != null ? bossAi.GetComponentInChildren<Animator>() : null;
             cooldown = patternCooldown;   // 등장하자마자 공격하지 않도록 첫 패턴 전에 한 번 쉰다
         }
 
@@ -192,6 +203,11 @@ namespace SurvivalDrone.Enemies
             slamTelegraph.SetProgress(0f);
             state = State.SlamTelegraph;
             stateTimer = 0f;
+            if (animator != null)
+            {
+                animator.SetFloat(SlamSpeedParam, SlamClipSeconds / slamDuration);
+                animator.SetTrigger(SlamTrigger);   // 분노 때 연속으로 내려찍을 때도 매번 처음부터 다시 재생된다
+            }
         }
 
         private void UpdateSlamTelegraph()
@@ -286,6 +302,7 @@ namespace SurvivalDrone.Enemies
 
             // 돌진 시작. 돌진 피해가 따로 들어가므로 몸이 닿았을 때의 접촉 피해는 이 동안 끈다.
             state = State.Dash;
+            if (animator != null) animator.SetBool(DashParam, true);   // 달리기 동작
             boss.ContactDamageScale = 0f;
             if (dashTelegraph != null) dashTelegraph.Flash();
         }
@@ -331,6 +348,7 @@ namespace SurvivalDrone.Enemies
                 Destroy(dashTelegraph.gameObject);
                 dashTelegraph = null;
             }
+            if (animator != null) animator.SetBool(DashParam, false);
             boss.ContactDamageScale = rage ? rageDamageMultiplier : 1f;
             state = State.DashRecover;
             stateTimer = 0f;
