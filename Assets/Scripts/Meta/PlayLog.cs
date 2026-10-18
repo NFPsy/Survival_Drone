@@ -164,6 +164,20 @@ namespace SurvivalDrone.Meta
             return string.IsNullOrEmpty(pickSummary) ? "" : " " + pickSummary;
         }
 
+        // ---- 저장 코드 (내보내기/불러오기) ----
+        // 저장 코드를 복사했을 때. 코어는 그때 보유량.
+        public static void RecordSaveExport(SaveData data, int core)
+        {
+            Add(data, "save_export", $"코어={core}");
+        }
+
+        // 저장 코드를 불러와서 지금 슬롯을 바꿨을 때. 이 줄 앞뒤로 코어 수지(남은코어)가 이어지지 않는 것이 정상이므로
+        // 분석할 때 "여기서 저장이 바뀜"을 알 수 있게 남긴다. coreBefore = 바뀌기 전, coreAfter = 바뀐 뒤.
+        public static void RecordSaveImport(SaveData data, int coreBefore, int coreAfter)
+        {
+            Add(data, "save_import", $"코어={coreBefore}→{coreAfter}");
+        }
+
         // ---- 가상 상점 (OBT 2단계) ----
         // 상점 화면을 열었을 때. core = 그때 보유한 코어 (코어가 모자라 상점으로 왔는지 보려고).
         // route = 어떻게 열었는지. 로비의 "상점" 버튼이면 비워 두고(기록 모양이 그대로), 뽑기 화면의 "코어 충전" 버튼이면

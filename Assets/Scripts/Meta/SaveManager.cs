@@ -240,6 +240,33 @@ namespace SurvivalDrone.Meta
             return true;
         }
 
+        // 지금 고른 슬롯의 저장을 다른 데이터로 통째로 바꾼다. 저장 코드 불러오기(SaveTransfer)가 쓴다.
+        // 슬롯 모드인데 슬롯을 아직 안 골랐으면(저장할 곳이 없으면) 아무것도 하지 않고 false.
+        // 바꾸기 전에 지금 파일을 ".beforeimport"로 복사해 둔다. (실수로 덮어써도 파일은 남게)
+        // 코드에는 테스트 기록 문장(playLog)이 없으므로 지금 슬롯의 기록을 그대로 이어 붙인다.
+        // 성공하면 파일에 저장하고 DataReplaced 이벤트를 발생시켜서 매니저들이 새 데이터로 다시 연결된다.
+        public static bool ReplaceCurrentData(SaveData data)
+        {
+            if (data == null) return false;
+            if (SlotsEnabled && _slot == 0) return false;
+
+            try
+            {
+                string path = FilePath;
+                if (File.Exists(path)) File.Copy(path, path + ".beforeimport", true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[Save] 불러오기 전에 지금 저장을 백업하지 못했습니다: {e.Message}");
+            }
+
+            if (_data != null && _data.playLog != null) data.playLog = _data.playLog;
+            _data = data;
+            Save();
+            DataReplaced?.Invoke();
+            return true;
+        }
+
         // 슬롯의 저장 내용을 "읽기만" 한다. 비어 있거나 읽을 수 없으면 null. (슬롯 선택 화면의 요약, 로그 내보내기에 쓴다)
         // 지금 고른 슬롯이면 메모리의 최신 데이터를 돌려준다.
         public static SaveData PeekSlot(int slot)

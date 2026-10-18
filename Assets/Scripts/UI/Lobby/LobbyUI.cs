@@ -47,6 +47,10 @@ namespace SurvivalDrone.UI
         private Button _shopButton;
         private ShopPopup _shopPopup;
 
+        // 저장 코드 (내보내기/불러오기). 슬롯 기능이 켜져 있을 때만 만들어진다.
+        private Button _saveTransferButton;
+        private SaveTransferPopup _saveTransferPopup;
+
         // 로비 카드에 지금 보여주는 스테이지 위치. 화살표로 넘겨 보다가 잠긴 스테이지를 볼 수도 있어서
         // "고른 스테이지(StageProgress.SelectedIndex)"와 따로 관리한다. 고른 것은 항상 해금된 스테이지뿐이다.
         private int _viewIndex;
@@ -117,7 +121,23 @@ namespace SurvivalDrone.UI
             else Debug.LogWarning("[Stage] 로비에서 'StageSelectPanel'(StageSelectUI)을 찾지 못했습니다.");
 
             BuildShopIfEnabled();
+            BuildSaveTransferIfSlots();
             BuildGachaNudgeIfNeeded();
+        }
+
+        // 저장 코드 버튼과 창을 코드로 만든다. (로비 씬 파일은 건드리지 않는다)
+        // 저장 슬롯 기능이 꺼져 있으면(옛 방식) 만들지 않는다. 버튼은 "테스트 로그" 버튼 바로 위에 놓는다.
+        private void BuildSaveTransferIfSlots()
+        {
+            if (!SaveManager.SlotsEnabled) return;
+
+            var font = _coreText != null ? _coreText.font : null;
+            _saveTransferPopup = SaveTransferPopup.Create(transform, font, clickSound);
+            var logRect = _logButton != null ? (RectTransform)_logButton.transform : null;
+            var position = logRect != null ? logRect.anchoredPosition + new Vector2(0f, logRect.sizeDelta.y + 20f) : new Vector2(330f, 140f);
+            var size = logRect != null ? logRect.sizeDelta : new Vector2(260f, 70f);
+            _saveTransferButton = SaveTransferPopup.CreateLobbyButton(transform, font, position, size);
+            _saveTransferButton.onClick.AddListener(() => { PlayClick(); _saveTransferPopup.Open(); });
         }
 
         // 아직 뽑기를 한 번도 안 했고 코어가 있으면, "뽑기" 버튼을 눈에 띄게(시안색) 바꾸고 옆에 한 줄 안내를 붙인다.
@@ -258,6 +278,7 @@ namespace SurvivalDrone.UI
             if (_questButton != null) _questButton.gameObject.SetActive(!show);
             if (_milestoneButton != null) _milestoneButton.gameObject.SetActive(!show);
             if (_shopButton != null) _shopButton.gameObject.SetActive(!show);
+            if (_saveTransferButton != null) _saveTransferButton.gameObject.SetActive(!show);
 
             // 패널을 닫고 돌아왔을 때 카드가 방금 고른 스테이지를 보여주도록 다시 그린다.
             if (!show)

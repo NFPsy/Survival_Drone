@@ -55,6 +55,7 @@ namespace SurvivalDrone.EditorTools
                 fails += CheckSlotsOn(dir, gachaTable, currencyTable, growthTable, stages);
                 fails += CheckBrokenFile(dir);
                 fails += CheckDeleteAll(dir);
+                fails += CheckSaveTransfer(dir);
 
                 if (fails == 0) Debug.Log($"[Save] 슬롯 검증 완료: 모든 항목 통과 ({DateTime.Now:HH:mm:ss})");
                 else Debug.LogError($"[Save] 슬롯 검증 완료: {fails}개 항목 실패 ({DateTime.Now:HH:mm:ss})");
@@ -64,6 +65,88 @@ namespace SurvivalDrone.EditorTools
                 SaveManager.ClearTestOverrides();
                 try { Directory.Delete(dir, true); } catch (Exception) { /* 임시 폴더는 못 지워도 괜찮다 */ }
             }
+        }
+
+        // ---------------- 저장 코드 (내보내기/불러오기) ----------------
+        // 코드로 바꿨다가 되돌리면 값이 그대로인지, 붙여 넣을 때 섞인 공백·줄바꿈은 무시하는지,
+        // 비었거나 이 게임 코드가 아니거나 깨졌거나 더 새 버전인 코드는 거절하는지, 불러온 저장이 지금 슬롯을 안전하게 바꾸는지 확인한다.
+        private static int CheckSaveTransfer(string dir)
+        {
+            int fails = 0;
+
+            var source = new SaveData
+            {
+                isCurrencyInitialized = true, core = 1234, credit = 99, unlockedStageCount = 3, normalClearedMask = 3, testerId = "ABC123",
+                gachaPityCount = 12, isInventoryInitialized = true,
+            };
+            source.ownedDrones.Add(new OwnedDroneData { droneType = DroneType.Sniper, rarity = GachaRarity.SR, level = 4 });
+            source.equippedDrones.Add((int)DroneType.Sniper);
+            source.bestSurvivalSeconds.Add(540.5f);
+            for (int i = 0; i < 400; i++) source.playLog.Add($"10-18 12:00:{i % 60:D2} | match | 스테이지=1 결과=실패 생존=100초 (시험 기록 {i}번째 줄)");
+
+            string code = SaveTransfer.Encode(source);
+            fails += Check(code.StartsWith(SaveTransfer.Prefix) && !code.Contains((char)10), $"코드는 \"SDSAVE1:\"로 시작하는 한 줄 글자 ({code.Length:N0}자)");
+            fails += Check(code.Length < 4000, $"기록 400줄이 있어도 코드는 짧음 — 기록 문장은 코드에 넣지 않는다 ({code.Length:N0}자 < 4,000자)");
+            fails += Check(source.playLog.Count == 400, "내보내도 원본 저장의 기록은 그대로 남음");
+
+            var result = SaveTransfer.TryDecode(code, out SaveData back);
+            fails += Check(result == SaveTransfer.DecodeResult.Ok && back != null, "코드를 다시 저장으로 되돌릴 수 있음");
+            fails += Check(back != null && back.core == 1234 && back.credit == 99 && back.unlockedStageCount == 3 && back.normalClearedMask == 3 && back.testerId == "ABC123" && back.gachaPityCount == 12,
+                "재화·해금·클리어 기록·테스터 번호·천장이 그대로");
+            fails += Check(back != null && back.ownedDrones.Count == 1 && back.ownedDrones[0].level == 4 && back.equippedDrones.Count == 1 && back.bestSurvivalSeconds.Count == 1 && Mathf.Approximately(back.bestSurvivalSeconds[0], 540.5f),
+                "보유 드론·장착·최고 기록이 그대로");
+            fails += Check(back != null && back.playLog.Count == 0, "되돌린 저장의 기록 문장은 비어 있음 (코드에 들어 있지 않으므로)");
+
+            string spaced = "  " + (char)34 + code.Substring(0, 30) + (char)10 + "  " + code.Substring(30, 40) + (char)13 + (char)10 + code.Substring(70) + (char)34 + "  ";
+            fails += Check(SaveTransfer.TryDecode(spaced, out SaveData spacedData) == SaveTransfer.DecodeResult.Ok && spacedData.core == 1234, "붙여 넣을 때 섞인 공백·줄바꿈·따옴표는 무시하고 읽음");
+
+            fails += Check(SaveTransfer.TryDecode("", out _) == SaveTransfer.DecodeResult.Empty && SaveTransfer.TryDecode("   " + (char)10 + " ", out _) == SaveTransfer.DecodeResult.Empty, "비어 있으면 Empty");
+            fails += Check(SaveTransfer.TryDecode("hello world", out _) == SaveTransfer.DecodeResult.NotACode, "이 게임 코드가 아니면 NotACode");
+            string cut = code.Substring(0, code.Length / 2);
+            fails += Check(SaveTransfer.TryDecode(cut, out _) == SaveTransfer.DecodeResult.Corrupt, "중간에 잘린 코드는 Corrupt");
+            char[] chars = code.ToCharArray();
+            for (int i = SaveTransfer.Prefix.Length + 20; i < SaveTransfer.Prefix.Length + 28; i++) chars[i] = chars[i] == 'A' ? 'B' : 'A';
+            fails += Check(SaveTransfer.TryDecode(new string(chars), out _) == SaveTransfer.DecodeResult.Corrupt, "글자가 바뀐 코드는 Corrupt (압축 안의 검사값으로 걸러냄)");
+            fails += Check(SaveTransfer.TryDecode(SaveTransfer.Prefix + "!!!notbase64!!!", out _) == SaveTransfer.DecodeResult.Corrupt, "Base64가 아닌 글자는 Corrupt");
+
+            var future = new SaveData { saveVersion = SaveTransfer.MaxSupportedSaveVersion + 1, core = 5 };
+            fails += Check(SaveTransfer.TryDecode(SaveTransfer.Encode(future), out _) == SaveTransfer.DecodeResult.TooNew, "더 새 저장 형식의 코드는 TooNew로 거절");
+            var negative = new SaveData { core = -5 };
+            fails += Check(SaveTransfer.TryDecode(SaveTransfer.Encode(negative), out _) == SaveTransfer.DecodeResult.Corrupt, "코어가 음수인 이상한 코드는 거절");
+            fails += Check(SaveTransfer.Summarize(source).Contains("코어 1,234") && SaveTransfer.Summarize(source).Contains("드론 1종") && SaveTransfer.Summarize(source).Contains("해금 스테이지 3개"), $"확인 창 요약: '{SaveTransfer.Summarize(source)}'");
+
+            // 불러온 저장이 지금 슬롯을 바꾸는지: 임시 폴더, 슬롯 켜짐
+            string subDir = Path.Combine(dir, "transfer");
+            Directory.CreateDirectory(subDir);
+            SaveManager.SetTestOverrides(subDir, true, 3);
+            fails += Check(!SaveManager.ReplaceCurrentData(back), "슬롯을 고르기 전에는 불러온 저장으로 바꾸지 않음 (저장할 곳이 없음)");
+
+            SaveManager.SelectSlot(2, out _);
+            SaveManager.Data.core = 7;
+            SaveManager.Data.playLog.Add("10-18 13:00:00 | session_start | 지금 슬롯의 기록");
+            SaveManager.Save();
+            int replacedEvents = 0;
+            Action onReplaced = () => replacedEvents++;
+            SaveManager.DataReplaced += onReplaced;
+            bool replaced = SaveManager.ReplaceCurrentData(SaveTransfer.TryDecode(code, out SaveData toImport) == SaveTransfer.DecodeResult.Ok ? toImport : null);
+            SaveManager.DataReplaced -= onReplaced;
+
+            fails += Check(replaced && SaveManager.Data.core == 1234 && SaveManager.Data.credit == 99 && SaveManager.Data.unlockedStageCount == 3, "슬롯 2에서 불러오면 지금 저장이 불러온 저장으로 바뀜");
+            fails += Check(replacedEvents == 1, "바뀌면 DataReplaced 이벤트가 한 번 발생함 (매니저들이 새 데이터로 다시 연결됨)");
+            fails += Check(SaveManager.Data.playLog.Count == 1 && SaveManager.Data.playLog[0].Contains("지금 슬롯의 기록"), "코드에 없는 테스트 기록은 지금 슬롯의 것을 그대로 이어 씀");
+            var onDisk = JsonUtility.FromJson<SaveData>(File.ReadAllText(SaveManager.SlotPath(2)));
+            fails += Check(onDisk.core == 1234 && onDisk.ownedDrones.Count == 1, "바뀐 저장이 슬롯 2 파일에 쓰임");
+            string backup = SaveManager.SlotPath(2) + ".beforeimport";
+            fails += Check(File.Exists(backup) && JsonUtility.FromJson<SaveData>(File.ReadAllText(backup)).core == 7, "덮어쓰기 전의 저장(코어 7)은 .beforeimport 파일로 남음");
+            fails += Check(SaveManager.PeekSlot(1) == null, "다른 슬롯(1번)은 건드리지 않음");
+
+            PlayLog.RecordSaveExport(SaveManager.Data, 1234);
+            PlayLog.RecordSaveImport(SaveManager.Data, 7, 1234);
+            int n = SaveManager.Data.playLog.Count;
+            fails += Check(SaveManager.Data.playLog[n - 2].EndsWith("| save_export | 코어=1234") && SaveManager.Data.playLog[n - 1].EndsWith("| save_import | 코어=7→1234"), "기록에 save_export / save_import 줄이 남음");
+
+            SaveManager.ClearTestOverrides();
+            return fails;
         }
 
         // ---------------- 개발용 "저장 파일 모두 삭제" ----------------

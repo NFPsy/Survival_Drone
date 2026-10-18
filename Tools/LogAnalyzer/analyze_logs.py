@@ -257,6 +257,11 @@ def ledger_mismatches(slot):
     problems = []
     prev = None
     for when, name, kv in slot.events:
+        # 저장 코드를 불러와서 저장이 통째로 바뀐 줄(코어=바뀌기 전→바뀐 뒤): 여기서부터는 바뀐 뒤의 코어를 기준으로 다시 센다.
+        if name == "save_import":
+            m = re.match(r"\s*\d+\s*→\s*(\d+)", kv.get("코어", ""))
+            prev = int(m.group(1)) if m else None
+            continue
         remaining = num(kv.get("남은코어"))
         if remaining is None:
             continue
