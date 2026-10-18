@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SurvivalDrone.LevelUp
 {
     // 이번 판에서 레벨업 선택지를 뭘 골랐는지 세어 두는 기록용 도우미.
@@ -17,6 +19,10 @@ namespace SurvivalDrone.LevelUp
         // 이동속도를 처음 고른 게임 시간(초). 한 번도 안 골랐으면 -1.
         private static float firstMoveSpeedSeconds = -1f;
 
+        // 고른 순서대로 적은 짧은 기호 목록. 이동속도 M, 체력 H, 신규 드론 N:종류, 드론 강화 U:종류. (예: M, M, N:Sniper, U:Sniper)
+        // 개수만으로는 "초반에 뭘 먼저 골랐는지"를 알 수 없어서 순서도 남긴다.
+        private static readonly List<string> pickOrder = new List<string>();
+
         // 새 판이 시작될 때 모든 숫자를 0으로 되돌린다.
         public static void Reset()
         {
@@ -25,6 +31,7 @@ namespace SurvivalDrone.LevelUp
             newDronePicks = 0;
             upgradeDronePicks = 0;
             firstMoveSpeedSeconds = -1f;
+            pickOrder.Clear();
         }
 
         // 플레이어가 선택지 하나를 골랐을 때 부른다. elapsedSeconds = 그 순간의 게임 시간.
@@ -36,32 +43,36 @@ namespace SurvivalDrone.LevelUp
             {
                 case LevelUpOptionKind.NewDrone:
                     newDronePicks++;
+                    pickOrder.Add("N:" + option.DroneType);
                     break;
                 case LevelUpOptionKind.UpgradeDrone:
                     upgradeDronePicks++;
+                    pickOrder.Add("U:" + option.DroneType);
                     break;
                 case LevelUpOptionKind.StatBoost:
                     if (option.StatBoost == StatBoostKind.MoveSpeed)
                     {
                         moveSpeedPicks++;
+                        pickOrder.Add("M");
                         if (firstMoveSpeedSeconds < 0f) firstMoveSpeedSeconds = elapsedSeconds;
                     }
                     else
                     {
                         healthPicks++;
+                        pickOrder.Add("H");
                     }
                     break;
             }
         }
 
-        // 판 기록 끝에 덧붙일 문장을 만든다. 예: "레벨업선택=이동속도3/체력1/신규드론1/드론강화4 이동속도첫선택=45초"
+        // 판 기록 끝에 덧붙일 문장을 만든다. 예: "레벨업선택=이동속도3/체력1/신규드론1/드론강화4 이동속도첫선택=45초 선택순서=M,N:Sniper,M,U:Sniper,H"
         // 아직 아무것도 고르지 않았으면 빈 글자를 돌려줘서, 기록에 아무것도 덧붙지 않게 한다.
         public static string BuildSummary()
         {
             if (moveSpeedPicks + healthPicks + newDronePicks + upgradeDronePicks == 0) return "";
 
             string first = firstMoveSpeedSeconds >= 0f ? $"{firstMoveSpeedSeconds:F0}초" : "없음";
-            return $"레벨업선택=이동속도{moveSpeedPicks}/체력{healthPicks}/신규드론{newDronePicks}/드론강화{upgradeDronePicks} 이동속도첫선택={first}";
+            return $"레벨업선택=이동속도{moveSpeedPicks}/체력{healthPicks}/신규드론{newDronePicks}/드론강화{upgradeDronePicks} 이동속도첫선택={first} 선택순서={string.Join(",", pickOrder)}";
         }
     }
 }

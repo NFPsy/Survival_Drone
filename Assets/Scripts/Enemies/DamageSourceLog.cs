@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using UnityEngine;
+using SurvivalDrone.Core;
 
 namespace SurvivalDrone.Enemies
 {
@@ -20,11 +22,17 @@ namespace SurvivalDrone.Enemies
         // 가장 마지막에 플레이어를 때린 적 종류 이름. 아무에게도 안 맞았으면 빈 글자.
         private static string lastHitKind = "";
 
+        // 1분씩 끊어서 그 분에 받은 피해 합계. 칸 0 = 0~1분, 칸 9 = 9분 이후(보스전 포함, 10분이 넘어도 마지막 칸에 센다).
+        // "몇 분쯤에 어려워지는지"를 보려고 만들었다.
+        private const int MinuteBuckets = 10;
+        private static readonly float[] damageByMinute = new float[MinuteBuckets];
+
         // 새 판이 시작될 때 모든 숫자를 비운다. (GameManager가 판 시작 때 부른다)
         public static void Reset()
         {
             damageByKind.Clear();
             lastHitKind = "";
+            System.Array.Clear(damageByMinute, 0, damageByMinute.Length);
         }
 
         // 플레이어가 적에게 한 번 맞을 때 부른다. kindLabel = 적 종류 이름(예: "빠른"), damage = 이번에 받은 피해량.
@@ -32,11 +40,22 @@ namespace SurvivalDrone.Enemies
         // 이 한 방으로 죽으면 TakeDamage 안에서 곧바로 결과 화면이 기록을 남기기 때문에, 나중에 부르면 마지막 일격이 빠진다.
         public static void Record(string kindLabel, float damage)
         {
+            // 지금이 판의 몇 초째인지(게임 시간 기준, 일시정지·선택 화면은 안 셈). 게임 매니저가 아직 없으면 0초로 본다.
+            Record(kindLabel, damage, GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f);
+        }
+
+        // 위와 같지만 "판의 몇 초째인지"를 직접 정한다. (검증 메뉴가 분별 칸을 시험할 때 쓴다)
+        public static void Record(string kindLabel, float damage, float elapsedSeconds)
+        {
             if (string.IsNullOrEmpty(kindLabel) || damage <= 0f) return;
 
             damageByKind.TryGetValue(kindLabel, out float sum);
             damageByKind[kindLabel] = sum + damage;
             lastHitKind = kindLabel;
+
+            // 몇 분째인지로 칸을 정해 같이 더한다.
+            int bucket = Mathf.Clamp(Mathf.FloorToInt(elapsedSeconds / 60f), 0, MinuteBuckets - 1);
+            damageByMinute[bucket] += damage;
         }
 
         // 적 종류를 기록용 짧은 한글 이름으로 바꾼다. 미니 보스는 보스 데이터를 줄여서 쓰므로 따로 구분한다.
@@ -55,7 +74,7 @@ namespace SurvivalDrone.Enemies
         }
 
         // 판 기록 끝에 덧붙일 문장을 만든다.
-        //  패배(lost = true)이면 맨 앞에 "사망원인=빠른"을 붙인다. 예: "사망원인=빠른 받은피해=빠른88/약한40/튼튼한20"
+        //  패배(lost = true)이면 맨 앞에 "사망원인=빠른"을 붙인다. 예: "사망원인=빠른 받은피해=빠른88/약한40/튼튼한20 분별피해=3분40/4분108"
         //  승리이면 "받은피해=..."만 남긴다 (이긴 판에서도 어떤 적이 가장 아팠는지 알 수 있다).
         //  한 번도 안 맞았으면 빈 글자를 돌려줘서, 기록에 아무것도 덧붙지 않게 한다.
         public static string BuildSummary(bool lost)
@@ -69,8 +88,19 @@ namespace SurvivalDrone.Enemies
             var parts = new List<string>();
             foreach (var pair in list) parts.Add($"{pair.Key}{pair.Value:F0}");
 
-            string damage = "받은피해=" + string.Join("/", parts);
+            string damage = "받은피해=" + string.Join("/", parts) + MinuteSummary();
             return lost ? $"사망원인={lastHitKind} {damage}" : damage;
+        }
+
+        // " 분별피해=1분12/4분80/9분210" 모양으로, 피해를 받은 분만 앞에서부터 나열한다. (1분 = 0~60초, 10분 = 540초 이후)
+        private static string MinuteSummary()
+        {
+            var parts = new List<string>();
+            for (int i = 0; i < MinuteBuckets; i++)
+            {
+                if (damageByMinute[i] > 0f) parts.Add($"{i + 1}분{damageByMinute[i]:F0}");
+            }
+            return parts.Count == 0 ? "" : " 분별피해=" + string.Join("/", parts);
         }
     }
 }

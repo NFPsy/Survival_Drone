@@ -85,7 +85,7 @@ namespace SurvivalDrone.Drones
             Vector3 hitPoint = target.transform.position + Vector3.up * (Mathf.Max(Mathf.Abs(target.transform.lossyScale.y), 0.7f) * ChestHeightPerScale);
 
             // 레벨이 오를수록(scale이 커질수록) 데미지도 함께 증가.
-            target.ApplyDamage(baseDamage * scale);
+            DroneContributionLog.RecordDamage(DroneType.Sniper, target.ApplyDamage(baseDamage * scale));   // 판 기록: 저격 드론이 준 피해
             SurvivalDrone.Core.AudioManager.Instance?.PlaySfx(fireSound, 0.5f);
 
             // 새 레이저 이펙트가 있으면 그것을 쓴다. (밝은 빔이 쭉 뻗고 맞은 자리에서 불꽃이 튄다)

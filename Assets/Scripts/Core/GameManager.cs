@@ -115,6 +115,9 @@ namespace SurvivalDrone.Core
 
             // 폭발 드론의 마우스 조준 기록(커서 고정 성공 여부)도 판마다 비운다.
             ExplosionDrone.ResetLogState();
+
+            // 드론별로 준 피해·회복량 기록도 판마다 비운다.
+            DroneContributionLog.Reset();
         }
 
         private void Start()

@@ -73,7 +73,9 @@ namespace SurvivalDrone.Drones
                 bool wasHurt = ownerHealth.CurrentHealth < ownerHealth.MaxHealth - 0.01f;
 
                 // 레벨이 오를수록 회복량도 함께 늘어난다.
+                float healthBeforeHeal = ownerHealth.CurrentHealth;
                 ownerHealth.Heal(baseHealAmount * scale);
+                DroneContributionLog.RecordHeal(ownerHealth.CurrentHealth - healthBeforeHeal);   // 판 기록: 실제로 채운 체력(가득이면 0)
 
                 // 회복할 때마다 작은 파티클은 늘 재생한다. 체력이 가득일 때는 이것만 나와서 화면이 시끄럽지 않다.
                 healEffect?.Play();

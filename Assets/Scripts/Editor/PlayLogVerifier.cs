@@ -169,7 +169,7 @@ namespace SurvivalDrone.EditorTools
                 LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 150f);
                 LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 160f);
                 string picks = LevelUpPickLog.BuildSummary();
-                fails += Check(picks == "레벨업선택=이동속도2/체력1/신규드론1/드론강화2 이동속도첫선택=45초", $"레벨업 선택 요약 문장: '{picks}'");
+                fails += Check(picks == "레벨업선택=이동속도2/체력1/신규드론1/드론강화2 이동속도첫선택=45초 선택순서=M,M,H,N:Melee,U:Melee,U:Melee", $"레벨업 선택 요약 문장(선택 순서 포함): '{picks}'");
                 var withPicks = new SaveData();
                 PlayLog.RecordMatch(withPicks, 1, true, 600f, 689f, 14, 5, 100, 0, 300, picks);
                 PlayLog.RecordAbandon(withPicks, 1, 50f, 60f, 3, 2, 100, "재시작", picks);
@@ -177,7 +177,7 @@ namespace SurvivalDrone.EditorTools
                     "판 결과·이탈 기록 끝에 레벨업 선택 요약이 덧붙음");
                 LevelUpPickLog.Reset();
                 LevelUpPickLog.Record(new LevelUpOption { Kind = LevelUpOptionKind.UpgradeDrone }, 30f);
-                fails += Check(LevelUpPickLog.BuildSummary().EndsWith("이동속도첫선택=없음"), "이동속도를 한 번도 안 골랐으면 '이동속도첫선택=없음'");
+                fails += Check(LevelUpPickLog.BuildSummary().Contains("이동속도첫선택=없음 선택순서=U:Melee"), "이동속도를 한 번도 안 골랐으면 '이동속도첫선택=없음'");
                 LevelUpPickLog.Reset();
 
                 // ---- 사망 원인·받은 피해 요약 (판 기록 끝에 덧붙는 문장) ----
@@ -192,8 +192,25 @@ namespace SurvivalDrone.EditorTools
                 DamageSourceLog.Record("강한", 0f);    // 피해가 0이면 무시
                 string lostDamage = DamageSourceLog.BuildSummary(true);
                 string wonDamage = DamageSourceLog.BuildSummary(false);
-                fails += Check(lostDamage == "사망원인=빠른 받은피해=빠른18/튼튼한10/약한6", $"패배 요약: 사망원인(마지막으로 맞은 종류) + 종류별 피해 합계(큰 순서): '{lostDamage}'");
-                fails += Check(wonDamage == "받은피해=빠른18/튼튼한10/약한6", $"승리 요약: 사망원인 없이 받은 피해만: '{wonDamage}'");
+                fails += Check(lostDamage == "사망원인=빠른 받은피해=빠른18/튼튼한10/약한6 분별피해=1분34", $"패배 요약: 사망원인(마지막으로 맞은 종류) + 종류별 피해 합계(큰 순서) + 분별 피해: '{lostDamage}'");
+                fails += Check(wonDamage == "받은피해=빠른18/튼튼한10/약한6 분별피해=1분34", $"승리 요약: 사망원인 없이 받은 피해만: '{wonDamage}'");
+
+                // 분별 칸: 0~60초 = 1분, 60~120초 = 2분, 540초 이후(보스전)와 10분이 넘은 때는 마지막 칸(10분)에 센다. 피해를 안 받은 분은 적지 않는다.
+                DamageSourceLog.Reset();
+                DamageSourceLog.Record("약한", 6f, 30f);
+                DamageSourceLog.Record("빠른", 12f, 95f);
+                DamageSourceLog.Record("약한", 6f, 119.9f);
+                DamageSourceLog.Record("보스", 20f, 545f);
+                DamageSourceLog.Record("보스", 25f, 700f);
+                string minuteDamage = DamageSourceLog.BuildSummary(false);
+                fails += Check(minuteDamage.EndsWith(" 분별피해=1분6/2분18/10분45"), $"분별 피해 칸(1분·2분·10분, 피해 없는 분은 생략): '{minuteDamage}'");
+                DamageSourceLog.Reset();
+                fails += Check(!DamageSourceLog.BuildSummary(false).Contains("분별피해"), "Reset 하면 분별 칸도 비워짐");
+                DamageSourceLog.Record("약한", 6f);
+                DamageSourceLog.Record("빠른", 6f);
+                DamageSourceLog.Record("튼튼한", 10f);
+                DamageSourceLog.Record("빠른", 12f);
+                lostDamage = DamageSourceLog.BuildSummary(true);
                 fails += Check(DamageSourceLog.LabelOf(EnemyKind.Fast, false) == "빠른" && DamageSourceLog.LabelOf(EnemyKind.Boss, false) == "보스"
                                && DamageSourceLog.LabelOf(EnemyKind.Boss, true) == "미니보스",
                     "적 종류 이름 (보스 데이터를 쓰는 미니 보스는 '미니보스'로 따로 구분)");
@@ -206,6 +223,22 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(withDamage.playLog[2].EndsWith("보상크레딧=300"), "요약을 안 넘기는 옛 방식 호출은 기록 모양이 그대로");
                 DamageSourceLog.Reset();
                 fails += Check(DamageSourceLog.BuildSummary(true) == "", "Reset 하면 지난 판의 맞은 기록이 지워짐");
+
+                // ---- 드론별 기여 (준 피해·회복량) ----
+                DroneContributionLog.Reset();
+                fails += Check(DroneContributionLog.BuildSummary() == "", "기여가 하나도 없으면 요약이 빈 글자 (기록에 아무것도 덧붙지 않음)");
+                DroneContributionLog.RecordDamage(DroneType.Sniper, 100f);
+                DroneContributionLog.RecordDamage(DroneType.Sniper, 50f);
+                DroneContributionLog.RecordDamage(DroneType.Explosion, 300f);
+                DroneContributionLog.RecordDamage(DroneType.Melee, 0f);       // 피해 0은 무시 (맵 밖 적 등)
+                DroneContributionLog.RecordHeal(20f);
+                DroneContributionLog.RecordHeal(-5f);                          // 음수는 무시
+                string contribution = DroneContributionLog.BuildSummary();
+                fails += Check(contribution == " 드론기여=Explosion피해300/Sniper피해150/Heal회복20", $"드론별 기여 요약(피해 큰 순서, 회복량은 맨 뒤): '{contribution}'");
+                DroneContributionLog.Reset();
+                DroneContributionLog.RecordHeal(7f);
+                fails += Check(DroneContributionLog.BuildSummary() == " 드론기여=Heal회복7", "회복만 했으면 회복량만 적힘 (Reset 뒤 지난 판 숫자는 남지 않음)");
+                DroneContributionLog.Reset();
 
                 // ---- 최종 보유 드론 요약 (판 기록 끝에 덧붙는 문장) ----
                 var loadoutHolder = new GameObject("LoadoutVerifierHolder");

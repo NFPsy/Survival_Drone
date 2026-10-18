@@ -91,6 +91,42 @@ def parse_damage(text):
     return result
 
 
+def parse_minutes(text):
+    """'1분12/4분80/9분210' (분별 받은 피해) -> {1: 12, 4: 80, 9: 210}. 없으면 None."""
+    result = {}
+    for part in (text or "").split("/"):
+        m = re.match(r"(\d+)분(\d+(?:\.\d+)?)$", part.strip())
+        if m:
+            result[int(m.group(1))] = float(m.group(2))
+    return result or None
+
+
+def parse_contrib(text):
+    """'Sniper피해1234/Explosion피해560/Heal회복210' (드론별 기여) -> {'Sniper': 1234, 'Explosion': 560, 'Heal': 210}. 없으면 None."""
+    result = {}
+    for part in (text or "").split("/"):
+        m = re.match(r"([A-Za-z]+)(?:피해|회복)(\d+(?:\.\d+)?)$", part.strip())
+        if m:
+            result[m.group(1)] = float(m.group(2))
+    return result or None
+
+
+def parse_final_drones(text):
+    """'Sniper(5)/Heal(3)' (최종드론) -> {'Sniper': 5, 'Heal': 3}. 없으면 None."""
+    result = {}
+    for part in (text or "").split("/"):
+        m = re.match(r"([A-Za-z]+)\((\d+)\)$", part.strip())
+        if m:
+            result[m.group(1)] = int(m.group(2))
+    return result or None
+
+
+def parse_order(text):
+    """'M,M,N:Sniper,U:Sniper,H' (레벨업 선택 순서) -> ['M', 'M', 'N:Sniper', 'U:Sniper', 'H']. 없으면 None."""
+    items = [x.strip() for x in (text or "").split(",") if x.strip()]
+    return items or None
+
+
 def parse_picks(text):
     """'이동속도7/체력0/신규드론2/드론강화9' -> {'이동속도': 7, ...}"""
     result = {}
@@ -206,6 +242,9 @@ def make_match(when, kv):
         "paused": num(kv.get("일시정지")), "select_screen": num(kv.get("선택화면")), "suspended": num(kv.get("2초넘는멈춤")),
         # 마우스 조준(10/18 이후): 감도(%)와 커서 고정 결과. 폭발 드론을 쓰지 않은 판에는 없다.
         "aim_sens": num(kv.get("마우스감도")), "aim_lock": kv.get("조준커서"),
+        # 10/18 로그 2·3단계 이후: 1분씩 끊은 받은 피해, 레벨업 선택 순서(M 이동속도·H 체력·N:드론 신규·U:드론 강화), 판이 끝날 때 보유 드론, 드론별 기여
+        "minute_damage": parse_minutes(kv.get("분별피해")), "pick_order": parse_order(kv.get("선택순서")),
+        "final_drones": parse_final_drones(kv.get("최종드론")), "contrib": parse_contrib(kv.get("드론기여")),
     }
 
 
@@ -363,6 +402,61 @@ def death_table(matches):
         out.append("")
         out += table(["받은 피해 합계(적 종류)", "피해"], [[k, f"{v:.0f}"] for k, v in total_damage.most_common()])
     return out
+
+
+def minute_damage_table(matches):
+    """몇 분째에 받은 피해가 큰지. 그 분까지 살아 있던 판을 기준으로 판당 평균을 낸다. 분별 기록이 있는 판이 없으면 None."""
+    ms = [m for m in matches if m["minute_damage"] and m["survive"] is not None]
+    if not ms:
+        return None
+    rows = []
+    for minute in range(1, 11):
+        start = (minute - 1) * 60
+        alive = [m for m in ms if m["survive"] >= start]
+        if not alive:
+            continue
+        avg = statistics.mean(m["minute_damage"].get(minute, 0) for m in alive)
+        died = sum(1 for m in alive if not m["cleared"] and start <= m["survive"] < start + 60) if minute < 10 else             sum(1 for m in alive if not m["cleared"] and m["survive"] >= start)
+        rows.append([f"{minute}분", len(alive), f"{avg:.0f}", died])
+    return table(["구간 (10분 = 540초 이후)", "그 구간까지 산 판", "판당 받은 피해", "그 구간에서 죽은 판"], rows)
+
+
+def drone_contrib_table(matches):
+    """드론 종류별로 판당 얼마나 기여했는지(준 피해, 회복량). 판이 끝날 때 그 드론을 가진 판만 센다. 기여 기록이 있는 판이 없으면 None."""
+    ms = [m for m in matches if m["contrib"] is not None or m["final_drones"]]
+    ms = [m for m in ms if m["final_drones"] is not None and m["survive"]]
+    has_contrib = [m for m in ms if m["contrib"] is not None]
+    if not has_contrib:
+        return None
+    rows = []
+    types = sorted({d for m in ms for d in m["final_drones"]})
+    for kind in types:
+        if kind == "Collector":
+            continue   # 수집 드론은 피해도 회복도 없다
+        owners = [m for m in has_contrib if kind in m["final_drones"]]
+        if not owners:
+            continue
+        amounts = [m["contrib"].get(kind, 0) for m in owners]
+        per_sec = [a / m["survive"] for a, m in zip(amounts, owners)]
+        levels = [m["final_drones"][kind] for m in owners]
+        unit = "회복" if kind == "Heal" else "피해"
+        rows.append([f"{kind}({unit})", len(owners), f"{statistics.mean(levels):.1f}", f"{statistics.mean(amounts):.0f}", f"{statistics.mean(per_sec):.1f}"])
+    return table(["드론", "가진 판", "평균 레벨", "판당 기여", "초당 기여"], rows)
+
+
+def pick_order_summary(matches):
+    """레벨업 선택 순서. 첫 선택들과 이동속도를 처음 고른 순번. 순서 기록이 있는 판이 없으면 None."""
+    ms = [m for m in matches if m["pick_order"]]
+    if not ms:
+        return None
+    first3_speed = sum(1 for m in ms if "M" in m["pick_order"][:3])
+    first_idx = [m["pick_order"].index("M") + 1 for m in ms if "M" in m["pick_order"]]
+    openings = Counter(" → ".join(m["pick_order"][:4]) for m in ms)
+    text = [f"- 판 {len(ms)}개 중 처음 3번 안에 이동속도를 고른 판 {first3_speed}개({pct(first3_speed, len(ms))})"]
+    if first_idx:
+        text.append(f"- 이동속도를 처음 고른 순번: 평균 {statistics.mean(first_idx):.1f}번째(중앙 {statistics.median(first_idx):.0f}번째)")
+    text.append("- 가장 흔한 처음 4번의 선택: " + ", ".join(f"{k}({v}판)" for k, v in openings.most_common(3)))
+    return text
 
 
 def picks_summary(matches):
@@ -523,6 +617,15 @@ def build_report(testers):
         out += ["", "## 내 전투력 ÷ 권장 전투력별 클리어율 (하드 스테이지 배율을 보정할 핵심 지표)"] + power_bins(all_matches)
         out += ["", "## 실패한 판의 생존 시간 분포 (90~150초에 몰리는지 확인)"] + survival_hist(all_matches)
         out += ["", "## 죽은 원인과 받은 피해"] + death_table(all_matches)
+        minute_rows = minute_damage_table(all_matches)
+        if minute_rows:
+            out += ["", "## 구간별 받은 피해 (몇 분에 어려워지는지, 10/18 이후 빌드 기록만)"] + minute_rows
+        contrib_rows = drone_contrib_table(all_matches)
+        if contrib_rows:
+            out += ["", "## 드론별 기여 (판이 끝날 때 가진 드론 기준, 10/18 이후 빌드 기록만)"] + contrib_rows
+        order_lines = pick_order_summary(all_matches)
+        if order_lines:
+            out += ["", "## 레벨업 선택 순서 (M 이동속도 · H 체력 · N 새 드론 · U 드론 강화, 10/18 이후 빌드 기록만)"] + order_lines
         early = [m for m in all_matches if not m["cleared"] and m["survive"] is not None and m["survive"] < 60]
         out += ["", f"60초 안쪽의 이른 사망 {len(early)}판 (조작 실수일 수 있어 판단에서 따로 뗀다)."]
         out += ["", f"레벨업 선택: {picks_summary(all_matches)}", f"성능: {perf_summary(all_matches)}"]

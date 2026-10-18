@@ -103,7 +103,7 @@ namespace SurvivalDrone.Drones
                 var enemy = col.GetComponent<EnemyAI>();
                 if (enemy != null)
                 {
-                    enemy.ApplyDamage(damage);
+                    DroneContributionLog.RecordDamage(DroneType.Melee, enemy.ApplyDamage(damage));   // 판 기록: 근접 드론이 준 피해
                     hitCount++;
                 }
             }

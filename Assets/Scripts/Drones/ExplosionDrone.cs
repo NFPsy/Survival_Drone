@@ -327,7 +327,7 @@ namespace SurvivalDrone.Drones
             foreach (var col in colliders)
             {
                 var enemy = col.GetComponent<EnemyAI>();
-                if (enemy != null) enemy.ApplyDamage(damage);
+                if (enemy != null) DroneContributionLog.RecordDamage(DroneType.Explosion, enemy.ApplyDamage(damage));   // 판 기록: 폭발 드론이 준 피해
             }
 
             // 폭발 파티클도 실제 피해 범위(radius)에 맞춰 크기를 조절하고, 폭발 지점으로 옮긴 뒤 재생.

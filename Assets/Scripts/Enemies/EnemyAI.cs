@@ -404,21 +404,26 @@ namespace SurvivalDrone.Enemies
             Mathf.Abs(transform.position.z) <= ArenaHalfSize;
 
         // 드론에게 공격받았을 때 호출되는 함수. 드론들이 이 함수를 통해서만 피해를 줄 수 있다.
-        public void ApplyDamage(float amount)
+        // 돌려주는 값 = 실제로 깎인 체력. 남은 체력보다 센 공격(마지막 일격)은 남은 체력만큼만 센다.
+        // 드론별로 "얼마나 기여했는지"를 로그에 남길 때 쓴다(DroneContributionLog). 맵 밖이라 피해가 안 들어가면 0.
+        public float ApplyDamage(float amount)
         {
             // 맵 밖에 있는 적은 피해를 받지 않는다. (맵 안으로 들어오면 다시 맞는다)
-            if (!IsInsideArena) return;
+            if (!IsInsideArena) return 0f;
 
             // "피해를 줬다"는 신호를 보낸다. (데미지 숫자 표시가 이 신호를 받는다)
             // 숫자에는 "이번 공격의 피해량"을 그대로 보여 준다. 남은 체력이 적어서 실제로는 덜 깎였더라도(마지막 일격)
             // 공격 자체의 세기를 보여 줘야 흰 숫자와 노란 숫자를 서로 비교할 수 있기 때문이다.
             // 이미 죽은 적에게는 피해가 들어가지 않으므로 신호도 보내지 않는다.
             bool wasAlive = !health.IsDead;
+            float healthBefore = health.CurrentHealth;
             health.TakeDamage(amount);
+            float dealt = healthBefore - health.CurrentHealth;
             if (wasAlive && amount > 0f) DamageDealt?.Invoke(this, amount * health.DamageTakenMultiplier, health.IsDead);
 
             // 맞았으면 살짝 밀려나게 한다 (이 한 방에 죽었으면 밀 필요 없다).
             if (amount > 0f) StartKnockback();
+            return dealt;
         }
 
         // 넉백을 시작한다. 방향은 "플레이어 반대쪽"으로 단순하게 정한다.

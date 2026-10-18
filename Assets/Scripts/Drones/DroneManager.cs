@@ -130,6 +130,7 @@ namespace SurvivalDrone.Drones
         // 테스트(CBT/OBT) 기록 끝에 덧붙일 "지금 가진 드론 종류와 레벨" 문장을 만든다. 예: "최종드론=Sniper(5)/Heal(3)/Melee(1)"
         // 판이 끝날 때 어떤 드론 조합이었는지 남겨서, 특정 조합이 지배적인지(예: 저격+회복) 로그로 확인하려고 만들었다.
         // 드론은 얻은 순서대로 나열하고, 괄호 안 숫자는 드론 레벨(5 = 최대 레벨 변신)이다. 하나도 없으면 빈 글자를 돌려준다.
+        // 뒤에는 드론 종류별로 준 피해·회복량(" 드론기여=Sniper피해1234/Heal회복210")이 붙는다. (아직 아무도 기여 못 했으면 안 붙는다)
         public string BuildLoadoutSummary()
         {
             if (owned.Count == 0) return "";
@@ -139,7 +140,7 @@ namespace SurvivalDrone.Drones
             {
                 parts.Add($"{pair.Key}({pair.Value.Level})");
             }
-            return "최종드론=" + string.Join("/", parts);
+            return "최종드론=" + string.Join("/", parts) + DroneContributionLog.BuildSummary();
         }
 
         // 보유한 드론들이 플레이어 주위에서 서로 겹치지 않도록, 원 모양으로 균등하게 배치하는 함수.
