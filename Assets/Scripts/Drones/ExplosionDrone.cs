@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using SurvivalDrone.Core;
 using SurvivalDrone.Enemies;
 using SurvivalDrone.UI;
 
@@ -9,11 +10,15 @@ namespace SurvivalDrone.Drones
     // 근접 드론과 달리 특정 적 하나를 노리는 게 아니라 "범위 안에 있는 모든 적"을 한꺼번에 때린다.
     //
     // 폭발 지점은 드론이 떠 있는 자리가 아니라 플레이어가 정한다 (10/14 개선, 10/18에 방향키에서 마우스로 바꿈):
-    //  - 마우스 커서가 가리키는 바닥 자리가 폭발 지점이다. (화면 속 마우스 위치에서 바닥으로 선을 쏴서 닿는 곳을 찾는다)
+    //  - 마우스로 "조준 커서"를 움직인다. 커서가 가리키는 바닥 자리가 폭발 지점이다. (화면 속 커서 위치에서 바닥으로 선을 쏴서 닿는 곳을 찾는다)
     //    방향키는 더 이상 조준에 쓰지 않는다. 이동은 WASD다.
-    //  - 플레이어에게서 aimMaxRange(기본 7m)보다 멀리 가리키면 그 방향의 7m 지점으로 제한한다.
+    //  - 운영체제의 마우스 커서 속도는 게임이 바꿀 수 없어서, 판이 진행되는 동안에는 실제 마우스 커서를 숨기고 화면에 고정한 뒤
+    //    "마우스가 움직인 양 x 감도"만큼 게임 안의 조준 커서(virtualCursor)를 움직인다. 감도는 설정 창에서 25~300 %로 정한다(AimSettings).
+    //    바닥에 보이는 폭발 범위 원(ExplosionAimMarker)이 조준 커서 역할을 한다.
+    //  - 시간이 멈추거나(일시정지·레벨업 선택) 판이 끝나면(승리·패배) 실제 커서를 다시 보여 주고 풀어서, 메뉴를 평소처럼 누를 수 있다.
+    //    다시 시작되면 조준 커서는 멈췄던 자리에서 이어진다.
+    //  - 플레이어에게서 aimMaxRange(기본 7m)보다 멀리 갈 수 없다. 가장자리에서 더 밀어도 커서가 그 자리에 머문다.
     //  - 카메라가 플레이어를 따라가므로, 마우스를 가만히 두면 폭발 지점도 플레이어와 같이 움직인다.
-    //  - 시간이 멈춘 동안(일시정지·레벨업 선택)에는 지점을 바꾸지 않는다. (카드를 누르러 간 마우스 위치로 지점이 튀지 않게)
     //  - 지점에는 폭발 범위만큼의 원(ExplosionAimMarker)이 바닥에 보이고, 터지기 직전에 더 밝아진다.
     //
     // 기획서 4장 기준 - 강화될수록 좋아지는 것은 "폭발 범위 또는 피해량"이므로,
@@ -35,6 +40,19 @@ namespace SurvivalDrone.Drones
 
         // 플레이어 기준 폭발 지점 위치(x, z만 사용). 처음에는 플레이어 바로 위(0, 0)다.
         private Vector2 aimOffset;
+
+        // 게임 안의 조준 커서 위치(화면 좌표, 픽셀). 마우스 이동량 x 감도로 움직인다.
+        private Vector2 virtualCursor;
+        private bool virtualCursorReady;
+
+        // 지금 실제 마우스 커서를 숨기고 고정해 둔 상태인지. 풀어 줄 때 한 번만 되돌리기 위해 기억한다.
+        private bool cursorCaptured;
+
+        // 커서를 고정한 첫 프레임에는 마우스 이동량이 튈 수 있어서 한 번 건너뛴다.
+        private bool skipNextDelta;
+
+        // 지금 쓰는 감도. 커서를 고정할 때마다 저장된 값을 새로 읽는다. (설정 창은 시간이 멈춘 동안만 열리므로 다시 시작할 때 반영된다)
+        private float sensitivity = AimSettings.DefaultSensitivity;
 
         private Transform markerTransform;
         private Renderer markerRenderer;
@@ -103,8 +121,15 @@ namespace SurvivalDrone.Drones
             if (!string.IsNullOrEmpty(acquireNotice)) HUDNotice.Instance?.Show(acquireNotice, acquireNoticeSeconds);
         }
 
+        // 꺼지거나 사라질 때(씬이 바뀔 때 포함) 숨겨 둔 커서를 반드시 되돌린다. 안 그러면 메뉴에서 마우스가 안 보이게 된다.
+        private void OnDisable()
+        {
+            ReleaseCursor();
+        }
+
         private void OnDestroy()
         {
+            ReleaseCursor();
             if (markerTransform != null) Destroy(markerTransform.gameObject);
             if (afterEffect != null) Destroy(afterEffect.gameObject);
         }
@@ -115,7 +140,7 @@ namespace SurvivalDrone.Drones
             // 부모 클래스(DroneBase)의 기본 "따라다니기" 동작을 그대로 사용한다.
             base.Update();
 
-            // 마우스가 가리키는 곳으로 폭발 지점을 옮긴다.
+            // 마우스로 조준 커서를 움직여 폭발 지점을 옮긴다.
             UpdateAim();
 
             // 폭발 쿨타임을 줄여나가다가, 다 되면 한 번 터뜨린다.
@@ -130,19 +155,68 @@ namespace SurvivalDrone.Drones
             UpdateMarker();
         }
 
-        // 마우스 위치로 폭발 지점(aimOffset)을 정한다.
-        // 시간이 멈춘 동안(일시정지·레벨업 선택)에는 지점을 그대로 둔다. 그때 마우스는 메뉴·카드를 누르러 가 있기 때문이다.
+        // 마우스 이동량으로 조준 커서(virtualCursor)를 움직이고, 그 자리를 바닥에 투영해 폭발 지점(aimOffset)을 정한다.
+        // 판이 진행 중이 아니면(시간 정지·승패 결정) 실제 커서를 되돌리고 아무것도 바꾸지 않는다.
         private void UpdateAim()
         {
-            if (Time.timeScale <= 0f) return;
+            bool playing = Time.timeScale > 0f && GameManager.Instance != null && GameManager.Instance.State == MatchState.Playing;
+            if (!playing)
+            {
+                ReleaseCursor();
+                return;
+            }
 
             var mouse = Mouse.current;
             var cam = Camera.main;
             if (mouse == null || cam == null) return;
 
             Vector3 center = owner != null ? owner.position : transform.position;
-            Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
-            if (TryGetAimOffset(ray, center, aimMaxRange, out Vector2 offset)) aimOffset = offset;
+
+            // 처음이면 조준 커서를 지금 폭발 지점(처음엔 플레이어 위치)이 보이는 화면 자리에 둔다.
+            if (!virtualCursorReady)
+            {
+                Vector3 start = cam.WorldToScreenPoint(new Vector3(center.x + aimOffset.x, 0f, center.z + aimOffset.y));
+                virtualCursor = new Vector2(start.x, start.y);
+                virtualCursorReady = true;
+            }
+
+            CaptureCursor();
+
+            if (skipNextDelta) skipNextDelta = false;
+            else virtualCursor += mouse.delta.ReadValue() * sensitivity;
+
+            // 화면 밖으로 나가지 못하게 한다.
+            virtualCursor.x = Mathf.Clamp(virtualCursor.x, 0f, Screen.width);
+            virtualCursor.y = Mathf.Clamp(virtualCursor.y, 0f, Screen.height);
+
+            Ray ray = cam.ScreenPointToRay(virtualCursor);
+            if (!TryGetAimOffset(ray, center, aimMaxRange, out Vector2 offset)) return;
+            aimOffset = offset;
+
+            // 7m 제한에 걸렸다면 조준 커서도 제한된 자리로 되돌려서, 가장자리에서 더 밀어도 커서가 바깥으로 쌓이지 않게 한다.
+            // (제한에 안 걸렸으면 거의 같은 자리라 그대로다)
+            Vector3 limited = cam.WorldToScreenPoint(new Vector3(center.x + aimOffset.x, 0f, center.z + aimOffset.y));
+            if (limited.z > 0f) virtualCursor = new Vector2(limited.x, limited.y);
+        }
+
+        // 실제 마우스 커서를 숨기고 화면에 고정한다. (이미 그렇게 해 뒀으면 아무것도 안 한다)
+        private void CaptureCursor()
+        {
+            if (cursorCaptured) return;
+            sensitivity = AimSettings.LoadSensitivity();
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            cursorCaptured = true;
+            skipNextDelta = true;
+        }
+
+        // 숨겨 둔 실제 커서를 다시 보이게 하고 풀어 준다. (내가 숨겨 둔 상태일 때만)
+        private void ReleaseCursor()
+        {
+            if (!cursorCaptured) return;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            cursorCaptured = false;
         }
 
         // 마우스에서 나온 선(ray)이 바닥(높이 0)에 닿는 자리를 찾아, 플레이어 기준으로 얼마나 떨어져 있는지(x, z)를 돌려준다.

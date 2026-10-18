@@ -4,11 +4,12 @@ using SurvivalDrone.Core;
 
 namespace SurvivalDrone.UI
 {
-    // 설정 패널(메인 메뉴 설정 창, 일시정지 메뉴의 볼륨 줄)의 볼륨 슬라이더와 숫자 입력 칸(%)을 처리하고
+    // 설정 패널(메인 메뉴 설정 창, 일시정지 메뉴의 볼륨 줄)의 슬라이더와 숫자 입력 칸(%)을 처리하고
     // PlayerPrefs에 저장해 다음 실행에도 값이 유지되게 하는 스크립트.
-    // 배경음악과 효과음을 따로 조절한다. 슬라이더로 움직이든 숫자로 치든 같은 값을 쓴다.
+    // 배경음악·효과음 볼륨과 폭발 드론 조준용 "마우스 감도"를 따로 조절한다. 슬라이더로 움직이든 숫자로 치든 같은 값을 쓴다.
     //
-    // 자식 오브젝트 이름으로 컨트롤을 찾는다: MusicSlider / MusicInput (배경음악), SfxSlider / SfxInput (효과음).
+    // 자식 오브젝트 이름으로 컨트롤을 찾는다: MusicSlider / MusicInput (배경음악), SfxSlider / SfxInput (효과음),
+    // AimSlider / AimInput (마우스 감도, 없는 씬이면 그냥 건너뛴다).
     public class SettingsPanelController : MonoBehaviour
     {
         // 배경음악·효과음 하나를 조절하는 슬라이더와 숫자 칸, 저장 키를 묶은 것.
@@ -19,7 +20,8 @@ namespace SurvivalDrone.UI
             public string key;       // PlayerPrefs 저장 키
             public Slider slider;
             public InputField input;
-            public float value;      // 지금 볼륨 (1 = 100%)
+            public float value;      // 지금 값 (1 = 100%)
+            public bool isAim;       // true면 볼륨이 아니라 마우스 감도 (소리에 적용하지 않고 값만 저장한다)
         }
 
         // 효과음 볼륨을 바꿀 때 들려줄 시험음. 이 소리가 얼마나 큰지로 효과음 크기를 가늠한다. (보통 버튼 클릭음을 끼운다)
@@ -32,11 +34,15 @@ namespace SurvivalDrone.UI
 
         private Channel music;
         private Channel sfx;
+        private Channel aim;
 
         private void Awake()
         {
-            music = CreateChannel("Music", AudioManager.MusicVolumeKey);
-            sfx = CreateChannel("Sfx", AudioManager.SfxVolumeKey);
+            music = CreateChannel("Music", AudioManager.MusicVolumeKey, false);
+            sfx = CreateChannel("Sfx", AudioManager.SfxVolumeKey, false);
+
+            // 마우스 감도 줄은 이 줄을 만들어 둔 씬(메인 메뉴·일시정지)에만 있다. 없으면 건너뛴다.
+            if (transform.Find("AimSlider") != null) aim = CreateChannel("Aim", AimSettings.SensitivityKey, true);
 
             // 게임 시작 때의 적용은 AudioManager가 하지만, 패널이 처음 켜질 때도 같은 값으로 맞춰 둔다.
             AudioManager.ApplyVolumes(music.value, sfx.value);
@@ -44,9 +50,10 @@ namespace SurvivalDrone.UI
 
         // 자식에서 이름이 prefix로 시작하는 슬라이더·숫자 칸을 찾아 연결한다. (prefix = "Music" 또는 "Sfx")
         // 못 찾아도(이름이 바뀌었거나 지워졌으면) 예외 대신 경고 로그만 남기고 넘어간다.
-        private Channel CreateChannel(string prefix, string key)
+        // isAim이 true면 볼륨이 아니라 마우스 감도(AimSettings)를 다루는 줄이다.
+        private Channel CreateChannel(string prefix, string key, bool isAim)
         {
-            var channel = new Channel { key = key };
+            var channel = new Channel { key = key, isAim = isAim };
 
             var sliderTransform = transform.Find(prefix + "Slider");
             channel.slider = sliderTransform != null ? sliderTransform.GetComponent<Slider>() : null;
@@ -56,8 +63,8 @@ namespace SurvivalDrone.UI
             channel.input = inputTransform != null ? inputTransform.GetComponent<InputField>() : null;
             if (channel.input == null) Debug.LogWarning($"[SettingsPanelController] '{prefix}Input' 자식 오브젝트를 찾지 못했습니다. (숫자로 볼륨 조정 불가)");
 
-            // 이전에 저장해둔 값이 있으면 그 값을, 없으면 기본값(1=슬라이더 원래 최대 음량)을 가져온다.
-            channel.value = AudioManager.LoadVolume(key);
+            // 이전에 저장해둔 값이 있으면 그 값을, 없으면 기본값(볼륨은 1=슬라이더 원래 최대 음량, 감도는 1=100%)을 가져온다.
+            channel.value = isAim ? AimSettings.LoadSensitivity() : AudioManager.LoadVolume(key);
 
             // UI에도 현재 값을 반영해서, 패널을 열었을 때 실제 상태와 다르게 보이지 않도록 한다.
             if (channel.slider != null)
@@ -83,8 +90,12 @@ namespace SurvivalDrone.UI
         {
             channel.value = value;
             PlayerPrefs.SetFloat(channel.key, value);
-            AudioManager.ApplyVolumes(music.value, sfx.value);
             ShowVolumeNumber(channel, value);
+
+            // 마우스 감도는 소리와 상관없으니 여기서 끝낸다. (폭발 드론이 다음에 커서를 잡을 때 저장된 값을 읽는다)
+            if (channel.isAim) return;
+
+            AudioManager.ApplyVolumes(music.value, sfx.value);
 
             // 효과음 크기를 바꿨을 때만 시험음을 들려준다. (배경음악은 계속 흐르고 있어서 바뀐 크기를 바로 들을 수 있다)
             if (channel == sfx) PlayPreview();
