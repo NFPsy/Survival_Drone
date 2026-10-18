@@ -67,6 +67,20 @@ def num(text, default=None):
     return int(value) if value.is_integer() and "." not in m.group(0) else value
 
 
+def parse_ratio(text):
+    """'4/9' (맞은 횟수/쓴 횟수) -> (4, 9). 모양이 다르면 None."""
+    m = re.match(r"\s*(\d+)\s*/\s*(\d+)", text or "")
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def parse_boss_entry(text):
+    """'속도7.9/체력112(100%)/레벨23' -> {'speed': 7.9, 'max_hp': 112, 'hp_pct': 100, 'level': 23}. 모양이 다르면 None."""
+    m = re.match(r"속도([\d.]+)/체력(\d+)\((\d+)%\)/레벨(\d+)", text or "")
+    if not m:
+        return None
+    return {"speed": float(m.group(1)), "max_hp": int(m.group(2)), "hp_pct": int(m.group(3)), "level": int(m.group(4))}
+
+
 def parse_damage(text):
     """'강한126/약한90/빠른66' -> {'강한': 126, ...}"""
     result = {}
@@ -183,6 +197,15 @@ def make_match(when, kv):
         "worst_ms": num(kv.get("최악")), "screen": kv.get("화면"),
         # 보스전(10/17 이후 빌드): "보스전=진입|없음", 진입했을 때만 "보스체력=NN%"(판이 끝났을 때 남은 비율, 처치하면 0), "보스전시간=NN.N초". 옛 기록에는 없다.
         "boss": kv.get("보스전"), "boss_hp": num(kv.get("보스체력")), "boss_seconds": num(kv.get("보스전시간")),
+        # 보스전 상세(10/18 이후 빌드): 들어갈 때 내 상태, 분노 시작, 패턴별 맞은 횟수/쓴 횟수, 끝날 때 내 체력 %
+        "boss_entry": parse_boss_entry(kv.get("보스입장")), "rage_at": num(kv.get("분노시작")),
+        "slam": parse_ratio(kv.get("내려찍기")), "rage_slam": parse_ratio(kv.get("분노내려찍기")),
+        "dash": parse_ratio(kv.get("돌진")), "rage_dash": parse_ratio(kv.get("분노돌진")),
+        "boss_end_hp": num(kv.get("보스전끝체력")),
+        # 시간 구성(10/18 이후): 일시정지 메뉴에 있던 시간, 레벨업 선택 화면에 있던 시간(초), 2초 넘게 멈춘 횟수(탭 전환 등으로 보임)
+        "paused": num(kv.get("일시정지")), "select_screen": num(kv.get("선택화면")), "suspended": num(kv.get("2초넘는멈춤")),
+        # 마우스 조준(10/18 이후): 감도(%)와 커서 고정 결과. 폭발 드론을 쓰지 않은 판에는 없다.
+        "aim_sens": num(kv.get("마우스감도")), "aim_lock": kv.get("조준커서"),
     }
 
 
@@ -366,6 +389,9 @@ def perf_summary(matches):
         text += f", 100ms 넘는 끊김이 있던 판 {len(hitch)}개(가장 심한 {worst['worst_ms']:.0f}ms, 스테이지 {worst['stage']})"
     else:
         text += ", 100ms 넘는 끊김 없음"
+    stalls = [m for m in ms if (m["suspended"] or 0) > 0]
+    if stalls:
+        text += f" · 2초 넘게 멈춘 판 {len(stalls)}개(합 {sum(m['suspended'] for m in stalls):.0f}회, 탭 전환 등으로 보여 위 끊김에는 안 섞음)"
     screens = Counter(m["screen"] for m in ms if m["screen"])
     if screens:
         text += " · 화면 " + ", ".join(f"{k}({v})" for k, v in screens.most_common(3))
@@ -423,6 +449,12 @@ def slot_report(t, slot):
     if ms:
         out.append(f"**레벨업 선택** {picks_summary(ms)}")
         out.append(f"**성능** {perf_summary(ms)}")
+        time_line = time_summary(ms)
+        if time_line:
+            out.append(f"**시간** {time_line}")
+        aim_line = aim_summary(ms)
+        if aim_line:
+            out.append(f"**조준** {aim_line}")
         boss_line = boss_summary(ms)
         if boss_line:
             out.append(f"**보스전** {boss_line}")
@@ -524,12 +556,82 @@ def boss_summary(matches):
                     pattern[kind] += value
         if pattern:
             text += " · 보스에게 받은 피해 합계 " + ", ".join(f"{k} {v:.0f}" for k, v in pattern.most_common())
+        text += boss_detail_text(entered)
+    return text
+
+
+def boss_detail_text(entered):
+    """보스전 상세 기록(10/18 이후 빌드)이 있는 판들의 집계. 하나도 없으면 빈 글자."""
+    detail = [m for m in entered if m["slam"] is not None or m["dash"] is not None]
+    if not detail:
+        return ""
+
+    def total(key, ms):
+        got = [m[key] for m in ms if m[key] is not None]
+        return (sum(h for h, _ in got), sum(u for _, u in got)) if got else None
+
+    def show(label, pair):
+        if not pair or pair[1] == 0:
+            return ""
+        return f"{label} {pair[0]}/{pair[1]}번 맞음({pct(pair[0], pair[1])})"
+
+    parts = []
+    entry = [m["boss_entry"] for m in detail if m["boss_entry"]]
+    if entry:
+        parts.append(f"들어갈 때 평균 이동속도 {mean([e['speed'] for e in entry], 1)}·최대 체력 {mean([e['max_hp'] for e in entry], 0)}·레벨 {mean([e['level'] for e in entry], 0)}")
+    rages = [m["rage_at"] for m in detail if m["rage_at"] is not None]
+    if rages:
+        parts.append(f"분노는 보스전 {mean(rages, 1)}초째에 시작(분노한 판 {len(rages)}/{len(detail)})")
+    for label, key in (("내려찍기", "slam"), ("└ 분노 중", "rage_slam"), ("돌진", "dash"), ("└ 분노 중", "rage_dash")):
+        text = show(label, total(key, detail))
+        if text:
+            parts.append(text)
+    ends = [m["boss_end_hp"] for m in detail if m["boss_end_hp"] is not None]
+    if ends:
+        parts.append(f"보스전이 끝날 때 내 체력 평균 {mean(ends, 0)}%")
+    return " · 상세(" + str(len(detail)) + "판): " + " / ".join(parts)
+
+
+def time_summary(matches):
+    """시간 구성(10/18 이후 빌드): 한 판의 실제 소요 시간을 일시정지·레벨업 선택·그 밖(탭 방치 등)으로 나눈다. 없으면 None."""
+    ms = [m for m in matches if m["paused"] is not None and m["select_screen"] is not None and m["real"] is not None]
+    reals = [m["real"] for m in matches if m["real"] is not None]
+    if not ms:
+        if not reals:
+            return None
+        return f"실제 소요 시간 중앙값 {fmt_clock(statistics.median(reals))} ({len(reals)}판, 일시정지·선택 시간 기록은 아직 없음)"
+    others = [max(0.0, m["real"] - (m["survive"] or 0) - m["paused"] - m["select_screen"]) for m in ms]
+    active = [m["real"] - m["paused"] - m["select_screen"] for m in ms]
+    return (f"판 {len(ms)}개: 실제 소요 중앙값 {fmt_clock(statistics.median([m['real'] for m in ms]))}"
+            f" · 일시정지·선택 제외 중앙값 {fmt_clock(statistics.median(active))}"
+            f" · 평균 일시정지 {mean([m['paused'] for m in ms], 0)}초, 레벨업 선택 화면 {mean([m['select_screen'] for m in ms], 0)}초"
+            f" · 그 밖(게임 시간 외 흐른 시간: 탭 방치 등) 중앙값 {statistics.median(others):.0f}초")
+
+
+def fmt_clock(seconds):
+    total = int(seconds)
+    return f"{total // 60}:{total % 60:02d}"
+
+
+def aim_summary(matches):
+    """마우스 조준(10/18 이후 빌드): 감도 분포와 커서 고정 결과. 폭발 드론을 쓴 판이 없으면 None."""
+    ms = [m for m in matches if m["aim_lock"] or m["aim_sens"] is not None]
+    if not ms:
+        return None
+    sens = Counter(int(m["aim_sens"]) for m in ms if m["aim_sens"] is not None)
+    locks = Counter(m["aim_lock"] for m in ms if m["aim_lock"])
+    text = f"폭발 드론을 쓴 판 {len(ms)}개"
+    if sens:
+        text += " · 감도 " + ", ".join(f"{k}%({v})" for k, v in sorted(sens.items()))
+    if locks:
+        text += " · 커서 고정 " + ", ".join(f"{k}({v})" for k, v in locks.most_common())
     return text
 
 
 def write_matches_csv(path, testers):
     fields = ["tester", "build", "slot", "when", "stage", "cleared", "survive", "real", "level", "power", "recommended", "ratio",
-              "death", "fps", "hitches", "worst_ms", "boss", "boss_hp", "boss_seconds"]
+              "death", "fps", "hitches", "worst_ms", "boss", "boss_hp", "boss_seconds",
+              "paused", "select_screen", "aim_sens", "aim_lock", "slam_hit", "slam_used", "dash_hit", "dash_used", "rage_at", "boss_end_hp"]
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         w.writerow(fields)
@@ -543,7 +645,10 @@ def write_matches_csv(path, testers):
                     seen.add(key)
                     w.writerow([t.tester, t.build, s.number, m["when"], m["stage"], int(m["cleared"]), m["survive"], m["real"], m["level"],
                                 m["power"], m["rec"], f"{m['ratio']:.3f}" if m["ratio"] is not None else "", m["death"] or "",
-                                m["fps"], m["hitches"], m["worst_ms"], m["boss"] or "", m["boss_hp"], m["boss_seconds"]])
+                                m["fps"], m["hitches"], m["worst_ms"], m["boss"] or "", m["boss_hp"], m["boss_seconds"],
+                                m["paused"], m["select_screen"], m["aim_sens"], m["aim_lock"] or "",
+                                m["slam"][0] if m["slam"] else "", m["slam"][1] if m["slam"] else "", m["dash"][0] if m["dash"] else "", m["dash"][1] if m["dash"] else "",
+                                m["rage_at"], m["boss_end_hp"]])
 
 
 def main():

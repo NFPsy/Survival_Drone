@@ -46,8 +46,13 @@ namespace SurvivalDrone.EditorTools
                 string firstId = data.testerId;
                 PlayLog.StartSession(data, "0.1.0", "WebGLPlayer", "960x600");
                 fails += Check(data.testerId == firstId && data.logStats.sessions == 2, "다시 접속해도 테스터 번호가 그대로, 접속 횟수만 증가");
+                PlayLog.RecordScreen(data, "Gacha");
+                fails += Check(data.playLog[data.playLog.Count - 1] == "10-09 13:05:07 | screen | Gacha", $"화면 기록 문장 형식: '{data.playLog[data.playLog.Count - 1]}'");
+                int linesBeforeSkippedScreens = data.playLog.Count;
+                PlayLog.RecordScreen(data, "MainMenu");
                 PlayLog.RecordScreen(data, "Lobby");
-                fails += Check(data.playLog[data.playLog.Count - 1] == "10-09 13:05:07 | screen | Lobby", $"화면 기록 문장 형식: '{data.playLog[data.playLog.Count - 1]}'");
+                PlayLog.RecordScreen(data, "InGame");
+                fails += Check(data.playLog.Count == linesBeforeSkippedScreens, "메인 메뉴·로비·InGame 화면 이동은 기록하지 않음 (match_start·match 줄에서 알 수 있고 기록의 절반을 차지했음)");
 
                 // ---- 요약: 아직 아무것도 안 했을 때 ----
                 string empty = PlayLog.BuildSummaryText(data);
@@ -292,6 +297,51 @@ namespace SurvivalDrone.EditorTools
                 fails += Check(noPerf.playLog[0].EndsWith(lostDamage), "성능 요약을 안 넘기는 호출은 기록 모양이 그대로");
                 SurvivalDrone.Core.PerfLog.Reset();
                 fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "", "Reset 하면 지난 판의 프레임 기록이 지워짐");
+
+                // ---- 10/18 로그 보강: 탭 전환으로 길어진 프레임 제외, 시간 구성, 보스전 상세, 마우스 조준 ----
+                SurvivalDrone.Core.PerfLog.Reset();
+                for (int i = 0; i < 100; i++) SurvivalDrone.Core.PerfLog.Record(1f / 60f);
+                SurvivalDrone.Core.PerfLog.Record(8.7f);    // 탭을 돌려놨다 돌아온 프레임(2초 넘음): 끊김·최악에 섞이지 않고 따로 센다
+                string perfSuspended = SurvivalDrone.Core.PerfLog.BuildSummary();
+                fails += Check(perfSuspended == "성능=평균60fps 30fps미만=0% 100ms넘는끊김=0회 최악=17ms 2초넘는멈춤=1회", $"2초 넘는 프레임은 끊김·최악에서 빼고 '2초넘는멈춤'으로 따로 적음: '{perfSuspended}'");
+                SurvivalDrone.Core.PerfLog.Reset();
+                SurvivalDrone.Core.PerfLog.SkipNextFrames(3);
+                for (int i = 0; i < 3; i++) SurvivalDrone.Core.PerfLog.Record(0.5f);        // 창이 돌아온 직후 3프레임은 건너뜀
+                for (int i = 0; i < 40; i++) SurvivalDrone.Core.PerfLog.Record(1f / 60f);
+                fails += Check(SurvivalDrone.Core.PerfLog.BuildSummary() == "성능=평균60fps 30fps미만=0% 100ms넘는끊김=0회 최악=17ms", "창이 돌아온 직후 몇 프레임은 기록에서 건너뜀");
+                SurvivalDrone.Core.PerfLog.Reset();
+
+                var timed = new SaveData();
+                PlayLog.RecordMatch(timed, 1, true, 600f, 800f, 20, 5, 100, 0, 300, null, null, null, null, null, 30f, 70f, "마우스감도=150% 조준커서=고정성공");
+                PlayLog.RecordMatch(timed, 1, false, 100f, 3400f, 5, 3, 100, 0, 20, null, null, null, null, null, 3200f, 100f);
+                fails += Check(timed.playLog[0].EndsWith(" 일시정지=30초 선택화면=70초 마우스감도=150% 조준커서=고정성공"), $"판 기록 끝에 일시정지·레벨업 선택 시간과 마우스 조준 요약이 덧붙음: '{timed.playLog[0]}'");
+                fails += Check(timed.playLog[1].EndsWith(" 일시정지=3200초 선택화면=100초"), "마우스 조준 요약을 안 넘기면 시간 구성까지만 덧붙음");
+                string timedSummary = PlayLog.BuildSummaryText(timed);
+                // 구성 기록이 있는 두 판: 실제 소요 합계 4200 - 일시정지 3230 - 선택 170 = 800 → 판당 평균 400초 = 6:40
+                fails += Check(timedSummary.Contains("일시정지·레벨업 선택 제외 평균 소요 시간: 6:40 (2판, 판당 일시정지 평균 1615초 · 레벨업 선택 화면 평균 85초)"), $"요약에 일시정지·선택 제외 평균이 나옴(방치한 판이 평균을 끌어올리지 않음): '{timedSummary}'");
+                var oldStyle = new SaveData();
+                PlayLog.RecordMatch(oldStyle, 1, true, 600f, 689f, 14, 5, 100, 0, 300);
+                fails += Check(!oldStyle.playLog[0].Contains("일시정지") && !PlayLog.BuildSummaryText(oldStyle).Contains("제외 평균"), "시간 구성을 안 넘기는 옛 방식 호출은 기록·요약 모양이 그대로");
+
+                SurvivalDrone.Enemies.BossFightLog.Reset();
+                SurvivalDrone.Enemies.BossFightLog.RecordEntry(7.94f, 112f, 1f, 23);
+                SurvivalDrone.Enemies.BossFightLog.RecordSlam(false, false);
+                SurvivalDrone.Enemies.BossFightLog.RecordSlam(false, true);
+                SurvivalDrone.Enemies.BossFightLog.RecordDash(false, false);
+                string bossNoRage = SurvivalDrone.Enemies.BossFightLog.BuildText(0.6f);
+                fails += Check(bossNoRage == " 보스입장=속도7.9/체력112(100%)/레벨23 내려찍기=1/2 돌진=0/1 보스전끝체력=60%", $"분노 전 보스전 상세 기록: '{bossNoRage}'");
+                SurvivalDrone.Enemies.BossFightLog.RecordRageStart(41.24f);
+                SurvivalDrone.Enemies.BossFightLog.RecordRageStart(60f);   // 두 번째 호출은 무시(처음 시작 시각만 남김)
+                SurvivalDrone.Enemies.BossFightLog.RecordSlam(true, true);
+                SurvivalDrone.Enemies.BossFightLog.RecordSlam(true, false);
+                SurvivalDrone.Enemies.BossFightLog.RecordDash(true, true);
+                string bossRage = SurvivalDrone.Enemies.BossFightLog.BuildText(0f);
+                fails += Check(bossRage == " 보스입장=속도7.9/체력112(100%)/레벨23 분노시작=41.2초 내려찍기=2/4 분노내려찍기=1/2 돌진=1/2 분노돌진=1/1 보스전끝체력=0%", $"분노 후 보스전 상세 기록(분노 항목이 따로 붙음): '{bossRage}'");
+                SurvivalDrone.Enemies.BossFightLog.Reset();
+                fails += Check(SurvivalDrone.Enemies.BossFightLog.BuildText(1f) == " 보스입장=속도0.0/체력0(0%)/레벨0 내려찍기=0/0 돌진=0/0 보스전끝체력=100%", "Reset 하면 지난 보스전 기록이 지워짐");
+
+                SurvivalDrone.Drones.ExplosionDrone.ResetLogState();
+                fails += Check(SurvivalDrone.Drones.ExplosionDrone.BuildLogSummary() == "", "폭발 드론을 안 쓴 판은 마우스 조준 요약이 빈 글자");
 
                 // ---- 최대 개수 ----
                 var big = new SaveData();

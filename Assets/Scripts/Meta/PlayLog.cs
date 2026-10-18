@@ -41,8 +41,12 @@ namespace SurvivalDrone.Meta
         }
 
         // 화면(씬)이 바뀔 때. "마지막으로 본 화면"이 이탈 지점을 알려준다.
+        // 메인 메뉴·로비·InGame은 기록하지 않는다. 판을 시작하고 끝낸 것은 match_start·match 줄에서 이미 알 수 있고,
+        // 이 세 화면이 기록의 절반 가까이를 차지해서 오래된 판 기록이 일찍 밀려났다(보관은 최근 MaxEntries개까지).
+        // 뽑기·격납고 같은 화면(어떤 기능을 열어 봤는지)은 계속 남긴다.
         public static void RecordScreen(SaveData data, string sceneName)
         {
+            if (sceneName == "MainMenu" || sceneName == "Lobby" || sceneName == "InGame") return;
             Add(data, "screen", sceneName);
         }
 
@@ -106,8 +110,10 @@ namespace SurvivalDrone.Meta
         //  pickSummary = 이번 판에서 레벨업 선택지를 뭘 골랐는지 요약한 문장. 비어 있으면(옛 방식 호출) 기록에 덧붙이지 않는다.
         //  damageSummary = 이번 판에서 어떤 적에게 얼마나 맞았는지(패배한 판은 사망원인 포함) 요약한 문장. 비어 있으면 덧붙이지 않는다.
         //  loadoutSummary = 판이 끝났을 때 가진 드론 종류·레벨을 요약한 문장 ("최종드론=Sniper(5)/Heal(3)"). 비어 있으면 덧붙이지 않는다.
-        //  bossSummary = 보스전 요약 문장 ("보스전=진입 보스체력=35% 보스전시간=62.4초" 또는 "보스전=없음"). 비어 있으면(옛 방식 호출) 덧붙이지 않는다.
-        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null, string perfSummary = null, string loadoutSummary = null, string bossSummary = null)
+        //  bossSummary = 보스전 요약 문장 ("보스전=진입 보스체력=35% 보스전시간=62.4초 ..." 또는 "보스전=없음"). 비어 있으면(옛 방식 호출) 덧붙이지 않는다.
+        //  pausedSeconds / selectSeconds = 이번 판에서 일시정지 메뉴에 머문 시간 / 레벨업 선택 화면에 머문 시간(초). 0 이상이면 기록에 덧붙이고 요약 통계에 센다. (-1 = 옛 방식 호출, 덧붙이지 않음)
+        //  aimSummary = 마우스 조준 요약 ("마우스감도=100% 조준커서=고정성공"). 비어 있으면 덧붙이지 않는다.
+        public static void RecordMatch(SaveData data, int stageNumber, bool cleared, float surviveSeconds, float realSeconds, int playerLevel, int droneCount, int combatPower, int rewardCore, int rewardCredit, string pickSummary = null, string damageSummary = null, string perfSummary = null, string loadoutSummary = null, string bossSummary = null, float pausedSeconds = -1f, float selectSeconds = -1f, string aimSummary = null)
         {
             var s = data.logStats;
             s.matches++;
@@ -129,9 +135,20 @@ namespace SurvivalDrone.Meta
                 s.timedFailSurviveSeconds += surviveSeconds;
             }
 
+            // 시간 구성(일시정지·레벨업 선택)이 있으면 통계에 세고 기록 끝에 덧붙인다.
+            string timeBreakdown = null;
+            if (pausedSeconds >= 0f && selectSeconds >= 0f)
+            {
+                s.breakdownMatches++;
+                s.breakdownRealSeconds += realSeconds;
+                s.pausedSecondsTotal += pausedSeconds;
+                s.selectSecondsTotal += selectSeconds;
+                timeBreakdown = $"일시정지={pausedSeconds:F0}초 선택화면={selectSeconds:F0}초";   // (레벨업선택=은 이미 "무엇을 골랐는지" 요약의 이름이라 겹치지 않게 선택화면으로 적는다)
+            }
+
             Add(data, "match",
                 $"스테이지={stageNumber} 결과={(cleared ? "클리어" : "실패")} 생존={surviveSeconds:F1}초 실제소요={realSeconds:F1}초 도달레벨={playerLevel} 드론수={droneCount}" +
-                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{PickSuffix(bossSummary)}");
+                $" 내전투력={combatPower} 보상코어={rewardCore} 보상크레딧={rewardCredit}{PickSuffix(pickSummary)}{PickSuffix(damageSummary)}{PickSuffix(perfSummary)}{PickSuffix(loadoutSummary)}{PickSuffix(bossSummary)}{PickSuffix(timeBreakdown)}{PickSuffix(aimSummary)}");
         }
 
         // 그래픽카드 이름이 있으면 " 그래픽=이름"을, 없으면 빈 글자를 돌려준다. 이름 안의 줄바꿈은 기록이 깨지지 않게 공백으로 바꾼다.
@@ -328,7 +345,13 @@ namespace SurvivalDrone.Meta
 
                 if (s.timedMatches > 0)
                 {
-                    builder.AppendLine($"- 판당 평균 실제 소요 시간: {FormatSeconds(s.timedRealSeconds / s.timedMatches)} ({s.timedMatches}판, 일시정지·레벨업 선택 화면 포함)");
+                    builder.AppendLine($"- 판당 평균 실제 소요 시간: {FormatSeconds(s.timedRealSeconds / s.timedMatches)} ({s.timedMatches}판, 일시정지·레벨업 선택 화면 포함. 메뉴를 열어 둔 채 방치한 판이 있으면 길어짐)");
+                    // 일시정지·레벨업 선택 화면에 머문 시간을 뺀 값. 방치한 판에 덜 휘둘리는, "판 길이" 판단용 수치다.
+                    if (s.breakdownMatches > 0)
+                    {
+                        float activeAverage = (s.breakdownRealSeconds - s.pausedSecondsTotal - s.selectSecondsTotal) / s.breakdownMatches;
+                        builder.AppendLine($"- 일시정지·레벨업 선택 제외 평균 소요 시간: {FormatSeconds(Mathf.Max(0f, activeAverage))} ({s.breakdownMatches}판, 판당 일시정지 평균 {s.pausedSecondsTotal / s.breakdownMatches:F0}초 · 레벨업 선택 화면 평균 {s.selectSecondsTotal / s.breakdownMatches:F0}초)");
+                    }
                     if (s.timedClears > 0)
                         builder.AppendLine($"- 클리어한 판 평균 실제 소요 시간: {FormatSeconds(s.timedClearRealSeconds / s.timedClears)} ({s.timedClears}판)");
                 }

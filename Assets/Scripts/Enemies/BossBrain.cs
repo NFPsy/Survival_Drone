@@ -126,6 +126,7 @@ namespace SurvivalDrone.Enemies
             if (!lowHealth && !tooLong) return;
 
             rage = true;
+            BossFightLog.RecordRageStart(Time.time - fightStartTime);   // 판 기록: 보스전 몇 초째에 분노했는지
             boss.MoveSpeedMultiplier = rageMoveSpeedMultiplier;
             // 돌진 중에는 접촉 피해가 꺼져 있다(돌진 피해가 따로 들어가서). 그때는 돌진이 끝날 때 분노 값으로 켠다.
             if (state != State.Dash) boss.ContactDamageScale = rageDamageMultiplier;
@@ -200,8 +201,10 @@ namespace SurvivalDrone.Enemies
             if (slamTelegraph != null) slamTelegraph.SetProgress(stateTimer / slamDuration);
             if (stateTimer < slamDuration) return;
 
-            // 터진다: 원 안에 있으면 피해.
-            if (FlatDistance(player.position, slamCenter) <= slamRadius)
+            // 터진다: 원 안에 있으면 피해. (판 기록에 "몇 번 터졌고 몇 번 맞았는지"를 남긴다)
+            bool slamHitPlayer = FlatDistance(player.position, slamCenter) <= slamRadius;
+            BossFightLog.RecordSlam(rage, slamHitPlayer);
+            if (slamHitPlayer)
                 DealDamage(slamDamage, "보스내려찍기");
 
             // 번쩍인 뒤 잠깐 있다 사라진다.
@@ -322,6 +325,7 @@ namespace SurvivalDrone.Enemies
 
         private void EndDash()
         {
+            BossFightLog.RecordDash(rage, dashHit);   // 판 기록: 돌진을 한 번 썼고 맞았는지
             if (dashTelegraph != null)
             {
                 Destroy(dashTelegraph.gameObject);

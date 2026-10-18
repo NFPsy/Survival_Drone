@@ -18,6 +18,10 @@ namespace SurvivalDrone.Core
         // 이 시간(초)보다 오래 걸린 프레임을 "끊김"으로 센다.
         private const float HitchSeconds = 0.1f;
 
+        // 이 시간(초)보다 오래 걸린 프레임은 "그리지 못하고 멈춰 있던 시간"(예: 브라우저 탭을 다른 탭으로 돌려놨다 돌아온 것)으로 보고
+        // 평균·끊김·최악에 섞지 않고 따로 센다. 안 그러면 성능 문제가 아닌 탭 전환이 "끊김 8초"로 보였다.
+        private const float SuspendSeconds = 2f;
+
         // 요약에 쓸 만큼 프레임이 모이지 않았으면(너무 짧은 판) 요약하지 않는다.
         private const int MinFrames = 30;
 
@@ -26,10 +30,20 @@ namespace SurvivalDrone.Core
         private static int hitches;
         private static float totalSeconds;
         private static float worstSeconds;
+        private static int suspensions;
+        private static int skipFrames;
+
+        // 창이 비활성이 됐다가 돌아오는 순간 등에는 다음 몇 프레임을 기록하지 않는다. (돌아온 첫 프레임이 유난히 길기 때문)
+        public static void SkipNextFrames(int count)
+        {
+            if (count > skipFrames) skipFrames = count;
+        }
 
         // 새 판이 시작될 때 지난 판의 값을 비운다.
         public static void Reset()
         {
+            suspensions = 0;
+            skipFrames = 0;
             frames = 0;
             slowFrames = 0;
             hitches = 0;
@@ -41,6 +55,18 @@ namespace SurvivalDrone.Core
         public static void Record(float frameSeconds)
         {
             if (frameSeconds <= 0f) return;
+
+            if (skipFrames > 0)
+            {
+                skipFrames--;
+                return;
+            }
+
+            if (frameSeconds > SuspendSeconds)
+            {
+                suspensions++;
+                return;
+            }
 
             frames++;
             totalSeconds += frameSeconds;
@@ -59,7 +85,9 @@ namespace SurvivalDrone.Core
             float averageFps = frames / totalSeconds;
             float slowPercent = slowFrames * 100f / frames;
             string screen = string.IsNullOrEmpty(screenInfo) ? "" : $" 화면={screenInfo}";
-            return $"성능=평균{averageFps:F0}fps 30fps미만={slowPercent:F0}% 100ms넘는끊김={hitches}회 최악={worstSeconds * 1000f:F0}ms{screen}";
+            // 2초 넘게 멈춘 적이 있으면(탭 전환 등으로 보임) 따로 적는다. 없으면 옛 모양 그대로다.
+            string suspended = suspensions > 0 ? $" 2초넘는멈춤={suspensions}회" : "";
+            return $"성능=평균{averageFps:F0}fps 30fps미만={slowPercent:F0}% 100ms넘는끊김={hitches}회 최악={worstSeconds * 1000f:F0}ms{suspended}{screen}";
         }
     }
 }

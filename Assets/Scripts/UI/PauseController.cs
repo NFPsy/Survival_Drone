@@ -90,6 +90,7 @@ namespace SurvivalDrone.UI
         private void Pause()
         {
             isPaused = true;
+            if (GameManager.Instance != null) GameManager.Instance.PauseMenuOpen = true;   // 판 기록: 멈춘 시간을 "일시정지"로 센다
             pausePanel.SetActive(true);
             Time.timeScale = 0f;
         }
@@ -99,6 +100,7 @@ namespace SurvivalDrone.UI
         {
             AudioManager.Instance?.PlaySfx(clickSound);
             isPaused = false;
+            if (GameManager.Instance != null) GameManager.Instance.PauseMenuOpen = false;
             pausePanel.SetActive(false);
             Time.timeScale = 1f;
         }

@@ -51,6 +51,29 @@ namespace SurvivalDrone.Drones
         // 커서를 고정한 첫 프레임에는 마우스 이동량이 튈 수 있어서 한 번 건너뛴다.
         private bool skipNextDelta;
 
+        // 판 기록용: 마우스 커서를 고정하는 데 성공했는지. ""(폭발 드론이 없었음) / "고정성공" / "고정실패".
+        // 웹(WebGL)에서는 브라우저가 마우스 고정에 클릭 같은 사용자 동작을 요구해서 실패할 수 있어, 로그로 확인하려고 남긴다.
+        private static string aimLockLog = "";
+
+        // 커서를 고정한 뒤 이 시간(초)이 지나서 실제로 고정됐는지 확인한다. (웹에서는 고정이 바로 적용되지 않을 수 있다)
+        private const float LockCheckDelaySeconds = 0.5f;
+        private bool lockCheckPending;
+        private float lockCheckAt;
+
+        // 새 판이 시작될 때 지난 판의 조준 기록을 비운다. (static이라 씬을 다시 불러도 값이 남는다)
+        public static void ResetLogState()
+        {
+            aimLockLog = "";
+        }
+
+        // 판 기록 끝에 덧붙일 마우스 조준 요약. 폭발 드론을 한 번도 쓰지 않은 판은 빈 글자(기록에 아무것도 덧붙지 않음).
+        // 예) "마우스감도=100% 조준커서=고정성공"
+        public static string BuildLogSummary()
+        {
+            if (string.IsNullOrEmpty(aimLockLog)) return "";
+            return $"마우스감도={Mathf.RoundToInt(AimSettings.LoadSensitivity() * 100f)}% 조준커서={aimLockLog}";
+        }
+
         // 지금 쓰는 감도. 커서를 고정할 때마다 저장된 값을 새로 읽는다. (설정 창은 시간이 멈춘 동안만 열리므로 다시 시작할 때 반영된다)
         private float sensitivity = AimSettings.DefaultSensitivity;
 
@@ -181,6 +204,7 @@ namespace SurvivalDrone.Drones
             }
 
             CaptureCursor();
+            CheckCursorLock();
 
             if (skipNextDelta) skipNextDelta = false;
             else virtualCursor += mouse.delta.ReadValue() * sensitivity;
@@ -208,6 +232,21 @@ namespace SurvivalDrone.Drones
             Cursor.visible = false;
             cursorCaptured = true;
             skipNextDelta = true;
+
+            // 폭발 드론을 쓴 판이라는 표시. 확인 결과는 잠시 뒤 CheckCursorLock이 적는다.
+            if (string.IsNullOrEmpty(aimLockLog)) aimLockLog = "고정확인중";
+            lockCheckPending = true;
+            lockCheckAt = Time.unscaledTime + LockCheckDelaySeconds;
+        }
+
+        // 커서를 고정한 지 잠시 뒤에 실제로 고정됐는지 확인해서 판 기록용으로 적는다. 한 번이라도 성공하면 성공으로 남긴다.
+        private void CheckCursorLock()
+        {
+            if (!lockCheckPending || Time.unscaledTime < lockCheckAt) return;
+            lockCheckPending = false;
+
+            if (Cursor.lockState == CursorLockMode.Locked) aimLockLog = "고정성공";
+            else if (aimLockLog != "고정성공") aimLockLog = "고정실패";
         }
 
         // 숨겨 둔 실제 커서를 다시 보이게 하고 풀어 준다. (내가 숨겨 둔 상태일 때만)

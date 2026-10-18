@@ -88,5 +88,14 @@ namespace SurvivalDrone.Meta
         // 시간 기록이 있는 판 중 실패한 판 수와 그 생존 시간(게임 시간) 합계
         public int timedFails;
         public float timedFailSurviveSeconds;
+
+        // ---- 시간 구성 통계 (10/18 이후 판만) ----
+        // "실제 소요 시간"에는 일시정지 메뉴와 레벨업 선택 화면에 머문 시간이 섞여서, 메뉴를 열어 둔 채 방치한 판이 평균을 크게 끌어올렸다.
+        // 그래서 일시정지한 시간과 레벨업 선택 화면에 있던 시간을 따로 모은다. 옛 저장 파일에는 없지만 0으로 안전하게 읽힌다.
+        // 구성 기록이 있는 판 수, 그 판들의 실제 소요 시간 합계, 일시정지한 시간 합계, 레벨업 선택 화면에 있던 시간 합계(모두 초)
+        public int breakdownMatches;
+        public float breakdownRealSeconds;
+        public float pausedSecondsTotal;
+        public float selectSecondsTotal;
     }
 }

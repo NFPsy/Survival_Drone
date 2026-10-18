@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using SurvivalDrone.Drones;
 using SurvivalDrone.Enemies;
 using SurvivalDrone.Meta;
 
@@ -41,6 +42,14 @@ namespace SurvivalDrone.Core
         // 지금까지 실제로 흐른 시간(초). RealElapsedSeconds는 판이 끝날 때만 정해지지만, 이 값은 호출한 순간의 값을 바로 계산한다.
         // 판 도중에 나갈 때(일시정지 메뉴의 재시작·메인메뉴) 테스트 기록에 남기려고 만들었다.
         public float CurrentRealElapsedSeconds => Time.realtimeSinceStartup - _matchStartRealtime;
+
+        // 이번 판에서 일시정지(P) 메뉴에 머문 시간(초)과, 레벨업 선택 화면 등 그 밖의 이유로 시간이 멈춰 있던 시간(초).
+        // "실제 소요 시간"에는 이 시간이 섞여서, 메뉴를 열어 둔 채 방치한 판이 판 길이 통계를 부풀렸다. 테스트 기록에 따로 남긴다.
+        public float PausedSeconds { get; private set; }
+        public float SelectSeconds { get; private set; }
+
+        // 일시정지 메뉴가 열려 있는지. PauseController가 켜고 끈다. 시간이 멈춘 동안 이 값으로 "일시정지"와 "선택 화면"을 가른다.
+        public bool PauseMenuOpen { get; set; }
 
         // 이번 판이 끝났을 때 받은 보상. 결과 화면이 "획득 보상" 패널에 보여준다. (판이 끝나기 전에는 0)
         public int RewardCore { get; private set; }
@@ -103,6 +112,9 @@ namespace SurvivalDrone.Core
 
             // 이번 판의 "화면 부드러움"(프레임 시간) 기록도 같은 이유로 비운다.
             PerfLog.Reset();
+
+            // 폭발 드론의 마우스 조준 기록(커서 고정 성공 여부)도 판마다 비운다.
+            ExplosionDrone.ResetLogState();
         }
 
         private void Start()
@@ -145,6 +157,12 @@ namespace SurvivalDrone.Core
             GameEvents.OnPlayerDied -= HandlePlayerDied;
         }
 
+        // 창(브라우저 탭)이 비활성이 됐다가 돌아올 때는 첫 프레임이 유난히 길어서, 화면 부드러움 기록에서 몇 프레임 건너뛴다.
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            PerfLog.SkipNextFrames(3);
+        }
+
         private void Update()
         {
             // 게임이 이미 끝났으면(승리/패배) 더 이상 타이머를 진행하지 않는다.
@@ -153,6 +171,13 @@ namespace SurvivalDrone.Core
             // 화면 부드러움 기록: 판이 시작된 직후 2초는 씬을 불러오느라 느린 구간이라 빼고,
             // 일시정지·레벨업 선택으로 시간이 멈춘 동안(Time.timeScale = 0)도 뺀다.
             if (ElapsedTime >= 2f && Time.timeScale > 0f) PerfLog.Record(Time.unscaledDeltaTime);
+
+            // 시간이 멈춰 있는 동안(실제 시간은 흐른다) 일시정지 메뉴에 있는지 레벨업 선택 화면 등에 있는지 나눠서 센다.
+            if (Time.timeScale <= 0f)
+            {
+                if (PauseMenuOpen) PausedSeconds += Time.unscaledDeltaTime;
+                else SelectSeconds += Time.unscaledDeltaTime;
+            }
 
             // 매 프레임 지난 시간(Time.deltaTime)만큼 누적.
             // 시간이 다 돼도 바로 승리하지 않는다: 적이 나오는 시간이 끝난 뒤 남은 적을 모두 잡았을 때

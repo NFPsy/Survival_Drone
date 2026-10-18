@@ -58,6 +58,9 @@ namespace SurvivalDrone.Enemies
         private GameObject healthBarObject;
         private bool finished;
 
+        // 판 기록용: 보스전이 끝났을 때 내 체력 비율을 읽으려고 플레이어의 체력 컴포넌트를 기억해 둔다.
+        private Health playerHealth;
+
         // 새 판을 시작할 때 이전 판의 static 값이 남아 있지 않게 비운다. (에디터에서 도메인 리로드를 끄고 플레이할 때를 위한 안전장치)
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnLoad()
@@ -80,7 +83,14 @@ namespace SurvivalDrone.Enemies
                 ratio = Mathf.Clamp01(boss.Health.CurrentHealth / boss.Health.MaxHealth);
 
             float seconds = Time.time - Instance.StartedAtTime;
-            return $"보스전=진입 보스체력={Mathf.CeilToInt(ratio * 100f)}% 보스전시간={seconds:F1}초";
+
+            // 내 체력 비율(죽었으면 0%). 상세 기록(보스 패턴을 몇 번 맞았는지 등)은 BossFightLog가 만든다.
+            float playerRatio = 0f;
+            var health = Instance.playerHealth;
+            if (health != null && !health.IsDead && health.MaxHealth > 0f)
+                playerRatio = Mathf.Clamp01(health.CurrentHealth / health.MaxHealth);
+
+            return $"보스전=진입 보스체력={Mathf.CeilToInt(ratio * 100f)}% 보스전시간={seconds:F1}초" + BossFightLog.BuildText(playerRatio);
         }
 
         // 보스전을 시작한다. EnemySpawner가 540초에 부른다.
@@ -91,6 +101,14 @@ namespace SurvivalDrone.Enemies
             Instance = this;
             StartedAtMatchTime = GameManager.Instance != null ? GameManager.Instance.ElapsedTime : 0f;
             StartedAtTime = Time.time;
+
+            // 판 기록용: 지난 보스전의 값을 비우고, 들어가는 순간의 내 상태(이동속도·체력·레벨)를 적어 둔다.
+            BossFightLog.Reset();
+            playerHealth = player.GetComponent<Health>();
+            var stats = player.GetComponent<SurvivalDrone.Player.PlayerStats>();
+            var experience = player.GetComponent<SurvivalDrone.Player.PlayerExperience>();
+            float healthRatio = playerHealth != null && playerHealth.MaxHealth > 0f ? Mathf.Clamp01(playerHealth.CurrentHealth / playerHealth.MaxHealth) : 0f;
+            BossFightLog.RecordEntry(stats != null ? stats.MoveSpeed : 0f, stats != null ? stats.MaxHealth : (playerHealth != null ? playerHealth.MaxHealth : 0f), healthRatio, experience != null ? experience.Level : 0);
 
             // 1) 살아 있는 몹을 모두 폭발시켜 없앤다. (구슬은 남는다)
             // 목록을 복사해서 도는 이유: Vanish()가 목록(ActiveEnemies)에서 자기 자신을 지우기 때문에, 원본을 돌면 건너뛰는 몹이 생긴다.
