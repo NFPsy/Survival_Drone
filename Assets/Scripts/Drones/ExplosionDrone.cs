@@ -8,20 +8,18 @@ namespace SurvivalDrone.Drones
     // 폭발 드론: 일정 시간마다 한 번씩 "폭발 지점" 주변 전체(범위 공격)에 피해를 준다.
     // 근접 드론과 달리 특정 적 하나를 노리는 게 아니라 "범위 안에 있는 모든 적"을 한꺼번에 때린다.
     //
-    // 폭발 지점은 드론이 떠 있는 자리가 아니라 플레이어가 정한다 (10/14 개선):
-    //  - 방향키(↑↓←→)는 플레이어 이동에 쓰지 않고(이동은 WASD만, 입력 설정 파일의 Move에서 방향키를 뺐다) 이 드론의 "폭발 지점 조작" 전용이다.
-    //    폭발 드론이 없을 때는 방향키를 눌러도 아무 일도 일어나지 않는다.
-    //  - 폭발 지점은 플레이어 기준으로 얼마나 떨어져 있는지(aimOffset)로 기억해서, 플레이어가 움직이면 같이 따라온다.
-    //  - 방향키를 떼면 마지막 자리에 그대로 남는다. 폭발 간격(기본 3초) 동안 지점을 옮겨 두면 시간이 됐을 때 그 자리에서 터진다.
+    // 폭발 지점은 드론이 떠 있는 자리가 아니라 플레이어가 정한다 (10/14 개선, 10/18에 방향키에서 마우스로 바꿈):
+    //  - 마우스 커서가 가리키는 바닥 자리가 폭발 지점이다. (화면 속 마우스 위치에서 바닥으로 선을 쏴서 닿는 곳을 찾는다)
+    //    방향키는 더 이상 조준에 쓰지 않는다. 이동은 WASD다.
+    //  - 플레이어에게서 aimMaxRange(기본 7m)보다 멀리 가리키면 그 방향의 7m 지점으로 제한한다.
+    //  - 카메라가 플레이어를 따라가므로, 마우스를 가만히 두면 폭발 지점도 플레이어와 같이 움직인다.
+    //  - 시간이 멈춘 동안(일시정지·레벨업 선택)에는 지점을 바꾸지 않는다. (카드를 누르러 간 마우스 위치로 지점이 튀지 않게)
     //  - 지점에는 폭발 범위만큼의 원(ExplosionAimMarker)이 바닥에 보이고, 터지기 직전에 더 밝아진다.
     //
     // 기획서 4장 기준 - 강화될수록 좋아지는 것은 "폭발 범위 또는 피해량"이므로,
     // 레벨이 오르면 범위와 피해량이 함께 커지도록 만들었다.
     public class ExplosionDrone : DroneBase
     {
-        // 방향키로 폭발 지점을 움직이는 속도(초당 미터).
-        [SerializeField] private float aimSpeed = 8f;
-
         // 플레이어에서 폭발 지점까지 최대 몇 미터까지 보낼 수 있는지.
         [SerializeField] private float aimMaxRange = 7f;
 
@@ -32,7 +30,7 @@ namespace SurvivalDrone.Drones
         [SerializeField] private float markerWarnSeconds = 0.6f;
 
         // 폭발 드론을 얻었을 때 화면 위 알림 칸에 띄울 안내 문구와 표시 시간.
-        [SerializeField] private string acquireNotice = "폭발 드론 획득! 방향키(↑↓←→)로 폭발 위치를 정하세요. 이동은 WASD입니다.";
+        [SerializeField] private string acquireNotice = "폭발 드론 획득! 마우스로 가리킨 곳에서 폭발합니다.";
         [SerializeField] private float acquireNoticeSeconds = 5f;
 
         // 플레이어 기준 폭발 지점 위치(x, z만 사용). 처음에는 플레이어 바로 위(0, 0)다.
@@ -101,7 +99,7 @@ namespace SurvivalDrone.Drones
                     markerBaseColor = markerRenderer.sharedMaterial.GetColor(BaseColorId);
             }
 
-            // 방향키가 이동이 아니라 폭발 지점 조작이 된다는 것을 알린다. (방향키로만 이동하던 사람이 당황하지 않도록)
+            // 마우스로 폭발 위치를 정한다는 것을 알린다.
             if (!string.IsNullOrEmpty(acquireNotice)) HUDNotice.Instance?.Show(acquireNotice, acquireNoticeSeconds);
         }
 
@@ -117,7 +115,7 @@ namespace SurvivalDrone.Drones
             // 부모 클래스(DroneBase)의 기본 "따라다니기" 동작을 그대로 사용한다.
             base.Update();
 
-            // 방향키로 폭발 지점을 옮긴다.
+            // 마우스가 가리키는 곳으로 폭발 지점을 옮긴다.
             UpdateAim();
 
             // 폭발 쿨타임을 줄여나가다가, 다 되면 한 번 터뜨린다.
@@ -132,23 +130,33 @@ namespace SurvivalDrone.Drones
             UpdateMarker();
         }
 
-        // 방향키 입력으로 폭발 지점(aimOffset)을 움직인다. 이동 방향은 플레이어 이동과 같다(↑ = 화면 위쪽).
-        // 시간이 멈춘 동안(일시정지·레벨업 선택)에는 Time.deltaTime이 0이라 지점도 움직이지 않는다.
+        // 마우스 위치로 폭발 지점(aimOffset)을 정한다.
+        // 시간이 멈춘 동안(일시정지·레벨업 선택)에는 지점을 그대로 둔다. 그때 마우스는 메뉴·카드를 누르러 가 있기 때문이다.
         private void UpdateAim()
         {
-            var keyboard = Keyboard.current;
-            if (keyboard == null) return;
+            if (Time.timeScale <= 0f) return;
 
-            Vector2 input = Vector2.zero;
-            if (keyboard.upArrowKey.isPressed) input.y += 1f;
-            if (keyboard.downArrowKey.isPressed) input.y -= 1f;
-            if (keyboard.leftArrowKey.isPressed) input.x -= 1f;
-            if (keyboard.rightArrowKey.isPressed) input.x += 1f;
-            if (input == Vector2.zero) return;
+            var mouse = Mouse.current;
+            var cam = Camera.main;
+            if (mouse == null || cam == null) return;
 
-            // 대각선이 더 빨라지지 않게 길이를 1로 맞추고, 플레이어에서 최대 거리를 넘지 않게 제한한다.
-            aimOffset += input.normalized * aimSpeed * Time.deltaTime;
-            aimOffset = Vector2.ClampMagnitude(aimOffset, aimMaxRange);
+            Vector3 center = owner != null ? owner.position : transform.position;
+            Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+            if (TryGetAimOffset(ray, center, aimMaxRange, out Vector2 offset)) aimOffset = offset;
+        }
+
+        // 마우스에서 나온 선(ray)이 바닥(높이 0)에 닿는 자리를 찾아, 플레이어 기준으로 얼마나 떨어져 있는지(x, z)를 돌려준다.
+        // 플레이어에게서 maxRange보다 멀면 같은 방향의 maxRange 지점으로 줄인다. 선이 바닥에 닿지 않으면(하늘을 가리키면) false.
+        // 화면이나 입력 장치 없이 숫자만으로 계산해서, 에디터에서 따로 시험해 볼 수 있다.
+        public static bool TryGetAimOffset(Ray ray, Vector3 playerPosition, float maxRange, out Vector2 offset)
+        {
+            offset = Vector2.zero;
+            var ground = new Plane(Vector3.up, Vector3.zero);
+            if (!ground.Raycast(ray, out float distance)) return false;
+
+            Vector3 hit = ray.GetPoint(distance);
+            offset = Vector2.ClampMagnitude(new Vector2(hit.x - playerPosition.x, hit.z - playerPosition.z), maxRange);
+            return true;
         }
 
         // 지금 폭발 지점의 월드 좌표. 높이는 드론이 떠 있는 높이를 그대로 써서(예전과 같은 판정 높이) 가로 위치만 바뀐다.

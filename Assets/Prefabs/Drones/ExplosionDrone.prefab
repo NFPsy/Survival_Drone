@@ -55,13 +55,11 @@ MonoBehaviour:
   owner: {fileID: 0}
   slotOffset: {x: 0, y: 0, z: 0}
   followLerp: 8
-  aimSpeed: 8
   aimMaxRange: 7
   aimMarkerPrefab: {fileID: 7629889043515015436, guid: e4c1b26e828badb4dadbb0a975685f09, type: 3}
   markerWarnSeconds: 0.6
-  acquireNotice: "\uD3ED\uBC1C \uB4DC\uB860 \uD68D\uB4DD! \uBC29\uD5A5\uD0A4(\u2191\u2193\u2190\u2192)\uB85C
-    \uD3ED\uBC1C \uC704\uCE58\uB97C \uC815\uD558\uC138\uC694. \uC774\uB3D9\uC740
-    WASD\uC785\uB2C8\uB2E4."
+  acquireNotice: "\uD3ED\uBC1C \uB4DC\uB860 \uD68D\uB4DD! \uB9C8\uC6B0\uC2A4\uB85C
+    \uAC00\uB9AC\uD0A8 \uACF3\uC5D0\uC11C \uD3ED\uBC1C\uD569\uB2C8\uB2E4."
   acquireNoticeSeconds: 5
   baseDamage: 10
   baseInterval: 3
