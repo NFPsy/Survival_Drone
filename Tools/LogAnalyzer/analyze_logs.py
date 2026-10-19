@@ -801,6 +801,7 @@ def main():
     ap.add_argument("files", nargs="+", help="내려받은 로그 파일(.txt) 또는 로그가 들어 있는 폴더(폴더 안의 .txt를 전부 읽는다)")
     ap.add_argument("--out", help="보고서를 저장할 파일(마크다운). 없으면 화면에 출력")
     ap.add_argument("--matches-csv", help="모든 판을 한 줄씩 담은 CSV 저장 경로")
+    ap.add_argument("--build", help="이 빌드 버전의 로그 파일만 분석한다(예: 0.3.0 = OBT). CBT(0.2.1)와 OBT 로그가 같은 폴더에 섞여 있을 때 쓴다")
     args = ap.parse_args()
 
     paths = []
@@ -814,6 +815,12 @@ def main():
     if not paths:
         sys.exit("읽을 로그 파일이 없다.")
     testers = [read_file(p) for p in paths]
+    if args.build:
+        # 파일 맨 위 머리글의 빌드 버전이 같은 파일만 남긴다. (한 파일 안의 판은 나누지 않는다)
+        found = sorted({t.build for t in testers})
+        testers = [t for t in testers if t.build == args.build]
+        if not testers:
+            sys.exit(f"빌드 {args.build}인 로그 파일이 없다. 읽은 파일의 빌드: {', '.join(found)}")
     report = build_report(testers)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:

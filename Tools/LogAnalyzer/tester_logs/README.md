@@ -25,6 +25,7 @@ python Tools/LogAnalyzer/analyze_logs.py Tools/LogAnalyzer/tester_logs/cbt --out
 ```
 
 - 폴더를 주면 그 안의 `.txt`를 전부 읽습니다. 파일을 하나씩 적을 필요가 없습니다.
+- **OBT(빌드 0.3.0) 로그만 보려면 `--build 0.3.0`을 붙입니다.** CBT 로그(0.2.1)가 같은 폴더에 있어도 섞이지 않습니다. 설문 응답은 `analyze_survey.py`로 따로 정리합니다(`../README.md` 참고).
 - `--out`을 생략하면 화면에 출력합니다. 보고서와 CSV는 저장소 밖(바탕화면 등)에 저장하세요. 테스터 번호가 들어 있어서 저장소에 두지 않는 편이 좋습니다.
 - 개발자 로그까지 같이 보고 싶으면 `Tools/LogAnalyzer/tester_logs` 폴더를 통째로 주면 됩니다.
 
