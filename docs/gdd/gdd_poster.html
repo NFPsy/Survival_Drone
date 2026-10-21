@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Survival : D — GDD 한 장 요약</title>
+<style>
+  @font-face { font-family: "Pretendard"; src: url("../../video_work/fonts/Pretendard-Regular.otf"); }
+  :root {
+    --cyan: #4fd8ea; --orange: #ff9f43; --red: #ff6b6b; --text: #e8f1f8; --muted: #9fb3c8;
+    --panel: rgba(18, 32, 56, .78); --line: rgba(79, 216, 234, .38);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    font-family: "Pretendard", "Malgun Gothic", sans-serif; color: var(--text);
+    background:
+      linear-gradient(rgba(79,216,234,.05) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(79,216,234,.05) 1px, transparent 1px) 0 0 / 40px 40px,
+      radial-gradient(ellipse at 50% 20%, #17294a 0%, #0b1220 70%);
+    position: relative;
+  }
+  .frame { position: absolute; inset: 14px; border: 2px solid var(--line); border-radius: 22px; }
+  b, h1, h2, h3 { font-weight: 700; }
+
+  /* 제목 */
+  .title { position: absolute; top: 26px; left: 0; width: 100%; text-align: center; }
+  .title .small { font-size: 22px; color: var(--cyan); letter-spacing: 2px; }
+  .title h1 { font-size: 54px; line-height: 1.15; letter-spacing: 1px; text-shadow: 0 0 24px rgba(79,216,234,.55); }
+  .title h1 span { color: var(--cyan); }
+
+  /* 섹션 머리글 */
+  .sec { font-size: 28px; color: var(--cyan); display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .sec::before { content: ""; width: 8px; height: 28px; border-radius: 4px; background: var(--cyan); }
+
+  /* 좌우 열 */
+  .col { position: absolute; top: 120px; width: 540px; }
+  .col.left { left: 44px; } .col.right { right: 44px; }
+  .item { display: flex; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; margin-bottom: 11px; min-height: 100px; align-items: center; }
+  .ico { flex: 0 0 62px; height: 62px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #1d4a63, #0f2236); border: 2px solid var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .item h3 { font-size: 20px; margin-bottom: 4px; color: #fff; }
+  .item p { font-size: 16.5px; line-height: 1.5; color: var(--muted); }
+  .item p em { font-style: normal; color: var(--orange); }
+
+  /* 가운데 그림 */
+  .hero { position: absolute; left: 672px; top: 118px; width: 576px; height: 457px; border-radius: 18px; border: 2px solid var(--cyan); box-shadow: 0 0 40px rgba(79,216,234,.35); overflow: hidden; }
+  .hero img { width: 100%; height: 100%; display: block; }
+
+  /* 아래 시스템 영역 */
+  .bottom-title { position: absolute; top: 600px; left: 0; width: 100%; text-align: center; font-size: 30px; color: var(--cyan); }
+  .bottom-title::before, .bottom-title::after { content: ""; display: inline-block; width: 260px; height: 2px; background: var(--line); vertical-align: middle; margin: 0 20px; }
+  .sys { position: absolute; width: 540px; }
+  .sys .item { min-height: 150px; }
+  .sys.left { left: 44px; top: 650px; } .sys.right { right: 44px; top: 650px; }
+  .loop { position: absolute; left: 600px; top: 632px; width: 720px; height: 380px; }
+
+  /* 맨 아래 띠 */
+  .strip { position: absolute; left: 44px; right: 44px; bottom: 28px; height: 44px; border-radius: 12px; background: rgba(79,216,234,.1); border: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 17px; color: var(--muted); }
+  .strip b { color: var(--text); }
+  .strip .sep { color: var(--line); }
+</style>
+</head>
+<body>
+<div class="frame"></div>
+
+<div class="title">
+  <div class="small">GAME DESIGN DOCUMENT · 한 장 요약</div>
+  <h1>Survival <span>: D</span> <small style="font-size:28px;color:var(--muted)">Drone Commander</small></h1>
+</div>
+
+<!-- 왼쪽: 게임 개요 -->
+<div class="col left">
+  <div class="sec">게임 개요</div>
+  <div class="item"><div class="ico">💡</div><div><h3>기획 의도</h3><p>조작은 이동뿐인 단순함 위에, 판이 끝난 뒤 뽑기·강화로 성장하는 <em>두 겹의 반복 재미</em>를 얹었습니다.</p></div></div>
+  <div class="item"><div class="ico">🚁</div><div><h3>핵심 컨셉</h3><p>공격은 드론이 자동으로, 선택은 플레이어가. 레벨업 3택1과 위험을 감수하는 오버드라이브로 판을 바꿉니다.</p></div></div>
+  <div class="item"><div class="ico">🎯</div><div><h3>타겟 유저</h3><p>뱀서라이크를 즐기는 사람, 설치 없이 브라우저에서 한 판(10분)을 가볍게 해 보고 싶은 사람</p></div></div>
+  <div class="item"><div class="ico">🌐</div><div><h3>플랫폼 / 장르</h3><p>WebGL(브라우저 실행) / 3D 쿼터뷰 생존 액션, 사이버펑크·SF</p></div></div>
+</div>
+
+<div class="hero"><img src="../itch/v0.3.0/cover_630x500.png" alt="Survival : D 커버"></div>
+
+<!-- 오른쪽: 아트·기술·캐릭터 -->
+<div class="col right">
+  <div class="sec">아트 · 기술 · 캐릭터</div>
+  <div class="item"><div class="ico">🎨</div><div><h3>비주얼 &amp; 사운드</h3><p>다크 남색 + 시안 UI, 위험한 것은 <em>빨강·주황</em>으로 구분. 배경음악 2곡(VARCO SOUND, Suno AI)과 직접 만든 효과음</p></div></div>
+  <div class="item"><div class="ico">⚙️</div><div><h3>개발 환경</h3><p>Unity 6000.3(C#) → WebGL 빌드, itch.io 배포. 경제 시뮬레이터와 로그 분석기는 Python</p></div></div>
+  <div class="item"><div class="ico">🤖</div><div><h3>주요 캐릭터</h3><p>엔지니어(주인공), 드론 5종(근접·저격·폭발·회복·수집), 로봇 5종과 엘리트, 최종 보스. 3D는 VARCO 3D로 제작</p></div></div>
+  <div class="item"><div class="ico">🗺️</div><div><h3>스테이지</h3><p>노멀 5개(외곽 순찰로 ~ 중앙 관제탑)와 노멀 클리어로 열리는 하드 1~5</p></div></div>
+</div>
+
+<!-- 아래: 핵심 시스템 -->
+<div class="bottom-title">핵심 게임플레이 &amp; 시스템</div>
+
+<div class="sys left">
+  <div class="item"><div class="ico">🛸</div><div><h3>드론 시스템</h3><p>5종 드론을 장착하고 5단계 강화와 변신, Lv6~8 각성으로 키웁니다. 폭발 드론은 <em>마우스로 터질 위치를 직접 조준</em>합니다.</p></div></div>
+  <div class="item"><div class="ico">⚡</div><div><h3>오버드라이브 &amp; 보스전</h3><p>5초간 공격 속도 2.5배, 대신 받는 피해 2배. 540초에 원형 경기장 보스전(내려찍기·돌진·분노)이 열리고, 보스를 쓰러뜨리면 승리합니다.</p></div></div>
+</div>
+
+<div class="sys right">
+  <div class="item"><div class="ico">🎲</div><div><h3>가챠 · 재화 BM</h3><p>일반 뽑기(SSR 2.5%, 천장 70회·소천장 10회)와 SR을 모으는 락온 뽑기. 확률 표기는 실제 수치표와 같고, <em>실제 결제는 없습니다.</em></p></div></div>
+  <div class="item"><div class="ico">📊</div><div><h3>데이터 검증</h3><p>경제 시뮬레이터로 규칙을 모의하고, 테스트 로그와 분석기로 CBT 4명·공개 OBT 결과를 읽어 밸런스를 고칩니다.</p></div></div>
+</div>
+
+<svg class="loop" viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, Malgun Gothic, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff9f43"/></marker>
+  </defs>
+  <g id="ring"></g>
+</svg>
+
+<div class="strip">
+  <span>한 판 <b>10분</b> (3분·6분 미니 보스 → 540초 보스전)</span><span class="sep">|</span>
+  <span>저장 슬롯 <b>3개</b> + 저장 코드</span><span class="sep">|</span>
+  <span>제작 <b>주서연</b> · NCAI 교육 개인 프로젝트 · 2026.10</span><span class="sep">|</span>
+  <span>플레이 <b>nfpsy.itch.io/drone-survival</b></span>
+</div>
+
+<script>
+  // 기본 플레이 루프: 6개 단계를 타원형으로 놓고 시계 방향 화살표로 잇는다.
+  const NS = "http://www.w3.org/2000/svg";
+  const ring = document.getElementById("ring");
+  const cx = 360, cy = 186, RX = 190, RY = 98, NODE = 34;
+  const steps = [
+    { icon: "🚁", label: "출격", sub: "더 강한 스테이지로 · 한 판 10분", side: "top" },
+    { icon: "⬆️", label: "레벨업 3택1", sub: "드론 증가·변신", side: "right" },
+    { icon: "🤖", label: "보스전·클리어", sub: "크레딧 획득", side: "right" },
+    { icon: "🪙", label: "보상 · 재화", sub: "코어·크레딧·조각", side: "bottom" },
+    { icon: "🎲", label: "뽑기", sub: "일반 / 락온", side: "left" },
+    { icon: "🔧", label: "격납고", sub: "드론 장착·강화", side: "left" },
+  ];
+  const T = i => -Math.PI / 2 + i * Math.PI / 3;
+  const pos = t => [cx + RX * Math.cos(t), cy + RY * Math.sin(t)];
+  const speed = t => Math.hypot(RX * Math.sin(t), RY * Math.cos(t));   // 타원 위에서 각도 1만큼 움직일 때의 거리
+  const make = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text) e.textContent = text; ring.appendChild(e); return e; };
+
+  // 화살표(타원 호): 각 단계의 가장자리에서 다음 단계의 가장자리까지
+  const half = t => NODE / speed(t) + 0.1;
+  steps.forEach((s, i) => {
+    const t0 = T(i) + half(T(i)), t1 = T(i + 1) - half(T(i + 1));
+    const [x0, y0] = pos(t0), [x1, y1] = pos(t1);
+    make("path", { d: `M${x0},${y0} A${RX},${RY} 0 0 1 ${x1},${y1}`, fill: "none", stroke: "#ff9f43", "stroke-width": 3, "marker-end": "url(#arr)" });
+  });
+
+  steps.forEach((s, i) => {
+    const [x, y] = pos(T(i));
+    make("circle", { cx: x, cy: y, r: NODE, fill: "#12263d", stroke: "#4fd8ea", "stroke-width": 3 });
+    make("text", { x: x, y: y + 11, "text-anchor": "middle", "font-size": 30 }, s.icon);
+    let lx = x, ly, anchor = "middle";
+    if (s.side === "top") { ly = y - NODE - 28; }
+    else if (s.side === "bottom") { ly = y + NODE + 26; }
+    else { ly = y - 2; lx = s.side === "right" ? x + NODE + 14 : x - NODE - 14; anchor = s.side === "right" ? "start" : "end"; }
+    make("text", { x: lx, y: ly, "text-anchor": anchor, "font-size": 21, "font-weight": 700, fill: "#ffffff" }, s.label);
+    make("text", { x: lx, y: ly + 22, "text-anchor": anchor, "font-size": 15.5, fill: "#9fb3c8" }, s.sub);
+  });
+
+  make("text", { x: cx, y: cy - 2, "text-anchor": "middle", "font-size": 23, "font-weight": 700, fill: "#4fd8ea" }, "기본 플레이 루프");
+  make("text", { x: cx, y: cy + 24, "text-anchor": "middle", "font-size": 15.5, fill: "#9fb3c8" }, "판 안(전투) ↔ 판 사이(성장)");
+</script>
+</body>
+</html>
