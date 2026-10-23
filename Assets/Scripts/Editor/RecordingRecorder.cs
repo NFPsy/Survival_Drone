@@ -11,8 +11,11 @@ namespace SurvivalDrone.EditorTools
     // Unity Recorder 패키지(유니티가 만든 공식 녹화 도구)를 코드로 설정해서, 창을 열고 옵션을 맞추는 과정 없이 키 하나로 시작한다.
     //
     // 사용법: InGame을 에디터에서 플레이한 상태에서
-    //   F10 = 녹화 시작   F11 = 녹화 멈춤
-    // 결과: video_work/clips/tr_take_001.mp4 처럼 저장된다. (번호는 녹화할 때마다 하나씩 커진다. 끝나면 이름을 바꿔서 쓴다)
+    //   Ctrl+F10 = 녹화 시작   Ctrl+F11 = 녹화 멈춤
+    //   (F10은 Unity Recorder 패키지가 이미 "Quick Recording"으로 쓰고 있어서 겹침 창이 뜨기 때문에 Ctrl을 붙였다)
+    // 결과: video_work/clips/tr_1023_092136.mp4 처럼 "tr_월일_시분초"로 저장된다.
+    //   (예전에는 tr_take_001로 저장되어서, 녹화를 다시 하면 앞 파일을 덮어쓰는 문제가 있었다. 이제는 이름이 매번 다르다)
+    // 녹화 중인지 눈으로 보고 싶으면 메뉴 SurvivalDrone/Recording/Show Status Window로 작은 상태 창을 연다.
     //
     // 설정: 게임 화면(Game 탭)만 1920x1080, 60프레임, MP4(H.264), 게임 소리 포함.
     //  - 에디터의 메뉴·패널은 찍히지 않고 게임 화면만 찍힌다. Game 탭이 눈에 보이는 상태여야 한다.
@@ -23,6 +26,11 @@ namespace SurvivalDrone.EditorTools
     {
         private static RecorderController controller;
 
+        // 상태 창(RecordingStatusWindow)이 읽어 가는 값: 녹화를 시작한 시각(에디터가 켜진 뒤 흐른 초)과 마지막으로 저장한 파일 이름
+        public static double StartTime { get; private set; }
+        public static string CurrentFileName { get; private set; } = "";
+        public static bool IsRecordingNow => controller != null && controller.IsRecording();
+
         static RecordingRecorder()
         {
             // 녹화 도중 플레이를 멈추면 파일이 깨질 수 있으니, 플레이가 끝나기 전에 먼저 녹화를 멈춘다.
@@ -32,9 +40,9 @@ namespace SurvivalDrone.EditorTools
             };
         }
 
-        private static bool IsRecording => controller != null && controller.IsRecording();
+        private static bool IsRecording => IsRecordingNow;
 
-        [MenuItem("SurvivalDrone/Recording/Start Recording (Play mode) _F10")]
+        [MenuItem("SurvivalDrone/Recording/Start Recording (Play mode) %F10")]
         private static void StartRecording()
         {
             if (IsRecording) return;
@@ -54,9 +62,10 @@ namespace SurvivalDrone.EditorTools
             };
             movie.ImageInputSettings = new GameViewInputSettings { OutputWidth = 1920, OutputHeight = 1080 };
             movie.AudioInputSettings.PreserveAudio = true;
-            // <Take>는 녹화할 때마다 001, 002…로 바뀌는 자리표시자다. 확장자(.mp4)는 자동으로 붙는다.
-            // (Path.Combine은 < > 같은 글자를 "잘못된 경로 글자"로 거부하므로, 문자열을 직접 이어 붙인다)
-            movie.OutputFile = folder.Replace('\\', '/') + "/tr_take_<Take>";
+            // 파일 이름은 "tr_월일_시분초"로 정한다. 확장자(.mp4)는 자동으로 붙는다.
+            // (예전의 <Take> 자리표시자는 녹화를 다시 할 때마다 001부터 시작해서 앞 파일을 덮어썼다. 시각은 매번 달라서 덮어쓸 일이 없다)
+            CurrentFileName = "tr_" + System.DateTime.Now.ToString("MMdd_HHmmss");
+            movie.OutputFile = folder.Replace('\\', '/') + "/" + CurrentFileName;
 
             var settings = ScriptableObject.CreateInstance<RecorderControllerSettings>();
             settings.AddRecorderSettings(movie);
@@ -67,19 +76,20 @@ namespace SurvivalDrone.EditorTools
             controller = new RecorderController(settings);
             controller.PrepareRecording();
             controller.StartRecording();
-            Debug.Log("[Recording] 녹화를 시작했습니다. (F11로 멈춤) 저장: video_work/clips/tr_take_번호.mp4");
+            StartTime = EditorApplication.timeSinceStartup;
+            Debug.Log("[Recording] 녹화를 시작했습니다. (Ctrl+F11로 멈춤) 저장: video_work/clips/" + CurrentFileName + ".mp4");
         }
 
-        [MenuItem("SurvivalDrone/Recording/Start Recording (Play mode) _F10", true)]
+        [MenuItem("SurvivalDrone/Recording/Start Recording (Play mode) %F10", true)]
         private static bool StartRecordingValidate() => Application.isPlaying && !IsRecording;
 
-        [MenuItem("SurvivalDrone/Recording/Stop Recording _F11")]
+        [MenuItem("SurvivalDrone/Recording/Stop Recording %F11")]
         private static void StopRecording()
         {
             StopIfRecording();
         }
 
-        [MenuItem("SurvivalDrone/Recording/Stop Recording _F11", true)]
+        [MenuItem("SurvivalDrone/Recording/Stop Recording %F11", true)]
         private static bool StopRecordingValidate() => IsRecording;
 
         private static void StopIfRecording()
