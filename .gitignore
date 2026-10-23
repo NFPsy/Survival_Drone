@@ -55,3 +55,6 @@ Packages/packages-lock.json
 # 테스터 로그 원본은 저장소가 공개라서 올리지 않는다 (README.md만 올린다)
 Tools/LogAnalyzer/tester_logs/*
 !Tools/LogAnalyzer/tester_logs/README.md
+
+# 제출 영상 작업 폴더(녹화 클립·카드·완성 영상은 용량이 커서 올리지 않는다)
+/video_work/
