@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survival : D 발표자료</title>
+<style>
+  /* 글꼴: 게임과 같은 Pretendard (SIL OFL). 파일이 없으면 맑은 고딕으로 대체된다 */
+  @font-face { font-family: "Pretendard"; src: url("assets/Pretendard-Regular.otf"); font-weight: 100 900; }
+  :root {
+    --bg: #0b1018; --panel: #18202e; --line: #3c5064;
+    --cyan: #4fd8e8; --orange: #ffaa50; --red: #ff6b6b;
+    --white: #f0f6fa; --muted: #a0b0c0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { word-break: keep-all; height: 100%; background: #05080d; overflow: hidden; font-family: "Pretendard", "Malgun Gothic", sans-serif; color: var(--white); }
+
+  /* 슬라이드는 1280x720 기준으로 만들고, 창 크기에 맞춰 통째로 줄이거나 늘린다 */
+  #stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; transform-origin: center center; }
+  .slide { position: absolute; inset: 0; background: var(--bg); padding: 40px 56px 0; display: none; overflow: hidden; }
+  .slide.active { display: block; }
+  .tag { color: var(--cyan); font-weight: 700; font-size: 17px; }
+  h1 { font-size: 40px; font-weight: 700; margin-top: 8px; line-height: 1.2; }
+  .foot { position: absolute; left: 56px; right: 56px; bottom: 16px; display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+
+  .card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 18px 22px; }
+  .card h3 { font-size: 23px; font-weight: 700; margin-bottom: 10px; }
+  .card p { font-size: 18px; line-height: 1.55; }
+  .c-cyan { color: var(--cyan); } .c-orange { color: var(--orange); } .c-red { color: var(--red); } .c-muted { color: var(--muted); }
+  .abs { position: absolute; }
+
+  /* 1. 게임 개요 */
+  .kv .k { font-size: 15px; font-weight: 700; color: var(--cyan); margin-bottom: 6px; }
+  .kv .v { font-size: 20px; line-height: 1.4; }
+  .banner { background: #1b2a3a; border: 1.5px solid var(--cyan); border-radius: 14px; padding: 18px 26px; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 16px; }
+  .banner small { font-size: 16px; color: var(--cyan); font-weight: 700; flex: none; }
+  .shot { border-radius: 12px; border: 1.5px solid var(--line); display: block; width: 100%; }
+
+  /* 2. 조작 */
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 28px; }
+  .key { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 26px 20px; text-align: center; height: 360px; }
+  .cap { border: 2px solid var(--cyan); background: #222d3f; border-radius: 16px; font-size: 30px; font-weight: 800; padding: 26px 0; letter-spacing: 3px; }
+  .key h3 { font-size: 24px; margin: 24px 0 12px; }
+  .key p { font-size: 17px; color: var(--muted); line-height: 1.55; }
+
+  /* 3. 루프 */
+  .chain { display: flex; align-items: center; gap: 12px; margin-top: 26px; }
+  .chain .lab { width: 150px; flex: none; font-size: 20px; font-weight: 700; }
+  .step { flex: 1; background: var(--panel); border: 2px solid var(--cyan); border-radius: 12px; height: 84px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 700; font-size: 18px; padding: 0 8px; position: relative; }
+  .step.o { border-color: var(--orange); }
+  .step:not(:last-child)::after { content: "▶"; position: absolute; right: -13px; font-size: 13px; color: var(--muted); background: var(--bg); padding: 2px 0; }
+  .stats { display: grid; gap: 20px; margin-top: 34px; }
+  .stat { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 18px 24px; }
+  .stat .big { font-size: 44px; font-weight: 800; line-height: 1.15; }
+  .stat .lbl { font-size: 15px; color: var(--muted); margin-top: 4px; }
+
+  /* 4. 드론 */
+  .drones { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 26px; }
+  .drone { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; text-align: center; padding: 10px 8px 14px; }
+  .drone img { width: 100%; height: 150px; object-fit: contain; }
+  .drone b { display: block; font-size: 19px; margin-top: 4px; }
+  .drone span { font-size: 14px; color: var(--muted); }
+
+  /* 6. 뽑기 확률 막대 */
+  .bar { display: flex; align-items: center; gap: 14px; margin: 14px 0; font-size: 18px; font-weight: 700; }
+  .bar .n { width: 46px; }
+  .bar .track { flex: 1; height: 34px; background: #121a26; border-radius: 6px; position: relative; }
+  .bar .fill { height: 100%; background: var(--cyan); border-radius: 6px; }
+  .bar .pct { width: 70px; text-align: right; }
+
+  /* 8. 시연 */
+  video { width: 100%; border-radius: 12px; border: 1.5px solid var(--cyan); background: #000; display: block; }
+
+  /* 9. 테스트 막대(세로) */
+  .cols { display: flex; align-items: flex-end; justify-content: space-around; height: 360px; margin-top: 16px; }
+  .grp { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .pair { display: flex; align-items: flex-end; gap: 16px; height: 320px; }
+  .col { width: 86px; border-radius: 6px 6px 0 0; display: flex; justify-content: center; font-weight: 800; font-size: 19px; padding-top: 4px; color: #071016; }
+  .legend { display: flex; gap: 22px; font-size: 15px; margin-top: 14px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+
+  /* 발표자 노트 (N 키) */
+  #notes { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(5, 8, 13, .96); border-top: 2px solid var(--cyan); padding: 14px 28px; font-size: 18px; line-height: 1.55; display: none; z-index: 10; max-height: 36vh; overflow: auto; }
+  #notes.on { display: block; }
+  #hint { position: fixed; right: 14px; top: 10px; font-size: 12px; color: #5b6b7b; z-index: 5; }
+
+  /* 인쇄(PDF 저장): 슬라이드 한 장이 한 쪽 */
+  @page { size: 1280px 720px; margin: 0; }
+  @media print {
+    html, body { overflow: visible; height: auto; background: var(--bg); }
+    #stage { position: static; transform: none !important; width: auto; height: auto; }
+    .slide { display: block !important; position: relative; width: 1280px; height: 720px; page-break-after: always; break-after: page; }
+    #notes, #hint { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="hint">← → 이동 · N 발표자 노트 · F 전체화면</div>
+<div id="stage">
+
+  <!-- 1. 게임 개요 -->
+  <section class="slide" data-notes="장르는 3D 쿼터뷰 생존 액션입니다. 로봇이 도시를 점령한 근미래에서 주인공은 직접 싸우지 않고 자신을 따라다니는 드론으로 싸웁니다. 한 판은 10분이고, 9분에 보스전이 시작됩니다. 핵심 재미는 한 줄로, 움직이는 건 나, 싸우는 건 드론, 이득과 위험을 맞바꾸는 건 오버드라이브입니다. 기획 의도는 뱀서라이크 구조가 한 판이 끝나면 남는 게 적다는 점에서 출발해, 판 사이에 재화-뽑기-강화를 잇는 가챠 BM을 얹어 설계하고 검증하는 것이었습니다. 참고한 게임은 탕탕특공대입니다.">
+    <div class="tag">게임 개요</div>
+    <h1>이동만 하면 드론이 싸우는 생존 액션</h1>
+    <div class="abs kv" style="left:56px; top:150px; width:640px; display:grid; gap:14px;">
+      <div class="card"><div class="k">게임 제목</div><div class="v">Survival : D (Drone Commander)</div></div>
+      <div class="card"><div class="k">장르</div><div class="v">3D 쿼터뷰 생존 액션 (사이버펑크·SF)</div></div>
+      <div class="card"><div class="k">컨셉</div><div class="v">로봇이 점령한 도시에서 드론을 지휘해 10분을 버티고, 마지막 보스를 쓰러뜨린다</div></div>
+    </div>
+    <img class="abs shot" src="assets/screenshot_2_swarm.jpg" alt="플레이 화면" style="left:730px; top:150px; width:494px; height:356px; object-fit:cover;">
+    <div class="abs banner" style="left:56px; right:56px; top:546px;">
+      <small>핵심 재미</small>
+      <span>움직이는 건 나, 싸우는 건 드론. <span class="c-cyan">이득</span>과 <span class="c-red">위험</span>을 맞바꾸는 건 <span class="c-orange">오버드라이브</span>.</span>
+    </div>
+  </section>
+
+  <!-- 2. 조작 -->
+  <section class="slide" data-notes="조작은 단순합니다. WASD로 이동하면 드론이 알아서 공격합니다. 스페이스바는 오버드라이브, 마우스는 폭발 드론이 터질 위치를 정하는 데 씁니다. P는 일시정지입니다. 입력은 적지만 이동, 조준, 오버드라이브 타이밍이 모두 승패에 영향을 주도록 만들었습니다.">
+    <div class="tag">조작 방법</div>
+    <h1>공격은 자동, 입력은 세 가지만</h1>
+    <div class="keys">
+      <div class="key"><div class="cap c-cyan">W A S D</div><h3>이동</h3><p>로봇과 보스 예고를 피해 움직인다<br>(게임패드 왼쪽 스틱도 가능)</p></div>
+      <div class="key"><div class="cap c-orange" style="border-color:var(--orange)">SPACE</div><h3>오버드라이브</h3><p>게이지가 가득 차면 발동.<br>5초간 공격·이동 속도가 오른다</p></div>
+      <div class="key"><div class="cap c-cyan">마우스</div><h3>폭발 드론 조준</h3><p>폭발이 터질 위치를 마우스로 정한다<br>(감도 25~300%)</p></div>
+      <div class="key"><div class="cap c-muted">P</div><h3>일시정지</h3><p>소리 크기 조절 등 설정을 열 수 있다</p></div>
+    </div>
+    <p class="abs" style="left:56px; top:640px; font-size:18px;">레벨업 선택지 3개 중 하나는 마우스 클릭 또는 키보드 1·2·3으로 고른다</p>
+  </section>
+
+  <!-- 3. 핵심 루프 -->
+  <section class="slide" data-notes="이 게임에는 두 개의 루프가 있습니다. 한 판 안에서는 이동하며 드론이 자동으로 싸우고, 처치로 경험치를 모아 레벨업 선택지 3개 중 하나를 고릅니다. 9분이 되면 보스전이 시작되고 보스를 쓰러뜨리면 승리합니다. 판이 끝나면 판 보상으로 뽑기를 하고, 드론을 장착하고 강화해서 더 어려운 스테이지에 도전합니다. 이 한 바퀴가 처음으로 끊김 없이 돌아간 날이 MVP 완성 기준이었습니다.">
+    <div class="tag">주요 기능 및 시스템 ①</div>
+    <h1>한 판 안과 판 사이, 두 개의 루프</h1>
+    <div class="chain" style="margin-top:46px;"><div class="lab c-cyan">판 안 (10분)</div>
+      <div class="step">이동</div><div class="step">드론 자동 공격</div><div class="step">처치 → 경험치</div><div class="step">레벨업 3택 1</div><div class="step">보스전 (9분~)</div></div>
+    <div class="chain" style="margin-top:34px;"><div class="lab c-orange">판 사이</div>
+      <div class="step o">판 보상</div><div class="step o">뽑기</div><div class="step o">장착·강화</div><div class="step o">더 어려운 스테이지</div></div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr); margin-top:56px;">
+      <div class="stat"><div class="big c-cyan">10분</div><div class="lbl">한 판 길이 · 9분에 보스전</div></div>
+      <div class="stat"><div class="big c-orange">5 + 5</div><div class="lbl">노멀 스테이지 5개 + 하드 5개</div></div>
+      <div class="stat"><div class="big c-cyan">5종</div><div class="lbl">드론: 근접·저격·폭발·회복·수집</div></div>
+    </div>
+  </section>
+
+  <!-- 4. 드론 -->
+  <section class="slide" data-notes="드론은 다섯 종류입니다. 근접 드론은 주변을 돌며 베고, 저격 드론은 광선을 쏘고, 폭발 드론은 마우스로 정한 위치에서 터집니다. 회복 드론은 체력을 회복하고 수집 드론은 경험치 구슬을 모읍니다. 레벨업마다 드론을 늘리거나 강화하거나 능력치를 고르기 때문에 매 판 빌드가 달라집니다. 그림의 3D 모델은 VARCO 3D로 만든 FBX를 Blender로 렌더링한 미리보기입니다.">
+    <div class="tag">주요 기능 및 시스템 ②</div>
+    <h1>드론 5종, 레벨업으로 키우는 나만의 빌드</h1>
+    <div class="drones">
+      <div class="drone"><img src="assets/drone_melee.png" alt=""><b>근접 드론</b><span>주변을 돌며 벤다</span></div>
+      <div class="drone"><img src="assets/drone_sniper.png" alt=""><b>저격 드론</b><span>멀리서 광선 공격</span></div>
+      <div class="drone"><img src="assets/drone_explosion.png" alt=""><b>폭발 드론</b><span>마우스로 조준</span></div>
+      <div class="drone"><img src="assets/drone_heal.png" alt=""><b>회복 드론</b><span>체력을 회복</span></div>
+      <div class="drone"><img src="assets/drone_collector.png" alt=""><b>수집 드론</b><span>경험치 구슬 수집</span></div>
+    </div>
+    <div class="abs" style="left:56px; right:56px; top:430px; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="card" style="height:170px"><h3 class="c-cyan">레벨업 3택 1</h3><p>드론 추가 · 강화 · 능력치 중 선택. 무엇을 고르느냐에 따라 매 판 빌드가 달라진다</p></div>
+      <div class="card" style="height:170px"><h3 class="c-orange">5단계 강화와 변신 · 각성</h3><p>조각과 크레딧으로 드론을 강화하고, 강화가 쌓이면 모습이 바뀐다. OBT에서 각성 단계(Lv6~8)도 열었다</p></div>
+    </div>
+  </section>
+
+  <!-- 5. 오버드라이브 -->
+  <section class="slide" data-notes="오버드라이브는 이 게임의 유일한 액티브 스킬입니다. 게이지가 차면 스페이스바로 발동하고, 5초 동안 드론 공격 속도가 2.5배, 이동 속도가 25% 오릅니다. 대신 그동안 받는 피해가 2배가 됩니다. 적이 몰린 위기의 순간에 한계를 넘는 힘을 사용해 탈출한다는 느낌을 주기 위해 만든 스킬입니다. 이득이 큰 만큼 받는 피해도 2배라서, 지를지 참을지가 하나의 선택이 됩니다. 다만 이 재미가 실제로 통했는지는 OBT 설문에서 오버드라이브를 따로 물어보지 않아 아직 검증하지 못했습니다.">
+    <div class="tag">주요 기능 및 시스템 ③</div>
+    <h1>오버드라이브: 위기를 한계를 넘는 힘으로 탈출한다</h1>
+    <div class="stats" style="grid-template-columns:repeat(4,1fr); margin-top:34px;">
+      <div class="stat"><div class="big c-orange" style="font-size:56px">5초</div><div class="lbl">지속 시간</div></div>
+      <div class="stat"><div class="big c-cyan" style="font-size:56px">×2.5</div><div class="lbl">드론 공격 속도 (이득)</div></div>
+      <div class="stat"><div class="big c-cyan" style="font-size:56px">+25%</div><div class="lbl">이동 속도 (이득)</div></div>
+      <div class="stat"><div class="big c-red" style="font-size:56px">×2</div><div class="lbl">받는 피해 (위험)</div></div>
+    </div>
+    <div class="abs" style="left:56px; right:56px; top:370px; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="card" style="height:210px"><h3 class="c-orange">게이지</h3><p>적을 처치하면 찬다. 일반 4 · 엘리트 25 (가득 100)<br><br>발동 중에는 게이지가 차지 않아 무한 연속을 막는다</p></div>
+      <div class="card" style="height:210px"><h3 class="c-orange">왜 만들었나</h3><p>적이 몰린 위기의 순간에 한계를 넘는 힘을 사용해 탈출한다는 느낌을 주기 위해 만들었다.</p></div>
+    </div>
+  </section>
+
+  <!-- 6. 뽑기·BM -->
+  <section class="slide" data-notes="이 프로젝트의 목적은 결제를 만드는 것이 아니라 BM을 설계하고 숫자로 검증하는 것입니다. 일반 뽑기는 N 55, R 30, SR 12.5, SSR 2.5퍼센트이고 SSR 70회 천장, SR 이상 10회 소천장이 있습니다. 화면의 확률과 천장 표기는 실제 뽑기 로직이 읽는 수치표와 같은 값을 쓰는 '표기 = 실제' 원칙을 지켰습니다. 락온 뽑기는 드론 3칸을 먼저 공개하고 SR 이상 칸을 잠근 뒤 나머지만 다시 뽑는 방식입니다. 상점은 실제 결제 없는 데모이고, 클릭만 로그로 남겨 결제 의향을 봤습니다.">
+    <div class="tag">주요 기능 및 시스템 ④</div>
+    <h1>뽑기와 BM: 확률은 화면에 공개하고, 결제는 없다</h1>
+    <div class="abs" style="left:56px; top:150px; width:540px;">
+      <div class="c-muted" style="font-size:16px; font-weight:700;">일반 뽑기 등급 확률 (화면에 공개)</div>
+      <div class="bar"><span class="n">N</span><div class="track"><div class="fill" style="width:78.6%"></div></div><span class="pct">55%</span></div>
+      <div class="bar"><span class="n">R</span><div class="track"><div class="fill" style="width:42.9%"></div></div><span class="pct">30%</span></div>
+      <div class="bar"><span class="n">SR</span><div class="track"><div class="fill" style="width:17.9%"></div></div><span class="pct">12.5%</span></div>
+      <div class="bar"><span class="n">SSR</span><div class="track"><div class="fill" style="width:3.6%; background:var(--orange)"></div></div><span class="pct">2.5%</span></div>
+      <div style="margin-top:26px; font-size:20px; font-weight:700;" class="c-orange">천장 SSR 70회 · 소천장 SR 이상 10회 보장</div>
+      <p style="margin-top:10px; font-size:16px; line-height:1.5;">화면의 확률·천장 표기는 실제 뽑기가 읽는 수치표와 같은 값 (표기 = 실제)</p>
+    </div>
+    <div class="abs" style="left:640px; right:56px; top:150px; display:grid; gap:16px;">
+      <div class="card"><h3 class="c-cyan">락온 뽑기</h3><p>첫 공개로 드론 3칸을 보여 주고, SR 이상인 칸을 잠근 뒤 나머지만 다시 뽑는다</p></div>
+      <div class="card"><h3 class="c-cyan">재화 두 종류</h3><p>코어(뽑기, 마일스톤·일일 퀘스트로 획득) · 크레딧(강화, 판 보상으로 획득)</p></div>
+      <div class="card"><h3 class="c-orange">실제 결제 없음</h3><p>상점은 결제 없는 가상 화면(데모). 클릭만 로그로 남겨 구매 의향을 본다</p></div>
+    </div>
+  </section>
+
+  <!-- 7. 보스전 -->
+  <section class="slide" data-notes="스테이지는 노멀 5개와 하드 5개입니다. 3분과 6분에는 미니 보스가 나오고, 9분이 되면 일반 로봇이 사라지고 원형 경기장에서 보스와 1대1이 됩니다. 보스의 내려찍기와 돌진은 바닥에 예고가 나오기 때문에 보고 피하는 방식이고, 체력이 절반 이하가 되면 분노합니다.">
+    <div class="tag">주요 기능 및 시스템 ⑤</div>
+    <h1>보스전: 바닥 예고를 보고 피한다</h1>
+    <div class="abs" style="left:56px; top:150px; width:560px; display:grid; gap:16px;">
+      <div class="card"><h3 class="c-cyan">스테이지</h3><p>노멀 5개 + 노멀 클리어로 열리는 하드 5개. 스테이지가 오를수록 적 체력·피해 배율이 올라간다</p></div>
+      <div class="card"><h3 class="c-cyan">미니 보스</h3><p>3분과 6분에 등장, 처치하면 선택지를 한 번 더 받는다</p></div>
+      <div class="card"><h3 class="c-orange">최종 보스</h3><p>9분에 일반 로봇이 사라지고 원형 경기장에서 1대1. 내려찍기·돌진은 바닥 예고, 체력 절반 이하에서 분노</p></div>
+    </div>
+    <img class="abs shot" src="assets/screenshot_3_boss.jpg" alt="보스전 화면" style="left:650px; top:150px; width:574px; height:420px; object-fit:cover;">
+    <div class="abs c-muted" style="left:650px; top:580px; font-size:14px;">보스전 화면 (itch.io 스크린샷)</div>
+  </section>
+
+  <!-- 8. 트레일러 -->
+  <section class="slide" data-notes="이어서 1분짜리 트레일러를 보여드리겠습니다. 이동만 하면 드론이 싸우는 모습, 오버드라이브, 뽑기, 보스전까지 이 게임의 핵심 장면을 담았습니다.">
+    <div class="tag">시연</div>
+    <h1>트레일러 (1분)</h1>
+    <div class="abs" style="left:200px; top:140px; width:880px;">
+      <video src="assets/trailer.mp4" poster="assets/trailer_poster.png" controls preload="metadata"></video>
+      <div class="c-muted" style="margin-top:10px; font-size:14px; text-align:center;">재생 버튼을 누르면 재생</div>
+    </div>
+  </section>
+
+  <!-- 9. 테스트 -->
+  <section class="slide" data-notes="테스트는 지인 대상 CBT와 공개 OBT를 열고, 게임이 남기는 로그와 설문으로 분석했습니다. CBT 4명, 56판에서 스테이지 1 클리어율은 9퍼센트였고, 이 결과로 스테이지 1 적 배율을 낮췄습니다. OBT에서는 스테이지 1 클리어율이 31퍼센트로 올랐습니다. 표본이 작아서 방향만 읽었습니다. OBT에서 드러난 숙제는 보스전이 모두에게 쉬웠다는 점, 폭발 드론에 피해가 쏠리고 근접 드론이 약하다는 점, 강화 체감이 낮다는 점입니다. OBT 중에는 로그가 섞이지 않도록 값을 바꾸지 않았고, 발표 뒤에 이 항목들을 고치고 드론 변신 에셋을 추가할 계획입니다. 어려웠던 점으로는 웹에서 한글이 안 나온 문제, 웹 FPS 20 안팎 문제, 보스에게 닿아도 피해가 안 들어간 문제가 있었는데, 모두 로그와 실제 빌드로 원인을 확인해 해결했습니다.">
+    <div class="tag">테스트 → 수정</div>
+    <h1>로그와 설문으로 난이도를 고치고, 남은 숙제를 찾았다</h1>
+    <div class="abs" style="left:56px; top:150px; width:560px;">
+      <div class="c-muted" style="font-size:16px; font-weight:700;">스테이지별 클리어율 (OBT는 표본이 작아 방향만 확인)</div>
+      <div class="cols">
+        <div class="grp"><div class="pair">
+          <div class="col" style="height:81px; background:var(--muted);">9%</div>
+          <div class="col" style="height:280px; background:var(--cyan);">31%</div></div><b style="font-size:18px">스테이지 1</b></div>
+        <div class="grp"><div class="pair">
+          <div class="col" style="height:36px; background:var(--muted); position:relative;"><span style="position:absolute; top:-28px; color:var(--white);">4%</span></div>
+          <div class="col" style="height:126px; background:var(--cyan);">14%</div></div><b style="font-size:18px">스테이지 2</b></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--muted)"></i>CBT (4명 · 56판)</span><span><i style="background:var(--cyan)"></i>OBT</span></div>
+    </div>
+    <div class="abs" style="left:650px; right:56px; top:150px; display:grid; gap:16px;">
+      <div class="card"><h3 class="c-cyan">CBT → 고친 것</h3><p>스테이지 1 적 배율 ×1.0 → ×0.85, 빠른 로봇 첫 등장 지연<br>뽑기 안내 노출, 근접 드론 범위 확대, 폭발 드론 마우스 조준</p></div>
+      <div class="card"><h3 class="c-orange">OBT에서 나온 숙제</h3><p>보스전은 응답자 모두 "쉬움"<br>폭발 드론이 피해의 약 65% → 근접 드론 존재감 약함<br>강화 체감 2.3 / 5, 출시 의향 2.8 / 5<br><span class="c-muted">계획: 보스 난이도 · 근접 드론 · 강화 수치 표시 · 조각 안내 · 드론 변신 에셋 추가</span></p></div>
+    </div>
+  </section>
+
+</div>
+<div id="notes"></div>
+
+<script>
+  // 슬라이드 넘기기: ← → / 스페이스 / 클릭, N = 발표자 노트, F = 전체화면, 주소 끝 #3 처럼 번호로 바로 이동
+  const slides = [...document.querySelectorAll(".slide")];
+  const stage = document.getElementById("stage");
+  const notes = document.getElementById("notes");
+  let cur = 0;
+
+  slides.forEach((s, i) => {
+    const f = document.createElement("div");
+    f.className = "foot";
+    f.innerHTML = `<span>Survival : D · 주서연</span><span>${i + 1} / ${slides.length}</span>`;
+    s.appendChild(f);
+  });
+
+  function show(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => s.classList.toggle("active", k === cur));
+    notes.textContent = slides[cur].dataset.notes || "";
+    history.replaceState(null, "", "#" + (cur + 1));
+  }
+  function fit() {
+    const k = Math.min(innerWidth / 1280, innerHeight / 720);
+    stage.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+  addEventListener("resize", fit);
+  addEventListener("keydown", e => {
+    if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+    else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+    else if (e.key === "Home") show(0);
+    else if (e.key === "End") show(slides.length - 1);
+    else if (e.key.toLowerCase() === "n") notes.classList.toggle("on");
+    else if (e.key.toLowerCase() === "f") { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  });
+  stage.addEventListener("click", e => { if (e.target.closest("video, a")) return; show(cur + (e.clientX < innerWidth / 3 ? -1 : 1)); });
+  fit();
+  show((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>
