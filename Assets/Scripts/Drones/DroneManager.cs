@@ -48,6 +48,14 @@ namespace SurvivalDrone.Drones
         {
             // 격납고에서 장착한 드론들(최대 2개)로 시작한다. 각 드론은 뽑기 등급 × 강화 배율을 받는다.
             // 장착한 드론이 없거나 메타 시스템이 없으면 예전처럼 기본 드론(근접) 1개로 시작한다.
+            // 튜토리얼은 저장된 장착 상태와 상관없이 누구나 같은 조건(근접 + 저격, 배율 1배)으로 연습한다.
+            if (SurvivalDrone.Core.GameManager.IsTutorial)
+            {
+                AddDrone(DroneType.Melee);
+                AddDrone(DroneType.Sniper);
+                return;
+            }
+
             if (!AddEquippedDrones()) AddDrone(startingDrone);
         }
 

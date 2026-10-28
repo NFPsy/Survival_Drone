@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using SurvivalDrone.Drones;
 using SurvivalDrone.Enemies;
 using SurvivalDrone.Meta;
@@ -16,6 +17,10 @@ namespace SurvivalDrone.Core
     {
         // 어디서든 GameManager.Instance로 이 스크립트에 접근할 수 있게 해주는 정적 변수.
         public static GameManager Instance { get; private set; }
+
+        // 지금 열린 씬이 튜토리얼 씬인지. 튜토리얼은 InGame 씬을 복사해서 만들었기 때문에 같은 스크립트가 돌아가는데,
+        // 연습용이라 저장 기록(판 시작·결과·마일스톤·보상·일일 퀘스트)을 남기면 안 된다. 그런 곳에서 이 값으로 건너뛴다.
+        public static bool IsTutorial => SceneManager.GetActiveScene().name == "Tutorial";
 
         // 적이 나오는 시간(초) = 한 판의 "기본 길이". 기본값 600초(10분).
         // 이 시간이 지나면 적이 더 나오지 않고, 남아 있는 적을 모두 처치해야 승리한다(EnemySpawner가 확인).
@@ -158,7 +163,7 @@ namespace SurvivalDrone.Core
         // 바로 저장하는 이유: 저장하지 않으면 탭을 닫는 순간 이 줄도 사라져서 "닫고 나감"을 알 수 없다.
         private static void RecordMatchStartLog()
         {
-            if (CurrencyManager.Instance == null) return;
+            if (CurrencyManager.Instance == null || IsTutorial) return;
 
             int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
             var inventory = DroneInventory.Instance;
@@ -233,7 +238,7 @@ namespace SurvivalDrone.Core
         // 로비를 거치지 않고 InGame만 실행한 경우(CurrencyManager 없음)에는 사용자의 저장 파일을 건드리지 않도록 건너뛴다.
         private void RecordDailyQuestDone(int questIndex)
         {
-            if (CurrencyManager.Instance == null) return;
+            if (CurrencyManager.Instance == null || IsTutorial) return;
 
             DailyQuests.MarkDone(SaveManager.Data, questIndex);
             SaveManager.Save();
@@ -244,7 +249,7 @@ namespace SurvivalDrone.Core
         // (InGame만 실행한 경우도 저장 파일을 건드리지 않도록 건너뜀)
         private void MarkMilestoneDone(int index, string title)
         {
-            if (CurrencyManager.Instance == null) return;
+            if (CurrencyManager.Instance == null || IsTutorial) return;
 
             int stageIndex = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex : 0;
             var data = SaveManager.Data;
@@ -266,7 +271,7 @@ namespace SurvivalDrone.Core
             // 나중에 콘솔에서 "몇 초 만에 죽었는지" 복기할 수 있도록 기록해둔다.
             Debug.Log($"[Match] 패배 - 경과 시간 {ElapsedTime:F0}초");
             RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;
-            StageProgress.Instance?.RecordMatchResult(false, ElapsedTime);
+            if (!IsTutorial) StageProgress.Instance?.RecordMatchResult(false, ElapsedTime);
             GrantReward(false);
             AudioManager.Instance?.PlaySfx(defeatSound);
             OnStateChanged?.Invoke(State);
@@ -282,7 +287,7 @@ namespace SurvivalDrone.Core
             // 이전 승리 기록과 같은 줄로 합쳐진다. 소수점까지 찍어서 매번 다른 문구가 되게 한다.
             Debug.Log($"[Match] 승리 - 경과 시간 {ElapsedTime:F2}초");
             RealElapsedSeconds = Time.realtimeSinceStartup - _matchStartRealtime;
-            StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
+            if (!IsTutorial) StageProgress.Instance?.RecordMatchResult(true, ElapsedTime);
             // 계정에서 처음 클리어했다면 "처음 클리어" 마일스톤을 달성으로 기록한다. (코어는 로비에서 받는다)
             MarkMilestoneDone(MatchMilestones.ClearIndex, "처음 클리어");
             RecordDailyQuestDone(MatchMilestones.ClearIndex);
@@ -297,6 +302,8 @@ namespace SurvivalDrone.Core
         // CurrencyManager가 없으면(InGame 씬만 단독으로 실행한 경우) 보상 없이 넘어간다.
         private void GrantReward(bool cleared)
         {
+            if (IsTutorial) return;   // 튜토리얼은 보상이 없다
+
             if (CurrencyManager.Instance == null)
             {
                 Debug.LogWarning("[Currency] CurrencyManager가 없어 판 보상을 지급하지 못했습니다. 메인 메뉴 씬부터 시작했는지 확인해주세요.");

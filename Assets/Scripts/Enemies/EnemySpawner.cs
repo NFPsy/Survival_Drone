@@ -111,6 +111,9 @@ namespace SurvivalDrone.Enemies
             // GameManager가 없거나 게임이 진행 중이 아니면(승리/패배 상태) 스폰을 멈춘다.
             if (GameManager.Instance == null || GameManager.Instance.State != MatchState.Playing) return;
 
+            // 튜토리얼에서는 스포너가 스스로 적을 내지 않는다. TutorialController가 필요한 때 SpawnTutorialEnemy로 직접 부른다.
+            if (GameManager.IsTutorial) return;
+
             // 게임이 시작된 뒤 흐른 시간을 가져온다.
             float elapsed = GameManager.Instance.ElapsedTime;
 
@@ -249,6 +252,19 @@ namespace SurvivalDrone.Enemies
             if (Mathf.Abs(spawnPos.z) > arenaHalfSize) spawnPos.z = player.position.z - dir2.y * radius;
 
             CreateEnemy(entry, spawnPos, allowElite, miniBossHealthMultiplier, 0f);
+        }
+
+        // 튜토리얼 전용: 가장 약한 적(목록 첫 번째) 한 마리를 플레이어에서 radius만큼 떨어진 곳에 만든다.
+        // 엘리트로 승격되지 않고 맵 밖으로 나가지 않는다. 만들지 못하면 null.
+        public EnemyAI SpawnTutorialEnemy(float radius)
+        {
+            if (enemyEntries.Count == 0 || enemyEntries[0].prefab == null || player == null) return null;
+
+            Vector2 dir2 = Random.insideUnitCircle.normalized;
+            Vector3 spawnPos = player.position + new Vector3(dir2.x, 0f, dir2.y) * radius;
+            spawnPos.x = Mathf.Clamp(spawnPos.x, -arenaHalfSize, arenaHalfSize);
+            spawnPos.z = Mathf.Clamp(spawnPos.z, -arenaHalfSize, arenaHalfSize);
+            return CreateEnemy(enemyEntries[0], spawnPos, false, 0f, 0f);
         }
 
         // 보스전의 최종 보스를 정해진 위치에 만든다. BossFight가 부른다.

@@ -89,6 +89,10 @@ namespace SurvivalDrone.Enemies
         private float dashTimer;
         private bool dashHit;
 
+        // 패턴 하나의 결과가 정해질 때 알린다. (isSlam: 내려찍기면 true·돌진이면 false, hitPlayer: 플레이어가 맞았는지)
+        // 튜토리얼이 "피했는지"를 세려고 만들었다.
+        public event System.Action<bool, bool> PatternResolved;
+
         // 보스전이 시작되면 BossFight가 보스를 만든 직후 불러서 연결한다.
         public void Init(EnemyAI bossAi, Transform playerTransform, float startTime)
         {
@@ -220,6 +224,7 @@ namespace SurvivalDrone.Enemies
             // 터진다: 원 안에 있으면 피해. (판 기록에 "몇 번 터졌고 몇 번 맞았는지"를 남긴다)
             bool slamHitPlayer = FlatDistance(player.position, slamCenter) <= slamRadius;
             BossFightLog.RecordSlam(rage, slamHitPlayer);
+            PatternResolved?.Invoke(true, slamHitPlayer);
             if (slamHitPlayer)
                 DealDamage(slamDamage, "보스내려찍기");
 
@@ -343,6 +348,7 @@ namespace SurvivalDrone.Enemies
         private void EndDash()
         {
             BossFightLog.RecordDash(rage, dashHit);   // 판 기록: 돌진을 한 번 썼고 맞았는지
+            PatternResolved?.Invoke(false, dashHit);
             if (dashTelegraph != null)
             {
                 Destroy(dashTelegraph.gameObject);

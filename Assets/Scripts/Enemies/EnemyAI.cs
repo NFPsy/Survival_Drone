@@ -172,8 +172,10 @@ namespace SurvivalDrone.Enemies
             // 선택한 스테이지의 배율을 체력과 접촉 피해에만 곱한다. (노멀 스테이지는 둘이 같은 값 x1.0 / x1.5 / x2.2, 하드 스테이지는 따로 정한다)
             // 스폰 속도와 마릿수는 건드리지 않는다 (적을 줄이면 XP 구슬도 줄어 레벨업이 느려지는 역효과가 있었음).
             // StageProgress가 없으면(씬을 단독 실행한 경우) 1배로 원래 밸런스 그대로 동작한다.
-            float healthScale = StageProgress.Instance != null ? StageProgress.Instance.CurrentHealthMultiplier : 1f;
-            float damageScale = StageProgress.Instance != null ? StageProgress.Instance.CurrentDamageMultiplier : 1f;
+            // 튜토리얼은 고른 스테이지와 상관없이 항상 1배로 맞춘다.
+            bool tutorial = GameManager.IsTutorial;
+            float healthScale = StageProgress.Instance != null && !tutorial ? StageProgress.Instance.CurrentHealthMultiplier : 1f;
+            float damageScale = StageProgress.Instance != null && !tutorial ? StageProgress.Instance.CurrentDamageMultiplier : 1f;
             float scaledMaxHealth = def.maxHealth * healthScale;
             scaledContactDamage = def.contactDamage * damageScale;
 
@@ -510,7 +512,7 @@ namespace SurvivalDrone.Enemies
         // 이 적이 있던 자리에 경험치 구슬을 하나 만든다. (죽을 때와 보스전에서 사라질 때 같이 쓴다)
         private void SpawnXpOrb()
         {
-            if (xpOrbPrefab == null) return;
+            if (xpOrbPrefab == null || GameManager.IsTutorial) return;   // 튜토리얼에서는 레벨업이 없으니 구슬도 만들지 않는다
 
             // 구슬은 적의 몸 중심이 아니라 플레이어 발 높이에 둔다. (몸 중심 높이에서 만들면 보스 구슬이 2.5m 공중에 떠서
             // 자석·획득 판정(3D 거리)이 닿지 않고 화면에서도 떠 보인다)

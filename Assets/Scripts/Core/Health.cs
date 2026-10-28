@@ -30,6 +30,9 @@ namespace SurvivalDrone.Core
         // 이 값은 "받는 쪽"에만 적용되므로, 공격하는 쪽 코드는 아무것도 몰라도 된다.
         public float DamageTakenMultiplier { get; set; } = 1f;
 
+        // true면 체력이 1 밑으로 내려가지 않아 죽지 않는다. 튜토리얼에서 연습 중 실수로 죽는 일이 없도록 플레이어에게 켠다.
+        public bool CannotDie { get; set; }
+
         // 체력이 바뀔 때마다 알림을 받고 싶은 다른 스크립트(예: 체력바 UI)가 구독하는 이벤트.
         // 매개변수는 (현재 체력, 최대 체력) 순서.
         public event Action<float, float> OnHealthChanged;
@@ -72,7 +75,7 @@ namespace SurvivalDrone.Core
             amount *= DamageTakenMultiplier;
 
             // 체력이 0 밑으로 내려가지 않도록 Mathf.Max로 최소값을 0으로 고정.
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+            CurrentHealth = Mathf.Max(CannotDie ? 1f : 0f, CurrentHealth - amount);
             OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
             OnDamaged?.Invoke(amount);
 

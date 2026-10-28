@@ -102,12 +102,27 @@ namespace SurvivalDrone.UI
         // 타이머 자리에 "보스전"을 이미 적어 뒀는지.
         private bool shownBossFight;
 
+        // 타이머 자리에 "튜토리얼"을 이미 적어 뒀는지.
+        private bool shownTutorial;
+
         private void Update()
         {
             // 타이머는 매 프레임 계속 줄어들기 때문에, 이벤트 방식이 아니라 여기서 직접 갱신한다.
             // 다만 화면에 보이는 값이 바뀐 프레임에만 글자를 새로 적는다.
             if (timerText != null && GameManager.Instance != null)
             {
+                // 튜토리얼에서는 남은 시간이 의미 없으니 "튜토리얼"로 바꿔 둔다.
+                if (GameManager.IsTutorial)
+                {
+                    if (!shownTutorial)
+                    {
+                        shownTutorial = true;
+                        timerText.text = "튜토리얼";
+                        SetTimerIcon(false);
+                    }
+                    return;
+                }
+
                 // 보스전 중에는 시간 대신 "보스전"을 보여 준다. (남은 시간·남은 적 수는 의미가 없어서)
                 if (BossFight.Active)
                 {

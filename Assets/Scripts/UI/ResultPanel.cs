@@ -141,7 +141,7 @@ namespace SurvivalDrone.UI
         // 메타 시스템 없이 InGame만 단독 실행한 경우에는 남길 저장 데이터가 없으므로 건너뛴다.
         private void RecordMatchLog(bool won)
         {
-            if (CurrencyManager.Instance == null) return;
+            if (CurrencyManager.Instance == null || GameManager.IsTutorial) return;
 
             int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
             int combatPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;

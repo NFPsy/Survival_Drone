@@ -140,7 +140,7 @@ namespace SurvivalDrone.UI
         {
             // 판이 이미 끝났거나, 로비를 거치지 않고 InGame 씬만 단독으로 실행한 경우(저장 데이터 없음)에는 남기지 않는다.
             var game = GameManager.Instance;
-            if (game == null || game.State != MatchState.Playing || CurrencyManager.Instance == null) return;
+            if (game == null || game.State != MatchState.Playing || CurrencyManager.Instance == null || GameManager.IsTutorial) return;
 
             int stageNumber = StageProgress.Instance != null ? StageProgress.Instance.SelectedIndex + 1 : 0;
             int combatPower = DroneInventory.Instance != null ? DroneInventory.Instance.TotalCombatPower : 0;

@@ -16,7 +16,10 @@ namespace SurvivalDrone.UI
         // (필드 이름을 gameplaySceneName에서 바꾼 이유: 씬에 저장돼 있던 옛 값 "InGame"이 새 기본값을 덮어쓰지 않게 하려고)
         [SerializeField] private string lobbySceneName = "Lobby";
 
-        // 처음 보이는 타이틀 화면(버튼 4개가 있는 패널).
+        // "튜토리얼" 버튼을 눌렀을 때 로드할 씬 이름. 로비·저장 슬롯을 거치지 않고 바로 연습 씬으로 간다.
+        [SerializeField] private string tutorialSceneName = "Tutorial";
+
+        // 처음 보이는 타이틀 화면(버튼 5개가 있는 패널).
         private GameObject titlePanel;
 
         // "조작법" 버튼을 누르면 뜨는 팝업.
@@ -51,8 +54,9 @@ namespace SurvivalDrone.UI
             aboutPanel = FindChild("AboutPanel");
             settingsPanel = FindChild("SettingsPanel");
 
-            // 타이틀 화면의 버튼 4개에 각각 클릭 시 실행할 함수를 연결한다.
+            // 타이틀 화면의 버튼 5개에 각각 클릭 시 실행할 함수를 연결한다.
             WireButton(titlePanel, "BtnStart", StartGame);
+            WireButton(titlePanel, "BtnTutorial", StartTutorial);
             WireButton(titlePanel, "BtnControls", () => ShowPanel(controlsPanel));
             WireButton(titlePanel, "BtnAbout", () => ShowPanel(aboutPanel));
             WireButton(titlePanel, "BtnSettings", () => ShowPanel(settingsPanel));
@@ -136,6 +140,13 @@ namespace SurvivalDrone.UI
             aboutPanel?.SetActive(false);
             settingsPanel?.SetActive(false);
             slotSelectPanel?.SetActive(false);
+        }
+
+        // "튜토리얼" 버튼을 눌렀을 때 실행. 저장 데이터를 쓰지 않는 연습 씬이라 슬롯 선택 없이 바로 불러온다.
+        private void StartTutorial()
+        {
+            AudioManager.Instance?.PlaySfx(clickSound);
+            SceneManager.LoadScene(tutorialSceneName);
         }
 
         // "게임 시작" 버튼을 눌렀을 때 실행.

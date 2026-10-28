@@ -213,7 +213,8 @@ namespace SurvivalDrone.Enemies
         }
 
         // 제한 테두리를 바닥에 그린다. 가는 고리 모양 메쉬를 코드로 만들어 붉은 재질을 입힌다.
-        private static GameObject BuildRing(Vector3 center, float radius)
+        // (튜토리얼도 같은 테두리를 그리려고 public으로 열어 두었다)
+        public static GameObject BuildRing(Vector3 center, float radius)
         {
             var material = Resources.Load<Material>(RingMaterialName);
             if (material == null)
