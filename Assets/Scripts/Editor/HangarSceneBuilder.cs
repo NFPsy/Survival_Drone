@@ -15,6 +15,7 @@ namespace SurvivalDrone.EditorTools
     //   왼쪽 패널: 드론 목록 (런타임에 견본 줄을 복제해서 5줄을 만든다)
     //   오른쪽 패널: 고른 드론의 상세 (이름, 등급·레벨, 전투력, 성능 배율, 조각 진행바, 강화 버튼, 조각 교환 버튼)
     //   아래: 내 전투력 + 출격 장착 슬롯 2개
+    //   팝업: 장착 버튼을 누르면 뜨는 슬롯 선택 창 (평소엔 꺼 둠)
     public static class HangarSceneBuilder
     {
         private const string ScenePath = "Assets/Scenes/Hangar.unity";
@@ -93,11 +94,15 @@ namespace SurvivalDrone.EditorTools
 
             var cost = NewText("CostText", detail.transform, "크레딧", 32, LightText, SansFont, TextAnchor.MiddleCenter);
             Place(cost.rectTransform, Center, Center, Center, new Vector2(0f, -95f), new Vector2(900f, 44f));
+            // 버튼 줄: [장착] [강화] [조각 교환] (가로 1080 안에 280 + 330 + 430, 사이 간격 20)
+            // 장착 버튼: 누르면 슬롯 1·2 중 어디에 장착할지 고르는 창(EquipPopup)이 뜬다
+            var equip = NewButton("BtnEquip", detail.transform, "장착", 42, new Color(0.36f, 0.78f, 0.52f), DarkText);
+            Place(equip.rectTransform, Center, Center, Center, new Vector2(-400f, -170f), new Vector2(280f, 88f));
             var upgrade = NewButton("BtnUpgrade", detail.transform, "강화", 42, Cyan, DarkText);
-            Place(upgrade.rectTransform, Center, Center, Center, new Vector2(-250f, -170f), new Vector2(420f, 88f));
+            Place(upgrade.rectTransform, Center, Center, Center, new Vector2(-75f, -170f), new Vector2(330f, 88f));
             // 강화 버튼 오른쪽: 크레딧으로 조각을 사는 버튼 (글자는 HangarUI가 받는 조각·크레딧·오늘 횟수로 채운다)
             var exchange = NewButton("BtnExchange", detail.transform, "조각 +10 교환\n크레딧 500  (오늘 0/3)", 28, ButtonColor, LightText);
-            Place(exchange.rectTransform, Center, Center, Center, new Vector2(250f, -170f), new Vector2(460f, 88f));
+            Place(exchange.rectTransform, Center, Center, Center, new Vector2(345f, -170f), new Vector2(430f, 88f));
             var status = NewText("StatusText", detail.transform, "", 28, Cyan, SansFont, TextAnchor.MiddleCenter);
             Place(status.rectTransform, Center, Center, Center, new Vector2(0f, -240f), new Vector2(1080f, 40f));
 
@@ -108,6 +113,19 @@ namespace SurvivalDrone.EditorTools
             Place(slot1.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(-260f, 50f), new Vector2(480f, 110f));
             var slot2 = NewButton("BtnSlot2", root, "슬롯 2\n비어 있음", 30, ButtonColor, LightText);
             Place(slot2.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(260f, 50f), new Vector2(480f, 110f));
+
+            // ---- 장착 슬롯 고르는 창 (장착 버튼을 누르면 뜬다. 글자는 HangarUI가 채운다) ----
+            // 다른 화면 요소 위에 그려져야 하므로 가장 마지막에 만든다.
+            var equipBox = NewPopup("EquipPopup", root, new Vector2(900f, 440f), out var equipRoot);
+            var equipTitle = NewText("TitleText", equipBox, "근접 드론을 장착할 슬롯", 44, LightText, SansFont, TextAnchor.MiddleCenter);
+            Place(equipTitle.rectTransform, TopCenter, TopCenter, TopCenter, new Vector2(0f, -40f), new Vector2(820f, 70f));
+            var popupSlot1 = NewButton("BtnPopupSlot1", equipBox, "슬롯 1\n비어 있음", 34, ButtonColor, LightText);
+            Place(popupSlot1.rectTransform, Center, Center, Center, new Vector2(-200f, 10f), new Vector2(360f, 150f));
+            var popupSlot2 = NewButton("BtnPopupSlot2", equipBox, "슬롯 2\n비어 있음", 34, ButtonColor, LightText);
+            Place(popupSlot2.rectTransform, Center, Center, Center, new Vector2(200f, 10f), new Vector2(360f, 150f));
+            var equipCancel = NewButton("BtnCancel", equipBox, "취소", 32, ButtonColor, LightText);
+            Place(equipCancel.rectTransform, BottomCenter, BottomCenter, BottomCenter, new Vector2(0f, 36f), new Vector2(240f, 68f));
+            equipRoot.gameObject.SetActive(false);
 
             // ---- 격납고 컨트롤러 ----
             var hangarUI = root.gameObject.AddComponent<HangarUI>();

@@ -11,8 +11,13 @@ namespace SurvivalDrone.UI
 {
     // 격납고 화면. 가진 드론을 보고, 강화하고, 출격할 드론을 장착하는 화면이다.
     //   왼쪽: 드론 5종 목록 (등급·레벨, 장착 중 표시, 미획득은 흐리게)
-    //   오른쪽: 고른 드론의 상세 (전투력, 성능 배율, 조각 진행바, 강화 버튼, 크레딧으로 조각을 사는 교환 버튼)
+    //   오른쪽: 고른 드론의 상세 (전투력, 성능 배율, 조각 진행바, 장착 버튼, 강화 버튼, 크레딧으로 조각을 사는 교환 버튼)
     //   아래: 출격 장착 슬롯 2개와 내 전투력
+    //
+    // 장착하는 방법은 두 가지다.
+    //   1) 상세 화면의 "장착" 버튼: 슬롯 1·2 중 어디에 장착할지 고르는 창이 뜬다. 고른 슬롯에 있던 드론과 자리가 바뀐다.
+    //      같은 드론이 두 슬롯에 들어가지는 않는다 (이미 다른 슬롯에 있는 드론이면 두 슬롯의 드론이 서로 바뀐다).
+    //   2) 아래 슬롯 버튼: 원하는 슬롯을 직접 눌러 그 자리에 넣는다. 이미 그 자리에 있는 드론이면 장착이 해제된다.
     //
     // 실제 규칙(보유·강화·장착·전투력 계산)은 DroneInventory가 처리하고, 이 스크립트는 버튼 입력을 넘기고 결과를 화면에 그리기만 한다.
     // MainMenuController처럼 정해진 이름의 자식 오브젝트를 찾아서 연결하며, 못 찾아도 경고만 남기고 나머지는 계속 동작한다.
@@ -56,6 +61,11 @@ namespace SurvivalDrone.UI
         private Text _costText;
         private Image _nameIcon;  // 상세 패널 제목(드론 이름) 왼쪽의 종류 아이콘
         private Image _costIcon;  // "크레딧 500"처럼 크레딧이 드는 줄에서만 보이는 크레딧 아이콘
+        private Button _equipButton;  // 상세 화면의 "장착" 버튼 (누르면 슬롯 고르는 창이 뜬다)
+        private GameObject _equipPopup;  // 슬롯 1·2 중 어디에 장착할지 고르는 창 (평소엔 꺼 둔다)
+        private Text _equipPopupTitle;
+        private readonly List<Button> _popupSlotButtons = new List<Button>();
+        private readonly List<Text> _popupSlotTexts = new List<Text>();
         private Button _upgradeButton;
         private Text _upgradeLabel;
         private Button _exchangeButton;
@@ -91,6 +101,7 @@ namespace SurvivalDrone.UI
             if (_shardBarFill == null) Debug.LogWarning("[Inventory] 격납고에서 'DetailPanel/ShardBar/Fill'을 찾지 못했습니다.");
 
             WireButton("BtnBack", () => { PlayClick(); SceneManager.LoadScene(lobbySceneName); });
+            _equipButton = WireButton("DetailPanel/BtnEquip", OpenEquipPopup);
             _upgradeButton = WireButton("DetailPanel/BtnUpgrade", Upgrade);
             _exchangeButton = WireButton("DetailPanel/BtnExchange", Exchange);
             _exchangeLabel = FindText("DetailPanel/BtnExchange/Text");
@@ -106,6 +117,25 @@ namespace SurvivalDrone.UI
                 _slotTexts.Add(button.transform.Find("Text").GetComponent<Text>());
                 _slotOutlines.Add(button.GetComponent<Outline>());
             }
+
+            // 슬롯 고르는 창: 씬에 아직 없어도 나머지 화면은 그대로 동작하도록 못 찾으면 경고만 남긴다.
+            var popup = transform.Find("EquipPopup");
+            if (popup != null)
+            {
+                _equipPopup = popup.gameObject;
+                _equipPopupTitle = FindText("EquipPopup/Box/TitleText");
+                for (int i = 0; i < slotCount; i++)
+                {
+                    int slot = i;
+                    var button = WireButton($"EquipPopup/Box/BtnPopupSlot{i + 1}", () => EquipToSlot(slot));
+                    if (button == null) continue;
+                    _popupSlotButtons.Add(button);
+                    _popupSlotTexts.Add(button.transform.Find("Text").GetComponent<Text>());
+                }
+                WireButton("EquipPopup/Box/BtnCancel", CloseEquipPopup);
+                _equipPopup.SetActive(false);
+            }
+            else Debug.LogWarning("[Inventory] 격납고에서 'EquipPopup'을 찾지 못했습니다.");
         }
 
         private void OnEnable()
@@ -124,6 +154,7 @@ namespace SurvivalDrone.UI
             // 처음 열 때는 첫 번째 슬롯에 장착된 드론을 골라 둔다 (없으면 근접 드론).
             var first = DroneInventory.Instance != null ? DroneInventory.Instance.GetEquipped(0) : null;
             _selected = first ?? DroneType.Melee;
+            if (_equipPopup != null) _equipPopup.SetActive(false);
             SetStatus("", CyanColor);
             Refresh();
         }
@@ -194,7 +225,15 @@ namespace SurvivalDrone.UI
 
             RefreshRows(inventory);
             RefreshDetail(inventory, currency);
+            RefreshEquipButton(inventory);
             RefreshSlots(inventory);
+        }
+
+        // 장착 버튼의 켜짐 상태. 보유한 드론이면 켜 두고, 미보유 드론은 장착할 수 없으니 끈다.
+        private void RefreshEquipButton(DroneInventory inventory)
+        {
+            if (_equipButton == null) return;
+            _equipButton.interactable = inventory.IsOwned(_selected);
         }
 
         private void RefreshRows(DroneInventory inventory)
@@ -390,6 +429,67 @@ namespace SurvivalDrone.UI
                     SetStatus("보유하지 않은 드론입니다", ShortColor);
                     break;
             }
+        }
+
+        // 장착 버튼: 어느 슬롯에 장착할지 고르는 창을 연다.
+        private void OpenEquipPopup()
+        {
+            var inventory = DroneInventory.Instance;
+            if (inventory == null || _equipPopup == null) return;
+
+            PlayClick();
+            if (!inventory.IsOwned(_selected))
+            {
+                SetStatus("보유하지 않은 드론은 장착할 수 없습니다", ShortColor);
+                return;
+            }
+
+            SetText(_equipPopupTitle, $"{DroneNames.Get(_selected)}을(를) 장착할 슬롯", LightColor);
+            for (int slot = 0; slot < _popupSlotButtons.Count; slot++)
+            {
+                var current = inventory.GetEquipped(slot);
+                bool alreadyHere = current.HasValue && current.Value == _selected;
+
+                string content = "비어 있음";
+                if (alreadyHere) content = "이미 장착 중";
+                else if (current.HasValue && inventory.TryGetInfo(current.Value, out var info)) content = $"{DroneNames.Get(current.Value)}  {info.rarity}";
+
+                _popupSlotTexts[slot].text = $"슬롯 {slot + 1}\n{content}";
+                _popupSlotTexts[slot].color = alreadyHere ? DeadColor : LightColor;
+                _popupSlotButtons[slot].interactable = !alreadyHere; // 이미 그 자리에 있는 드론이면 고를 필요가 없다
+            }
+            _equipPopup.SetActive(true);
+        }
+
+        private void CloseEquipPopup()
+        {
+            PlayClick();
+            if (_equipPopup != null) _equipPopup.SetActive(false);
+        }
+
+        // 창에서 슬롯을 골랐을 때: 그 슬롯에 고른 드론을 넣는다. 원래 그 슬롯에 있던 드론은 밀려난다.
+        // 고른 드론이 다른 슬롯에 이미 들어 있으면 DroneInventory가 두 슬롯을 서로 바꿔 주므로 같은 드론이 두 개가 되지 않는다.
+        private void EquipToSlot(int slot)
+        {
+            var inventory = DroneInventory.Instance;
+            if (inventory == null) return;
+
+            PlayClick();
+            if (_equipPopup != null) _equipPopup.SetActive(false);
+
+            var replaced = inventory.GetEquipped(slot);
+            bool movedFromOtherSlot = FindEquippedSlot(inventory, _selected) >= 0;
+            if (!inventory.TryEquip(slot, _selected))
+            {
+                SetStatus("보유하지 않은 드론은 장착할 수 없습니다", ShortColor);
+                return;
+            }
+
+            string name = DroneNames.Get(_selected);
+            if (movedFromOtherSlot)
+                SetStatus(replaced.HasValue ? $"{name}와(과) {DroneNames.Get(replaced.Value)}의 자리를 바꿨습니다" : $"{name}을(를) 슬롯 {slot + 1}로 옮겼습니다", CyanColor);
+            else
+                SetStatus(replaced.HasValue ? $"슬롯 {slot + 1}: {DroneNames.Get(replaced.Value)} → {name} 교체했습니다" : $"{name}을(를) 슬롯 {slot + 1}에 장착했습니다", CyanColor);
         }
 
         // 슬롯을 누르면: 이 슬롯에 지금 고른 드론을 장착한다. 이미 그 자리에 있는 드론이면 장착을 해제한다.
